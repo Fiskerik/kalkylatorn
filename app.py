@@ -3,58 +3,55 @@ import math
 
 app = Flask(__name__)
 
-def calculate_daily_amount(monthly_income):
-    yearly_income = monthly_income * 12
-    if yearly_income < 117590:
+def berakna_daglig_ersattning(inkomst):
+    if not inkomst:
+        return None
+
+    arsinkomst = inkomst * 12
+    if arsinkomst < 117590:
         return 250
-    elif yearly_income > 588000:
+    elif arsinkomst > 588000:
         return 1250
     else:
-        sgi = yearly_income * 0.97
-        daily = (sgi * 0.8) / 365
-        return round(daily)
+        sgi = arsinkomst * 0.97
+        ersattning = sgi * 0.80 / 365
+        return min(1250, max(250, round(ersattning)))
 
-@app.route('/')
+@app.route("/", methods=["GET", "POST"])
 def index():
-    return render_template('index.html',
-        daily_rate_1=0,
-        daily_rate_2=0,
-        monthly_fp_1=0,
-        monthly_fp_2=0,
-        dagar_sjukpenning=0,
-        dagar_lagstaniva=0,
-        shared_care=False
-    )
+    daily_rate_1 = None
+    daily_rate_2 = None
+    monthly_fp_1 = None
+    monthly_fp_2 = None
 
+    if request.method == "POST":
+        vardnad = request.form.get("vardnad")
+        inkomst1 = request.form.get("inkomst1")
+        inkomst2 = request.form.get("inkomst2")
 
-@app.route('/resultat', methods=['POST'])
-def resultat():
-    income1 = int(request.form.get('income1'))
-    income2 = request.form.get('income2')
-    income2 = int(income2) if income2 else None
+        try:
+            inkomst1 = int(inkomst1)
+        except:
+            inkomst1 = 0
+        try:
+            inkomst2 = int(inkomst2)
+        except:
+            inkomst2 = 0
 
-    shared = True if income2 is not None else False
-    days_per_parent = 195 if shared else 390
+        daily_rate_1 = berakna_daglig_ersattning(inkomst1)
+        if vardnad == "gemensam":
+            daily_rate_2 = berakna_daglig_ersattning(inkomst2)
 
-    daily1 = calculate_daily_amount(income1)
-    daily2 = calculate_daily_amount(income2) if shared else None
+        if daily_rate_1:
+            monthly_fp_1 = round(daily_rate_1 * 4.3 * 7 / 100) * 100  # avrundat till 100-tal
+        if daily_rate_2:
+            monthly_fp_2 = round(daily_rate_2 * 4.3 * 7 / 100) * 100
 
-    rows1 = []
-    for d in range(1, 8):
-        weeks = round(days_per_parent / d, 1)
-        monthly = round(daily1 * d * 4.3, -2)
-        rows1.append({'days': d, 'weeks': weeks, 'monthly': monthly})
+    return render_template("index.html",
+                           daily_rate_1=daily_rate_1,
+                           daily_rate_2=daily_rate_2,
+                           monthly_fp_1=monthly_fp_1,
+                           monthly_fp_2=monthly_fp_2)
 
-    rows2 = []
-    if shared:
-        for d in range(1, 8):
-            weeks = round(days_per_parent / d, 1)
-            monthly = round(daily2 * d * 4.3, -2)
-            rows2.append({'days': d, 'weeks': weeks, 'monthly': monthly})
-
-    return render_template('result.html',
-                           shared=shared,
-                           daily1=daily1,
-                           rows1=rows1,
-                           daily2=daily2,
-                           rows2=rows2)
+if __name__ == "__main__":
+    app.run(debug=True)
