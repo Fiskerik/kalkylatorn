@@ -2,149 +2,65 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <title>Föräldrapenningskalkylator</title>
+    <title>Föräldrapenningkalkylator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>👶 Föräldrapenningskalkylator</h1>
-    <section class="block">
-        <h2>Välj vårdnadsform</h2>
-      
+    <h1>Föräldrapenningkalkylator</h1>
+
+    <form action="{{ url_for('calculate') }}" method="POST" id="calc-form">
+        <label>Vårdnad:</label>
         <div class="button-group">
-          <button type="button" onclick="selectCare('joint')">Gemensam vårdnad</button>
-          <button type="button" onclick="selectCare('single')">Ensam vårdnad</button>
+            <button type="button" onclick="selectCare('shared')" id="btn-shared">Gemensam</button>
+            <button type="button" onclick="selectCare('single')" id="btn-single">Ensam</button>
         </div>
-      
-        <div id="care-info" class="info-text" style="margin-top: 1em;"></div>
-      
-        <div id="income-section" style="display: none; margin-top: 1em;">
-          <label for="income">Vad är din månadsinkomst före skatt?</label><br>
-          <input type="number" id="income" placeholder="30 000 kr" style="padding: 8px; width: 200px;">
-          <br><br>
-          <button onclick="calculate()">Visa resultat</button>
+
+        <p class="info-text" id="care-info"></p>
+        <input type="hidden" name="care_type" id="care_type" value="">
+
+        <div id="parent1-input" style="display: none;">
+            <label for="income1">
+                Vad är din månadsinkomst före skatt? 
+                <span title="Bruttolön före skatt, t.ex. 30000 kr.">(ℹ️)</span>
+            </label>
+            <input type="number" name="income1" id="income1" placeholder="30 000 kr">
         </div>
-      
-        <div id="result-section" style="margin-top: 2em;"></div>
-      </section>
-      
-      <script>
-        let daysAvailable = 0;
-      
-        function selectCare(type) {
-          const info = document.getElementById("care-info");
-          const incomeSection = document.getElementById("income-section");
-      
-          if (type === "joint") {
-            daysAvailable = 195;
-            info.innerHTML = `När du och den andra föräldern har gemensam vårdnad får ni <strong>195 dagar</strong> var på sjukpenningnivå.`;
-          } else if (type === "single") {
-            daysAvailable = 390;
-            info.innerHTML = `Du som har ensam vårdnad får <strong>390 dagar</strong> på sjukpenningnivå.`;
-          }
-      
-          incomeSection.style.display = "block";
-          document.getElementById("result-section").innerHTML = ""; // Clear previous results
-        }
-      
-        function calculate() {
-          const income = parseFloat(document.getElementById("income").value);
-          if (isNaN(income) || income <= 0) {
-            alert("Ange en giltig inkomst.");
-            return;
-          }
-      
-          // Enkel Fk-modell: ca 80% av SGI upp till taket
-          const dailyAllowance = Math.min(income * 0.8 / 30, 1116); // ca tak i 2024: 1116 kr/dag
-          const dailyRounded = Math.round(dailyAllowance);
-      
-          let resultHtml = `<p>Du kan preliminärt få <strong>${dailyRounded.toLocaleString('sv-SE')} kronor</strong> per dag i föräldrapenning.</p>`;
-          resultHtml += `
-            <table border="1" cellpadding="8" style="border-collapse: collapse; margin-top: 1em;">
-              <thead>
-                <tr>
-                  <th>Dagar per vecka</th>
-                  <th>Så länge räcker dagarna</th>
-                  <th>Föräldrapenning per månad</th>
-                </tr>
-              </thead>
-              <tbody>`;
-      
-          for (let i = 1; i <= 7; i++) {
-            const weeks = daysAvailable / i;
-            const months = weeks / 4.3;
-            const monthlyPay = dailyRounded * i * 4.3;
-            const monthlyRounded = Math.round(monthlyPay / 100) * 100;
-      
-            resultHtml += `
-              <tr>
-                <td>${i} dag${i > 1 ? 'ar' : ''}</td>
-                <td>${Math.floor(weeks)} veckor</td>
-                <td>${monthlyRounded.toLocaleString('sv-SE')} kr</td>
-              </tr>`;
-          }
-      
-          resultHtml += `</tbody></table>`;
-          document.getElementById("result-section").innerHTML = resultHtml;
-        }
-      </script>
 
-      
+        <div id="parent2-input" style="display: none;">
+            <label for="income2">
+                Vad är den andra förälderns månadsinkomst?
+                <span title="Bruttolön före skatt, t.ex. 32000 kr.">(ℹ️)</span>
+            </label>
+            <input type="number" name="income2" id="income2" placeholder="32 000 kr">
+        </div>
 
-      
-    
-    <form method="POST">
-        <label for="parent">Välj förälder:</label>
-        <select name="parent" id="parent">
-            <option value="Förälder 1">Förälder 1</option>
-            <option value="Förälder 2">Förälder 2</option>
-        </select>
-
-        <label for="income">Årsinkomst (brutto):</label>
-        <input type="number" name="income" id="income" required>
-
-        <label for="days_80">Antal dagar på 80%-nivå (max 390):</label>
-        <input type="number" name="days_80" id="days_80" max="390" required>
-
-        <label for="days_180">Antal dagar på lägstanivå (max 90):</label>
-        <input type="number" name="days_180" id="days_180" max="90" required>
-
-        <button type="submit">💰 Beräkna</button>
+        <button type="submit">Visa resultat</button>
     </form>
 
-    {% if result %}
-    <section class="result">
-        <h2>📊 Resultat för {{ result.parent }}</h2>
-        <p><strong>Ersättning per dag (80%):</strong> {{ result.sgi_per_day }} kr</p>
-        <p><strong>{{ result.dagar_80 }} dagar</strong> på 80%-nivå: {{ result.ers_80 | round }} kr</p>
-        <p><strong>{{ result.dagar_180 }} dagar</strong> på lägstanivå: {{ result.ers_180 }} kr</p>
-        <p><strong>Total ersättning:</strong> {{ result.total | round }} kr</p>
-        <p><strong>Kvarvarande dagar:</strong> {{ result.remaining }} / 480</p>
+    <script>
+        function selectCare(type) {
+            const careTypeField = document.getElementById('care_type');
+            const info = document.getElementById('care-info');
+            const income1 = document.getElementById('parent1-input');
+            const income2 = document.getElementById('parent2-input');
 
-        <canvas id="chart" width="400" height="200"></canvas>
-        <script>
-            const ctx = document.getElementById('chart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['80%-nivå', 'Lägstanivå'],
-                    datasets: [{
-                        label: 'Ersättning (kr)',
-                        data: [{{ result.ers_80 | round(2) }}, {{ result.ers_180 | round(2) }}],
-                        backgroundColor: ['#4CAF50', '#2196F3']
-                    }]
-                },
-                options: {
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        </script>
-    </section>
-    {% endif %}
+            careTypeField.value = type;
+
+            if (type === 'shared') {
+                info.innerHTML = 'När du och den andra föräldern har gemensam vårdnad får ni <strong>195 dagar</strong> var på sjukpenningnivå.';
+                income1.style.display = 'block';
+                income2.style.display = 'block';
+            } else {
+                info.innerHTML = 'Du som har ensam vårdnad får <strong>390 dagar</strong> på sjukpenningnivå.';
+                income1.style.display = 'block';
+                income2.style.display = 'none';
+            }
+
+            // Highlight selected
+            document.getElementById('btn-shared').style.backgroundColor = type === 'shared' ? '#ccc' : '#e3e3e3';
+            document.getElementById('btn-single').style.backgroundColor = type === 'single' ? '#ccc' : '#e3e3e3';
+        }
+    </script>
 </body>
 </html>

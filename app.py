@@ -3,46 +3,49 @@ import math
 
 app = Flask(__name__)
 
-SGI_TAK = 573000  # 2024 års SGI-tak
-MAX_DAGAR = 480
-MAX_SJUKPENNING_DAGAR = 390
-MAX_LAGSTANIVA_DAGAR = 90
-LAGSTANIVA = 180
-NETTO_FAKTOR = 0.97  # Efter preliminär skatt
+def calculate_daily_amount(monthly_income):
+    yearly_income = monthly_income * 12
+    if yearly_income < 117590:
+        return 250
+    elif yearly_income > 588000:
+        return 1250
+    else:
+        sgi = yearly_income * 0.97
+        daily = (sgi * 0.8) / 365
+        return round(daily)
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
 def index():
-    result = None
+    return render_template('index.html')
 
-    if request.method == 'POST':
-        income = float(request.form['income'])
-        parent = request.form.get('parent', 'Förälder 1')
+@app.route('/resultat', methods=['POST'])
+def resultat():
+    income1 = int(request.form.get('income1'))
+    income2 = request.form.get('income2')
+    income2 = int(income2) if income2 else None
 
-        dagar_80 = int(request.form['days_80'])
-        dagar_180 = int(request.form['days_180'])
+    shared = True if income2 is not None else False
+    days_per_parent = 195 if shared else 390
 
-        sgi = min(income, SGI_TAK)
-        sgi_per_day = round(sgi * 0.8 / 365 * NETTO_FAKTOR, 2)
+    daily1 = calculate_daily_amount(income1)
+    daily2 = calculate_daily_amount(income2) if shared else None
 
-        ers_80 = dagar_80 * sgi_per_day
-        ers_180 = dagar_180 * LAGSTANIVA
-        total_ers = ers_80 + ers_180
+    rows1 = []
+    for d in range(1, 8):
+        weeks = round(days_per_parent / d, 1)
+        monthly = round(daily1 * d * 4.3, -2)
+        rows1.append({'days': d, 'weeks': weeks, 'monthly': monthly})
 
-        remaining = MAX_DAGAR - dagar_80 - dagar_180
+    rows2 = []
+    if shared:
+        for d in range(1, 8):
+            weeks = round(days_per_parent / d, 1)
+            monthly = round(daily2 * d * 4.3, -2)
+            rows2.append({'days': d, 'weeks': weeks, 'monthly': monthly})
 
-        result = {
-            'parent': parent,
-            'income': income,
-            'sgi_per_day': sgi_per_day,
-            'dagar_80': dagar_80,
-            'dagar_180': dagar_180,
-            'ers_80': ers_80,
-            'ers_180': ers_180,
-            'total': total_ers,
-            'remaining': remaining
-        }
-
-    return render_template('index.html', result=result)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    return render_template('result.html',
+                           shared=shared,
+                           daily1=daily1,
+                           rows1=rows1,
+                           daily2=daily2,
+                           rows2=rows2)
