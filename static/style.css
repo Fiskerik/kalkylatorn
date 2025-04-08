@@ -1,0 +1,44 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background: #f7f7f7;
+    padding: 2rem;
+    max-width: 600px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    color: #444;
+}
+
+form {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+input, button {
+    padding: 0.6rem;
+    width: 100%;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background: #005fa3;
+}
+
+h2 {
+    margin-top: 2rem;
+    color: #333;
+}

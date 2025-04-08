@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Föräldrapenningskalkylator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>👶 Föräldrapenningskalkylator</h1>
+
+    <form method="POST">
+        <label for="parent">Välj förälder:</label>
+        <select name="parent" id="parent">
+            <option value="Förälder 1">Förälder 1</option>
+            <option value="Förälder 2">Förälder 2</option>
+        </select>
+
+        <label for="income">Årsinkomst (brutto):</label>
+        <input type="number" name="income" id="income" required>
+
+        <label for="days_80">Antal dagar på 80%-nivå (max 390):</label>
+        <input type="number" name="days_80" id="days_80" max="390" required>
+
+        <label for="days_180">Antal dagar på lägstanivå (max 90):</label>
+        <input type="number" name="days_180" id="days_180" max="90" required>
+
+        <button type="submit">💰 Beräkna</button>
+    </form>
+
+    {% if result %}
+    <section class="result">
+        <h2>📊 Resultat för {{ result.parent }}</h2>
+        <p><strong>Ersättning per dag (80%):</strong> {{ result.sgi_per_day }} kr</p>
+        <p><strong>{{ result.dagar_80 }} dagar</strong> på 80%-nivå: {{ result.ers_80 | round }} kr</p>
+        <p><strong>{{ result.dagar_180 }} dagar</strong> på lägstanivå: {{ result.ers_180 }} kr</p>
+        <p><strong>Total ersättning:</strong> {{ result.total | round }} kr</p>
+        <p><strong>Kvarvarande dagar:</strong> {{ result.remaining }} / 480</p>
+
+        <canvas id="chart" width="400" height="200"></canvas>
+        <script>
+            const ctx = document.getElementById('chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['80%-nivå', 'Lägstanivå'],
+                    datasets: [{
+                        label: 'Ersättning (kr)',
+                        data: [{{ result.ers_80 | round(2) }}, {{ result.ers_180 | round(2) }}],
+                        backgroundColor: ['#4CAF50', '#2196F3']
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        </script>
+    </section>
+    {% endif %}
+</body>
+</html>
