@@ -2,66 +2,106 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <title>Föräldrapenningkalkylator</title>
+    <title>Resultat - Föräldrapenning</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>Föräldrapenningkalkylator</h1>
+    <div class="container">
+        <h1>Resultat</h1>
 
-    <form action="{{ url_for('resultat') }}" method="POST" id="calc-form">
+        <div class="result-block">
+            <h2>Förälder 1</h2>
+            <p>Nedan sammanfattas hur mycket föräldrapenning på sjukpenningnivå du kan få under din föräldraledighet.</p>
 
-        <label>Vårdnad:</label>
-        <div class="button-group">
-            <button type="button" onclick="selectCare('shared')" id="btn-shared">Gemensam</button>
-            <button type="button" onclick="selectCare('single')" id="btn-single">Ensam</button>
+            <div class="grid-2">
+                <div class="info-box">
+                    <h3>Daglig ersättning på sjukpenningnivå</h3>
+                    <p class="highlight">{{ daily_rate_1 }} kr/dag</p>
+                    <div class="progress-container">
+                        <span>250 kr</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" data-width="{{ daily_rate_1|int / 1250 * 100 }}"></div>
+
+                        </div>
+                        <span>1250 kr</span>
+                    </div>
+                </div>
+                <div class="info-box">
+                    <h3>Preliminär föräldralön</h3>
+                    <p class="highlight">{{ monthly_fp_1 }} kr/månad</p>
+                </div>
+            </div>
+
+            <details>
+                <summary>ℹ Föräldrapenning vid kort anställningstid</summary>
+                <p>
+                    Eftersom du arbetat kortare än 240 dagar i sträck före barnets födelse eller inte uppfyller inkomstkravet
+                    på 85 000 kr i årsinkomst får du 250 kr/dag på sjukpenningnivå under de första 180 dagarna du tar ut
+                    föräldrapenning för barnet. När du, den andra föräldern eller ni tillsammans har tagit 180 dagar med
+                    föräldrapenning, övergår din ersättning till att baseras på din inkomst.
+                </p>
+            </details>
+            <details>
+                <summary>ℹ Information om föräldralön</summary>
+                <p>Föräldralön är ett tillägg vissa arbetsgivare betalar ovanpå ersättningen från Försäkringskassan. Denna kan variera.</p>
+            </details>
+
+            <h3>Föräldradagar</h3>
+            <p>Nedan sammanfattas dina föräldradagar du kan få.</p>
+            <div class="grid-2">
+                <div class="info-box">
+                    <h3>Dagar på sjukpenningnivå</h3>
+                    <p class="highlight">{{ dagar_sjukpenning }} dagar</p>
+                    <ul>
+                        <li>Varav dagar som kan delas: <strong>105 dagar</strong></li>
+                        <li>Varav reserverade dagar: <strong>90 dagar</strong></li>
+                    </ul>
+                </div>
+                <div class="info-box">
+                    <h3>Dagar på lägstanivå</h3>
+                    <p class="highlight">{{ dagar_lagstaniva }} dagar</p>
+                </div>
+            </div>
+            <details>
+                <summary>ℹ Mer information om dina dagar</summary>
+                <p>
+                    Du kan ta ut föräldradagar olika många dagar per vecka. Hur länge de räcker beror på hur ofta du tar ut dem.
+                </p>
+            </details>
         </div>
 
-        <p class="info-text" id="care-info"></p>
-        <input type="hidden" name="care_type" id="care_type" value="">
+        {% if shared_care %}
+        <hr>
+        <div class="result-block">
+            <h2>Förälder 2</h2>
+            <p>Nedan sammanfattas hur mycket föräldrapenning din partner kan få.</p>
+            <div class="grid-2">
+                <div class="info-box">
+                    <h3>Daglig ersättning på sjukpenningnivå</h3>
+                    <p class="highlight">{{ daily_rate_2 }} kr/dag</p>
+                    <div class="progress-container">
+                        <span>250 kr</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" data-width="{{ daily_rate_2|int / 1250 * 100 }}"></div>
 
-        <div id="parent1-input" style="display: none;">
-            <label for="income1">
-                Vad är din månadsinkomst före skatt? 
-                <span title="Bruttolön före skatt, t.ex. 30000 kr.">(ℹ️)</span>
-            </label>
-            <input type="number" name="income1" id="income1" placeholder="30 000 kr">
+                        </div>
+                        <span>1250 kr</span>
+                    </div>
+                </div>
+                <div class="info-box">
+                    <h3>Preliminär föräldralön</h3>
+                    <p class="highlight">{{ monthly_fp_2 }} kr/månad</p>
+                </div>
+            </div>
         </div>
-
-        <div id="parent2-input" style="display: none;">
-            <label for="income2">
-                Vad är den andra förälderns månadsinkomst?
-                <span title="Bruttolön före skatt, t.ex. 32000 kr.">(ℹ️)</span>
-            </label>
-            <input type="number" name="income2" id="income2" placeholder="32 000 kr">
-        </div>
-
-        <button type="submit">Visa resultat</button>
-    </form>
-
+        {% endif %}
+    </div>
     <script>
-        function selectCare(type) {
-            const careTypeField = document.getElementById('care_type');
-            const info = document.getElementById('care-info');
-            const income1 = document.getElementById('parent1-input');
-            const income2 = document.getElementById('parent2-input');
-
-            careTypeField.value = type;
-
-            if (type === 'shared') {
-                info.innerHTML = 'När du och den andra föräldern har gemensam vårdnad får ni <strong>195 dagar</strong> var på sjukpenningnivå.';
-                income1.style.display = 'block';
-                income2.style.display = 'block';
-            } else {
-                info.innerHTML = 'Du som har ensam vårdnad får <strong>390 dagar</strong> på sjukpenningnivå.';
-                income1.style.display = 'block';
-                income2.style.display = 'none';
-            }
-
-            // Highlight selected
-            document.getElementById('btn-shared').style.backgroundColor = type === 'shared' ? '#ccc' : '#e3e3e3';
-            document.getElementById('btn-single').style.backgroundColor = type === 'single' ? '#ccc' : '#e3e3e3';
-        }
+        document.querySelectorAll('.progress-fill').forEach(el => {
+            const width = el.getAttribute('data-width');
+            el.style.width = Math.min(Math.max(parseFloat(width), 0), 100) + '%';
+        });
     </script>
+    
 </body>
 </html>
