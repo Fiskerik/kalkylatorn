@@ -14,9 +14,18 @@ def calculate_daily_amount(monthly_income):
         daily = (sgi * 0.8) / 365
         return round(daily)
 
-@app.route('/', methods=['GET'])
+@app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html',
+        daily_rate_1=0,
+        daily_rate_2=0,
+        monthly_fp_1=0,
+        monthly_fp_2=0,
+        dagar_sjukpenning=0,
+        dagar_lagstaniva=0,
+        shared_care=False
+    )
+
 
 @app.route('/resultat', methods=['POST'])
 def resultat():
