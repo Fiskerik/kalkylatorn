@@ -8,7 +8,91 @@
 </head>
 <body>
     <h1>👶 Föräldrapenningskalkylator</h1>
+    <section class="block">
+        <h2>Välj vårdnadsform</h2>
+      
+        <div class="button-group">
+          <button type="button" onclick="selectCare('joint')">Gemensam vårdnad</button>
+          <button type="button" onclick="selectCare('single')">Ensam vårdnad</button>
+        </div>
+      
+        <div id="care-info" class="info-text" style="margin-top: 1em;"></div>
+      
+        <div id="income-section" style="display: none; margin-top: 1em;">
+          <label for="income">Vad är din månadsinkomst före skatt?</label><br>
+          <input type="number" id="income" placeholder="30 000 kr" style="padding: 8px; width: 200px;">
+          <br><br>
+          <button onclick="calculate()">Visa resultat</button>
+        </div>
+      
+        <div id="result-section" style="margin-top: 2em;"></div>
+      </section>
+      
+      <script>
+        let daysAvailable = 0;
+      
+        function selectCare(type) {
+          const info = document.getElementById("care-info");
+          const incomeSection = document.getElementById("income-section");
+      
+          if (type === "joint") {
+            daysAvailable = 195;
+            info.innerHTML = `När du och den andra föräldern har gemensam vårdnad får ni <strong>195 dagar</strong> var på sjukpenningnivå.`;
+          } else if (type === "single") {
+            daysAvailable = 390;
+            info.innerHTML = `Du som har ensam vårdnad får <strong>390 dagar</strong> på sjukpenningnivå.`;
+          }
+      
+          incomeSection.style.display = "block";
+          document.getElementById("result-section").innerHTML = ""; // Clear previous results
+        }
+      
+        function calculate() {
+          const income = parseFloat(document.getElementById("income").value);
+          if (isNaN(income) || income <= 0) {
+            alert("Ange en giltig inkomst.");
+            return;
+          }
+      
+          // Enkel Fk-modell: ca 80% av SGI upp till taket
+          const dailyAllowance = Math.min(income * 0.8 / 30, 1116); // ca tak i 2024: 1116 kr/dag
+          const dailyRounded = Math.round(dailyAllowance);
+      
+          let resultHtml = `<p>Du kan preliminärt få <strong>${dailyRounded.toLocaleString('sv-SE')} kronor</strong> per dag i föräldrapenning.</p>`;
+          resultHtml += `
+            <table border="1" cellpadding="8" style="border-collapse: collapse; margin-top: 1em;">
+              <thead>
+                <tr>
+                  <th>Dagar per vecka</th>
+                  <th>Så länge räcker dagarna</th>
+                  <th>Föräldrapenning per månad</th>
+                </tr>
+              </thead>
+              <tbody>`;
+      
+          for (let i = 1; i <= 7; i++) {
+            const weeks = daysAvailable / i;
+            const months = weeks / 4.3;
+            const monthlyPay = dailyRounded * i * 4.3;
+            const monthlyRounded = Math.round(monthlyPay / 100) * 100;
+      
+            resultHtml += `
+              <tr>
+                <td>${i} dag${i > 1 ? 'ar' : ''}</td>
+                <td>${Math.floor(weeks)} veckor</td>
+                <td>${monthlyRounded.toLocaleString('sv-SE')} kr</td>
+              </tr>`;
+          }
+      
+          resultHtml += `</tbody></table>`;
+          document.getElementById("result-section").innerHTML = resultHtml;
+        }
+      </script>
 
+      
+
+      
+    
     <form method="POST">
         <label for="parent">Välj förälder:</label>
         <select name="parent" id="parent">
