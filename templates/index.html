@@ -9,7 +9,8 @@
 <body>
     <h1>Föräldrapenningkalkylator</h1>
 
-    <form action="{{ url_for('calculate') }}" method="POST" id="calc-form">
+    <form action="{{ url_for('resultat') }}" method="POST" id="calc-form">
+
         <label>Vårdnad:</label>
         <div class="button-group">
             <button type="button" onclick="selectCare('shared')" id="btn-shared">Gemensam</button>
