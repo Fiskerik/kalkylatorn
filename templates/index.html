@@ -20,8 +20,7 @@
                     <div class="progress-container">
                         <span>250 kr</span>
                         <div class="progress-bar">
-                            <div class="progress-fill" data-width="{{ daily_rate_1|int / 1250 * 100 }}"></div>
-
+                            <div class="progress-fill" style="width: {{ (daily_rate_1 / 1250 * 100) | round(0) }}%"></div>
                         </div>
                         <span>1250 kr</span>
                     </div>
@@ -82,8 +81,7 @@
                     <div class="progress-container">
                         <span>250 kr</span>
                         <div class="progress-bar">
-                            <div class="progress-fill" data-width="{{ daily_rate_2|int / 1250 * 100 }}"></div>
-
+                            <div class="progress-fill" style="width: {{ (daily_rate_2 / 1250 * 100) | round(0) }}%"></div>
                         </div>
                         <span>1250 kr</span>
                     </div>
@@ -96,12 +94,5 @@
         </div>
         {% endif %}
     </div>
-    <script>
-        document.querySelectorAll('.progress-fill').forEach(el => {
-            const width = el.getAttribute('data-width');
-            el.style.width = Math.min(Math.max(parseFloat(width), 0), 100) + '%';
-        });
-    </script>
-    
 </body>
 </html>
