@@ -2,16 +2,44 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <title>Resultat - Föräldrapenning</title>
+    <title>Föräldrapenningkalkylator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>Resultat</h1>
+        <h1>Beräkna din föräldrapenning</h1>
 
+        <form method="POST" action="/">
+            <label>Vårdnad:</label>
+            <div class="button-group">
+                <label><input type="radio" name="vardnad" value="gemensam" required {% if vardnad == 'gemensam' %}checked{% endif %}> Gemensam</label>
+                <label><input type="radio" name="vardnad" value="ensam" required {% if vardnad == 'ensam' %}checked{% endif %}> Ensam</label>
+            </div>
+
+            {% if vardnad %}
+            <p class="info-text">
+                {% if vardnad == 'gemensam' %}
+                    När du och den andra föräldern har gemensam vårdnad får ni <strong>195</strong> dagar var på sjukpenningnivå.
+                {% elif vardnad == 'ensam' %}
+                    Du som har ensam vårdnad får <strong>390</strong> dagar på sjukpenningnivå.
+                {% endif %}
+            </p>
+            {% endif %}
+
+            <label>Din månadsinkomst före skatt:</label>
+            <input type="number" name="inkomst1" placeholder="30 000" value="{{ inkomst1 or '' }}" required>
+
+            {% if vardnad == 'gemensam' %}
+            <label>Månadsinkomst för förälder 2:</label>
+            <input type="number" name="inkomst2" placeholder="30 000" value="{{ inkomst2 or '' }}">
+            {% endif %}
+
+            <button type="submit">Visa resultat</button>
+        </form>
+
+        {% if daily_rate_1 %}
         <div class="result-block">
             <h2>Förälder 1</h2>
-            <p>Nedan sammanfattas hur mycket föräldrapenning på sjukpenningnivå du kan få under din föräldraledighet.</p>
 
             <div class="grid-2">
                 <div class="info-box">
@@ -31,22 +59,7 @@
                 </div>
             </div>
 
-            <details>
-                <summary>ℹ Föräldrapenning vid kort anställningstid</summary>
-                <p>
-                    Eftersom du arbetat kortare än 240 dagar i sträck före barnets födelse eller inte uppfyller inkomstkravet
-                    på 85 000 kr i årsinkomst får du 250 kr/dag på sjukpenningnivå under de första 180 dagarna du tar ut
-                    föräldrapenning för barnet. När du, den andra föräldern eller ni tillsammans har tagit 180 dagar med
-                    föräldrapenning, övergår din ersättning till att baseras på din inkomst.
-                </p>
-            </details>
-            <details>
-                <summary>ℹ Information om föräldralön</summary>
-                <p>Föräldralön är ett tillägg vissa arbetsgivare betalar ovanpå ersättningen från Försäkringskassan. Denna kan variera.</p>
-            </details>
-
             <h3>Föräldradagar</h3>
-            <p>Nedan sammanfattas dina föräldradagar du kan få.</p>
             <div class="grid-2">
                 <div class="info-box">
                     <h3>Dagar på sjukpenningnivå</h3>
@@ -61,19 +74,14 @@
                     <p class="highlight">{{ dagar_lagstaniva }} dagar</p>
                 </div>
             </div>
-            <details>
-                <summary>ℹ Mer information om dina dagar</summary>
-                <p>
-                    Du kan ta ut föräldradagar olika många dagar per vecka. Hur länge de räcker beror på hur ofta du tar ut dem.
-                </p>
-            </details>
         </div>
+        {% endif %}
 
-        {% if shared_care %}
+        {% if vardnad == 'gemensam' and daily_rate_2 %}
         <hr>
         <div class="result-block">
             <h2>Förälder 2</h2>
-            <p>Nedan sammanfattas hur mycket föräldrapenning din partner kan få.</p>
+
             <div class="grid-2">
                 <div class="info-box">
                     <h3>Daglig ersättning på sjukpenningnivå</h3>
