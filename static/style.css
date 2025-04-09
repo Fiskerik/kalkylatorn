@@ -99,3 +99,23 @@ table th {
 canvas {
     margin-top: 2rem;
 }
+.toggle-btn {
+    padding: 10px 20px;
+    font-weight: bold;
+    background-color: #e3e3e3;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  .toggle-btn.active {
+    background-color: #007acc;
+    color: white;
+  }
+  
+  .toggle-btn:hover {
+    background-color: #005f99;
+    color: white;
+  }
+  
