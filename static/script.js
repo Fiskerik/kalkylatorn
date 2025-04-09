@@ -123,7 +123,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!isNaN(income1)) {
             const dag1 = beraknaDaglig(income1);
             const extra1 = avtal1 ? (income1 <= 49000 ? Math.round(income1 * 0.10) : 4900) : 0;
-            const manad1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
+            const manad1 = Math.round((dag1 * 7 * 4.3) / 100) * 10;
 
             output += `
                 <div class="result-section">
@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (vardnad === "gemensam" && beraknaPartner === "ja" && income2 > 0) {
             const dag2 = beraknaDaglig(income2);
             const extra2 = avtal2 ? (income2 <= 49000 ? Math.round(income2 * 0.10) : 4900) : 0;
-            const manad2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
+            const manad2 = Math.round((dag2 * 7 * 4.3) / 100) * 10;
 
             output += `
                 <div class="result-section">
