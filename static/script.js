@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    setupBarnval('barn-tidigare-group', 'barn-tidigare');
-    setupBarnval('barn-planerade-group', 'barn-planerade');
+
 
     const vardnadButtons = document.querySelectorAll('#vardnad-group .vardnad-btn');
     const vardnadInput = document.getElementById('vardnad');
@@ -11,8 +10,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('calc-form');
     const resultBlock = document.getElementById('result-block');
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
-    console.log('Barnval init:', groupId, inputId, group.querySelectorAll('button').length);
 
+    
     // Vårdnad
     vardnadButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -176,3 +175,4 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
     const details = `${totalBarn} barn ger ${Math.round(barnbidrag)} kr barnbidrag${tillagg > 0 ? " + " + tillagg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
     return { barnbidrag: Math.round(barnbidrag), tillagg: Math.round(tillagg), total: Math.round(total), details };
 }
+console.log('Barnval init:', groupId, inputId, group.querySelectorAll('button').length);
