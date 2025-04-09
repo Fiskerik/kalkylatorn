@@ -5,7 +5,6 @@
     <title>Föräldrapenningkalkylator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/style.css">
-   
 </head>
 <body>
     <div class="container">
@@ -13,26 +12,26 @@
 
         <form id="calc-form">
             <div class="form-section">
-              <label for="vardnad">Har du Gemensam eller Ensam vårdnad?</label>
-              <div class="button-group" id="vardnad-group">
-                <button type="button" class="toggle-btn active" data-value="gemensam">Gemensam vårdnad</button>
-                <button type="button" class="toggle-btn" data-value="ensam">Ensam vårdnad</button>
-              </div>
-              <input type="hidden" name="vardnad" id="vardnad" value="gemensam">
-              <p id="vardnad-info" class="info-text">När du och den andra föräldern har gemensam vårdnad får ni <strong>195 dagar</strong> var på sjukpenningnivå.</p>
+                <label for="vardnad">Har du Gemensam eller Ensam vårdnad?</label>
+                <div class="button-group" id="vardnad-group">
+                    <button type="button" class="toggle-btn" data-value="gemensam">Gemensam vårdnad</button>
+                    <button type="button" class="toggle-btn" data-value="ensam">Ensam vårdnad</button>
+                </div>
+                <input type="hidden" name="vardnad" id="vardnad" value="">
+                <p id="vardnad-info" class="info-text"></p>
             </div>
-          
-            <div id="partner-question" style="display:block;" class="form-section">
-              <label for="berakna-partner">Vill du beräkna föräldrapenning för din partner också?</label>
-              <div class="button-group" id="partner-group">
-                <button type="button" class="toggle-btn active" data-value="ja">Ja</button>
-                <button type="button" class="toggle-btn" data-value="nej">Nej</button>
-              </div>
-              <input type="hidden" name="berakna_partner" id="berakna-partner" value="ja">
+
+            <div id="partner-question" style="display:none;" class="form-section">
+                <label for="berakna-partner">Vill du beräkna föräldrapenning för din partner också?</label>
+                <div class="button-group" id="partner-group">
+                    <button type="button" class="toggle-btn" data-value="ja">Ja</button>
+                    <button type="button" class="toggle-btn" data-value="nej">Nej</button>
+                </div>
+                <input type="hidden" name="berakna_partner" id="berakna-partner" value="">
             </div>
 
             <div id="inkomst-block-1">
-                <label for="inkomst1">Månadsinkomst förälder 1 (före skatt):</label>
+                <label for="inkomst1">Vad är din månadsinkomst före skatt?</label>
                 <input type="number" name="inkomst1" id="inkomst1" placeholder="30000" required>
             </div>
 
