@@ -5,12 +5,6 @@ body {
     margin: 0; /* ingen auto */
 }
 
-.container {
-    max-width: 800px;
-    margin: auto;
-}
-
-
 h1 {
     text-align: center;
     color: #333;
@@ -60,6 +54,7 @@ button {
     border-radius: 6px;
     box-sizing: border-box;
     font-size: 16px;
+    text-align: center;
 }
 
 button, .toggle-btn {
@@ -197,21 +192,28 @@ canvas {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 2rem;
+}
+
 .benefit-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
-    margin-top: 1rem;
 }
 
 .benefit-card {
-    flex: 1 1 calc(50% - 0.5rem);
+    flex: 1 1 48%;
+    min-width: 0; /* Viktig för flex-wrap att fungera korrekt */
     background-color: #f5f8ff;
     border-radius: 10px;
     padding: 1.2rem;
-    min-width: 300px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
 }
+
 
 .benefit-title {
     font-weight: 600;
