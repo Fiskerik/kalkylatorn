@@ -11,7 +11,17 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('calc-form');
     const resultBlock = document.getElementById('result-block');
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
-
+    const avtalButtons = document.querySelectorAll('#avtal-group .toggle-btn');
+    const avtalInput = document.getElementById('har-avtal');
+    
+    avtalButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            avtalButtons.forEach(b => b.classList.remove('active'));
+            button.classList.add('active');
+            avtalInput.value = button.dataset.value;
+        });
+    });
+    
     
     // Vårdnad
     vardnadButtons.forEach(button => {
@@ -88,7 +98,7 @@ document.addEventListener("DOMContentLoaded", function () {
             for (let i = 1; i <= 7; i++) {
                 const veckor = Math.floor(dagar / i);
                 const manadsersattning = Math.round((dailyRate * i * 4.3) / 100) * 100;
-                const totalDisponibelt = manadsersattning + total;
+                const totalDisponibelt = manadsersattning + total + kollektivavtalErs1;
                 rows += `
                     <tr>
                         <td>${i} dag${i > 1 ? 'ar' : ''}</td>
@@ -152,6 +162,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!isNaN(income1)) {
             const dag1 = beraknaDaglig(income1);
+            let kollektivavtalErs1 = 0;
+                if (document.getElementById("har-avtal").value === "ja") {
+                    kollektivavtalErs1 = income1 <= 49000 ? Math.round(income1 * 0.10) : 4900;
+                }
+
             output += `
             <div class="result-section">
                 <h2>Förälder 1</h2>
@@ -228,9 +243,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         output += `
             <div class="result-block">
-                <h2>Sammanlagt barnbidrag</h2>
+                <h2>Ditt barnbidrag</h2>
                 <p>${details}</p>
             </div>`;
+
+            output += genereraTabell(dag1, dagar, income1 * 12, income1);
+
+
 
         if (vardnad === "gemensam") {
             output += `
@@ -238,8 +257,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     <h2>Partnerns barnbidrag</h2>
                     <p>Din partner kommer att få ${barnbidrag.toLocaleString()} kr i barnbidrag och ${tillagg.toLocaleString()} kr i flerbarnstillägg.</p>
                 </div>`;
-        }
 
+            output += genereraTabell(dag2, dagar, income2 * 12, income2);
+
+        }
+        
         output += "</div>";
         resultBlock.innerHTML = output;
     });
