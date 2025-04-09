@@ -148,6 +148,21 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                         </div>
                     </div>
+                    <div class="benefit-grid">
+                        <div class="benefit-card">
+                            <div class="benefit-title">Föräldradagar på sjukpenningnivå</div>
+                            <div class="benefit-value-large">
+                                <span>390 </span><span class="unit">dagar</span>
+                            </div>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-title">Föräldradagar på lägstanivå</div>
+                            <div class="benefit-value-large">
+                                <span>90 </span><span class="unit">dagar</span>
+                                <span class="unit">180 kr/månad</span>
+                            </div>
+                        </div>
+                    </div>
                     ${genereraTabell(dag1, dagar, extra1)}
                 </div>
             `;
@@ -178,6 +193,21 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div class="benefit-title">Preliminär föräldralön</div>
                             <div class="benefit-value-large">
                                 <span>${extra2.toLocaleString()}</span><span class="unit">kr/månad</span>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="benefit-grid">
+                        <div class="benefit-card">
+                            <div class="benefit-title">Föräldradagar på sjukpenningnivå</div>
+                            <div class="benefit-value-large">
+                                <span>390 </span><span class="unit">dagar</span>
+                            </div>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-title">Föräldradagar på lägstanivå</div>
+                            <div class="benefit-value-large">
+                                <span>90 </span><span class="unit">dagar</span>
+                                <span class="unit">180 kr/månad</span>
                             </div>
                         </div>
                     </div>

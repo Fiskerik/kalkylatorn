@@ -195,16 +195,16 @@ canvas {
 .benefit-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 1rem;
     margin-top: 1rem;
 }
 
 .benefit-card {
-    flex: 1 1 250px;
-    background: #f5f7ff;
-    padding: 1rem 1.5rem;
+    flex: 1 1 48%;
+    background-color: #f5f8ff;
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    padding: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .benefit-title {
@@ -251,4 +251,11 @@ canvas {
     color: #777;
 }
 
+
+/* Responsivt fallback på mobil */
+@media (max-width: 768px) {
+    .benefit-card {
+        flex: 1 1 100%;
+    }
+}
 
