@@ -11,6 +11,25 @@ h1 {
     color: #333;
     margin-bottom: 2rem;
 }
+/* Behåll denna för barnantal */
+.button-group.barnval .toggle-btn {
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    font-size: 18px;
+    text-align: center;
+    border-radius: 8px;
+    background-color: #e3e3e3;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+/* Undvik att alla .toggle-btn påverkas */
+.toggle-btn:not(.barnval .toggle-btn) {
+    padding: 10px 20px;
+}
 
 form {
     background: #fff;
@@ -38,8 +57,7 @@ button {
     font-size: 16px;
 }
 
-button,
-.toggle-btn {
+button, .toggle-btn {
     background-color: #007acc;
     color: white;
     font-weight: bold;
@@ -51,21 +69,7 @@ button,
     border-radius: 6px;
 }
 
-button:hover,
-.toggle-btn:hover {
-    background-color: #005f99;
-    color: white;
-}
 
-.toggle-btn {
-    background-color: #e3e3e3;
-    color: black;
-}
-
-.toggle-btn.active {
-    background-color: #007acc;
-    color: white;
-}
 
 .button-group {
     display: flex;
@@ -168,23 +172,4 @@ canvas {
     margin-bottom: 2rem;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-/* Behåll denna för barnantal */
-.button-group.barnval .toggle-btn {
-    width: 50px;
-    height: 50px;
-    padding: 0;
-    font-size: 18px;
-    text-align: center;
-    border-radius: 8px;
-    background-color: #e3e3e3;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-/* Undvik att alla .toggle-btn påverkas */
-.toggle-btn:not(.barnval .toggle-btn) {
-    padding: 10px 20px;
 }

@@ -97,9 +97,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     </tr>
                 `;
             }
-
+            if (ar > 588000)
             return `
                 <p>Du kan preliminärt få <strong>${dailyRate} kr</strong> per dag i föräldrapenning</p>
+                <p>Eftersom du tjänar mer än 588 000 kronor per år får du maxbeloppet (1250 kronor) för föräldrapenning.</p>
                 <table>
                     <thead>
                         <tr>
@@ -112,6 +113,38 @@ document.addEventListener("DOMContentLoaded", function () {
                     <tbody>${rows}</tbody>
                 </table>
             `;
+            else if (ar < 117590)
+            return `
+                <p>Du kan preliminärt få <strong>${dailyRate} kr</strong> per dag i föräldrapenning</p>
+                <p>Eftersom du tjänar mer än 588 000 kronor per år får du minimibeloppet (250 kronor) för föräldrapenning.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dagar per vecka</th>
+                            <th>Så länge räcker dagarna</th>
+                            <th>Föräldrapenning per månad</th>
+                            <th>Disponibel inkomst / månad</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+            else
+                return `
+                    <p>Du kan preliminärt få <strong>${dailyRate} kr</strong> per dag i föräldrapenning</p>
+                    <p>Eftersom du tjänar <strong>${inkomst} kr</strong> kronor per år får du ${manadsersattning} för föräldrapenning.</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dagar per vecka</th>
+                                <th>Så länge räcker dagarna</th>
+                                <th>Föräldrapenning per månad</th>
+                                <th>Disponibel inkomst / månad</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
         };
 
         let output = "<div class='result'>";
