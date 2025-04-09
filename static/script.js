@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
+document.getElementById('daily-payment-parent-1').textContent = dag1.toLocaleString();
+document.getElementById('monthly-payment-parent-1').textContent = monthly1.toLocaleString();
+document.getElementById('daily-fill-parent-1').style.width = ((dag1 - 250) / (1250 - 250) * 100) + "%";
 
 
     const vardnadButtons = document.querySelectorAll('#vardnad-group .vardnad-btn');
