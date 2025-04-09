@@ -8,10 +8,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('calc-form');
     const resultBlock = document.getElementById('result-block');
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
-    const barnTidigareInput = document.getElementById('barn-tidigare');
-    const barnPlaneradeInput = document.getElementById('barn-planerade');
 
-    // Knappar - Vårdnad
+    // Vårdnad
     vardnadButtons.forEach(button => {
         button.addEventListener('click', () => {
             vardnadButtons.forEach(b => b.classList.remove('active'));
@@ -30,7 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Knappar - Partner
+    // Partner
     partnerButtons.forEach(button => {
         button.addEventListener('click', () => {
             partnerButtons.forEach(b => b.classList.remove('active'));
@@ -40,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Knappar - Barnval
+    // Barnval
     document.querySelectorAll('.barnval').forEach(group => {
         const input = group.querySelector('input[type="hidden"]');
         group.querySelectorAll('button').forEach(button => {
@@ -52,36 +50,19 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Kalkylering
+    // Form-submit
     form.addEventListener("submit", function (e) {
         e.preventDefault();
 
         const vardnad = vardnadInput.value;
         const beraknaPartner = partnerInput.value;
         const income1 = parseInt(document.getElementById("inkomst1").value);
-        const income2 = parseInt(document.getElementById("inkomst2").value) || 0;
-        const barnTidigare = parseInt(document.getElementById("barn-tidigare").value || "0");
-        const barnPlanerade = parseInt(document.getElementById("barn-planerade").value || "0");
-        const totaltBarn = barnTidigare + barnPlanerade;
-    
-        const { barnbidrag, tillagg, total, details } = beraknaBarnbidrag(totaltBarn, vardnad === "ensam");
-    
-        output += `
-            <div class="result-block">
-                <h2>Barnbidrag</h2>
-                <p>${details}</p>
-            </div>
-        `;
-    
-        if (vardnad === "gemensam") {
-            output += `
-                <div class="result-block">
-                    <h2>Partnerns barnbidrag</h2>
-                    <p>Din partner kommer att få ${barnbidrag} kr i barnbidrag och ${tillagg} kr i flerbarnstillägg.</p>
-                </div>
-            `;
-        }
-    
+        const income2 = parseInt(document.getElementById("inkomst2")?.value || "0");
+        const barnTidigare = parseInt(document.getElementById("barn-tidigare")?.value || "0");
+        const barnPlanerade = parseInt(document.getElementById("barn-planerade")?.value || "0");
+        const totalBarn = barnTidigare + barnPlanerade;
+
+        const { barnbidrag, tillagg, total, details } = beraknaBarnbidrag(totalBarn, vardnad === "ensam");
 
         const beraknaDaglig = (inkomst) => {
             const ar = inkomst * 12;
@@ -98,11 +79,13 @@ document.addEventListener("DOMContentLoaded", function () {
             for (let i = 1; i <= 7; i++) {
                 const veckor = Math.floor(dagar / i);
                 const manadsersattning = Math.round((dailyRate * i * 4.3) / 100) * 100;
+                const totalDisponibelt = manadsersattning + total;
                 rows += `
                     <tr>
                         <td>${i} dag${i > 1 ? 'ar' : ''}</td>
                         <td>${veckor} veckor</td>
                         <td>${manadsersattning.toLocaleString()} kr</td>
+                        <td>${totalDisponibelt.toLocaleString()} kr</td>
                     </tr>
                 `;
             }
@@ -115,6 +98,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <th>Dagar per vecka</th>
                             <th>Så länge räcker dagarna</th>
                             <th>Föräldrapenning per månad</th>
+                            <th>Disponibel inkomst / månad</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
@@ -122,44 +106,45 @@ document.addEventListener("DOMContentLoaded", function () {
             `;
         };
 
-        const barnbidragData = {
-            delad: [625, 1250, 1875, 2500, 3125, 3750],
-            tillagg: [0, 75, 365, 870, 1495, 2120],
-            ensam: [1250, 2500, 3750, 5000, 6250, 7500],
-            tillagg_ensam: [0, 150, 730, 1740, 2990, 4240]
-        };
-
-        const getBarnbidrag = (antal, ensam) => {
-            if (antal === 0) return 0;
-            const index = Math.min(antal - 1, 5);
-            const base = ensam ? barnbidragData.ensam[index] : barnbidragData.delad[index];
-            const tillagg = ensam ? barnbidragData.tillagg_ensam[index] : barnbidragData.tillagg[index];
-            return base + tillagg;
-        };
-
         let output = "<div class='result'>";
 
         if (!isNaN(income1)) {
             const dag1 = beraknaDaglig(income1);
-            output += `<h2>Förälder 1</h2>${genereraTabell(dag1, dagar)}`;
+            output += `
+                <div class="result-block">
+                    <h2>Förälder 1</h2>
+                    ${genereraTabell(dag1, dagar)}
+                </div>`;
         }
 
         if (vardnad === "gemensam" && beraknaPartner === "ja" && income2 > 0) {
             const dag2 = beraknaDaglig(income2);
-            output += `<h2>Förälder 2</h2>${genereraTabell(dag2, dagar)}`;
+            output += `
+                <div class="result-block">
+                    <h2>Förälder 2</h2>
+                    ${genereraTabell(dag2, dagar)}
+                </div>`;
         }
 
-        // Barnbidrag
-        const totalBarnbidrag = getBarnbidrag(antalBarnTotalt, vardnad === "ensam");
-        output += `<div class='result-block'>
-            <h2>Sammanlagt barnbidrag</h2>
-            <p>Med ${antalBarnTotalt} barn får du <strong>${totalBarnbidrag.toLocaleString()} kr</strong> i barnbidrag inklusive flerbarnstillägg.</p>
-        </div>`;
+        output += `
+            <div class="result-block">
+                <h2>Sammanlagt barnbidrag</h2>
+                <p>${details}</p>
+            </div>`;
+
+        if (vardnad === "gemensam") {
+            output += `
+                <div class="result-block">
+                    <h2>Partnerns barnbidrag</h2>
+                    <p>Din partner kommer att få ${barnbidrag.toLocaleString()} kr i barnbidrag och ${tillagg.toLocaleString()} kr i flerbarnstillägg.</p>
+                </div>`;
+        }
 
         output += "</div>";
         resultBlock.innerHTML = output;
     });
 });
+
 // Funktion för att räkna barnbidrag + tillägg
 function beraknaBarnbidrag(totalBarn, ensamVardnad) {
     const bidragPerBarn = 1250;
@@ -179,10 +164,6 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
     }
 
     const total = barnbidrag + tillagg;
-
-    const details = `${ensamVardnad ? totalBarn : totalBarn + " (delat)"} barn ger ` +
-        `${ensamVardnad ? totalBarn : totalBarn + " x 625"} x ${ensamVardnad ? "1250" : "625"} kr barnbidrag` +
-        `${tillagg > 0 ? " + " + tillagg + " kr i flerbarnstillägg" : ""} = <strong>${Math.round(total)} kr</strong>`;
-
+    const details = `${totalBarn} barn ger ${Math.round(barnbidrag)} kr barnbidrag${tillagg > 0 ? " + " + tillagg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
     return { barnbidrag: Math.round(barnbidrag), tillagg: Math.round(tillagg), total: Math.round(total), details };
 }
