@@ -74,7 +74,17 @@
                 <label for="inkomst2">Månadsinkomst förälder 2 (före skatt):</label>
                 <input type="number" name="inkomst2" id="inkomst2" placeholder="30000 kr">
             </div>
-
+            
+            <!-- Block 4: Kollektivavtal -->
+            <div id="avtal-question" class="form-section">
+                <label for="har-avtal">Har du kollektivavtal?</label>
+                <div class="button-group" id="avtal-group">
+                    <button type="button" class="toggle-btn" data-value="ja">Ja</button>
+                    <button type="button" class="toggle-btn" data-value="nej">Nej</button>
+                </div>
+                <input type="hidden" name="har_avtal" id="har-avtal" value="">
+            </div>
+            
             <!-- Submit -->
             <button type="submit">Visa resultat</button>
         </form>
