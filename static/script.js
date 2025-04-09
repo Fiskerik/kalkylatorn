@@ -129,6 +129,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <div class="result-section">
                     <h2>Förälder 1</h2>
                     <div class="benefit-grid">
+                        <h3>Ersättning</h3>
                         <div class="benefit-card">
                             <div class="benefit-title">Daglig ersättning på sjukpenningnivå</div>
                             <div class="benefit-value-large">
@@ -149,6 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
                     </div>
                     <div class="benefit-grid">
+                        <h3>Föräldradagar</h3>
                         <div class="benefit-card">
                             <div class="benefit-title">Föräldradagar på sjukpenningnivå</div>
                             <div class="benefit-value-large">
@@ -177,6 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <div class="result-section">
                     <h2>Förälder 2</h2>
                     <div class="benefit-grid">
+                        <h3>Ersättning</h3>
                         <div class="benefit-card">
                             <div class="benefit-title">Daglig ersättning på sjukpenningnivå</div>
                             <div class="benefit-value-large">
@@ -197,6 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
                     </div>
                      <div class="benefit-grid">
+                     <h3>Föräldradagar</h3>
                         <div class="benefit-card">
                             <div class="benefit-title">Föräldradagar på sjukpenningnivå</div>
                             <div class="benefit-value-large">
