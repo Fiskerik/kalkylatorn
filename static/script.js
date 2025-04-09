@@ -60,9 +60,28 @@ document.addEventListener("DOMContentLoaded", function () {
         const beraknaPartner = partnerInput.value;
         const income1 = parseInt(document.getElementById("inkomst1").value);
         const income2 = parseInt(document.getElementById("inkomst2").value) || 0;
-        const barnTidigare = parseInt(barnTidigareInput.value) || 0;
-        const barnPlanerade = parseInt(barnPlaneradeInput.value) || 0;
-        const antalBarnTotalt = barnTidigare + barnPlanerade;
+        const barnTidigare = parseInt(document.getElementById("barn-tidigare").value || "0");
+        const barnPlanerade = parseInt(document.getElementById("barn-planerade").value || "0");
+        const totaltBarn = barnTidigare + barnPlanerade;
+    
+        const { barnbidrag, tillagg, total, details } = beraknaBarnbidrag(totaltBarn, vardnad === "ensam");
+    
+        output += `
+            <div class="result-block">
+                <h2>Barnbidrag</h2>
+                <p>${details}</p>
+            </div>
+        `;
+    
+        if (vardnad === "gemensam") {
+            output += `
+                <div class="result-block">
+                    <h2>Partnerns barnbidrag</h2>
+                    <p>Din partner kommer att få ${barnbidrag} kr i barnbidrag och ${tillagg} kr i flerbarnstillägg.</p>
+                </div>
+            `;
+        }
+    
 
         const beraknaDaglig = (inkomst) => {
             const ar = inkomst * 12;
@@ -141,3 +160,29 @@ document.addEventListener("DOMContentLoaded", function () {
         resultBlock.innerHTML = output;
     });
 });
+// Funktion för att räkna barnbidrag + tillägg
+function beraknaBarnbidrag(totalBarn, ensamVardnad) {
+    const bidragPerBarn = 1250;
+    const flerbarnstillägg = {
+        2: 150,
+        3: 730,
+        4: 1740,
+        5: 2990,
+        6: 4240
+    };
+
+    let barnbidrag = bidragPerBarn * totalBarn;
+    let tillagg = flerbarnstillägg[totalBarn] || 0;
+    if (!ensamVardnad) {
+        barnbidrag = (bidragPerBarn * totalBarn) / 2;
+        tillagg = tillagg / 2;
+    }
+
+    const total = barnbidrag + tillagg;
+
+    const details = `${ensamVardnad ? totalBarn : totalBarn + " (delat)"} barn ger ` +
+        `${ensamVardnad ? totalBarn : totalBarn + " x 625"} x ${ensamVardnad ? "1250" : "625"} kr barnbidrag` +
+        `${tillagg > 0 ? " + " + tillagg + " kr i flerbarnstillägg" : ""} = <strong>${Math.round(total)} kr</strong>`;
+
+    return { barnbidrag: Math.round(barnbidrag), tillagg: Math.round(tillagg), total: Math.round(total), details };
+}

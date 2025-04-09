@@ -38,37 +38,39 @@ button {
     font-size: 16px;
 }
 
-button {
-    background: #007acc;
+button,
+.toggle-btn {
+    background-color: #007acc;
     color: white;
     font-weight: bold;
     border: none;
+    transition: background-color 0.3s, color 0.3s;
+    cursor: pointer;
     margin-top: 1.5rem;
-    transition: background-color 0.3s;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #005f99;
-}
-
-.button-group button {
-    margin-right: 10px;
     padding: 10px 20px;
-    font-weight: bold;
-    background-color: #e3e3e3;
-    border: none;
     border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s;
 }
 
-.button-group button:hover {
-    background-color: #d0d0d0;
+button:hover,
+.toggle-btn:hover {
+    background-color: #005f99;
+    color: white;
 }
 
-.info-text {
-    font-size: 16px;
+.toggle-btn {
+    background-color: #e3e3e3;
+    color: black;
+}
+
+.toggle-btn.active {
+    background-color: #007acc;
+    color: white;
+}
+
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
     margin-top: 0.5rem;
 }
 
@@ -77,6 +79,11 @@ button:hover {
     padding: 2rem;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.info-text {
+    font-size: 16px;
+    margin-top: 0.5rem;
 }
 
 table {
@@ -98,48 +105,4 @@ table th {
 
 canvas {
     margin-top: 2rem;
-}
-.toggle-btn {
-    padding: 10px 20px;
-    font-weight: bold;
-    background-color: #e3e3e3;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s;
-  }
-  
-  .toggle-btn.active {
-    background-color: #007acc;
-    color: white;
-  }
-  
-  .toggle-btn:hover {
-    background-color: #005f99;
-    color: white;
-  }
-  .button-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 0.5rem;
-}
-
-.button-group .toggle-btn {
-    padding: 10px 16px;
-    font-weight: bold;
-    background-color: #e3e3e3;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.button-group .toggle-btn:hover {
-    background-color: #d0d0d0;
-}
-
-.button-group .toggle-btn.active {
-    background-color: #007acc;
-    color: white;
 }
