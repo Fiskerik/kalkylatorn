@@ -69,20 +69,27 @@
                 <label for="inkomst1">Vad är din månadsinkomst före skatt?</label>
                 <input type="number" name="inkomst1" id="inkomst1" placeholder="30000 kr" required>
             </div>
+            <div id="avtal-question-1" class="form-section">
+                <label for="har-avtal-1">Har du kollektivavtal?</label>
+                <div class="button-group" id="avtal-group-1">
+                    <button type="button" class="toggle-btn" data-value="ja">Ja</button>
+                    <button type="button" class="toggle-btn" data-value="nej">Nej</button>
+                </div>
+                <input type="hidden" name="har_avtal_1" id="har-avtal-1" value="">
+            </div>
 
             <div id="inkomst-block-2" style="display:none;" class="form-section">
                 <label for="inkomst2">Månadsinkomst förälder 2 (före skatt):</label>
                 <input type="number" name="inkomst2" id="inkomst2" placeholder="30000 kr">
             </div>
-            
-            <!-- Block 4: Kollektivavtal -->
-            <div id="avtal-question" class="form-section">
-                <label for="har-avtal">Har du kollektivavtal?</label>
-                <div class="button-group" id="avtal-group">
+
+            <div id="avtal-question-2" class="form-section" style="display: none;">
+                <label for="har-avtal-2">Har din partner kollektivavtal?</label>
+                <div class="button-group" id="avtal-group-2">
                     <button type="button" class="toggle-btn" data-value="ja">Ja</button>
                     <button type="button" class="toggle-btn" data-value="nej">Nej</button>
                 </div>
-                <input type="hidden" name="har_avtal" id="har-avtal" value="">
+                <input type="hidden" name="har_avtal_2" id="har-avtal-2" value="">
             </div>
             
             <!-- Submit -->
