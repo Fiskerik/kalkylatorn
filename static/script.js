@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div class="benefit-title">Föräldradagar på lägstanivå</div>
                             <div class="benefit-value-large">
                                 <span>90 </span><span class="unit">dagar</span>
-                                <span class="unit">180 kr/månad</span>
+                                 <br><div><span class="unit">180 kr/månad</span></div>
                             </div>
                         </div>
                     </div>
@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div class="benefit-title">Föräldradagar på lägstanivå</div>
                             <div class="benefit-value-large">
                                 <span>90 </span><span class="unit">dagar</span>
-                                <span class="unit">180 kr/månad</span>
+                                <br><div><span class="unit">180 kr/månad</span></div>
                             </div>
                         </div>
                     </div>
