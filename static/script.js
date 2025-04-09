@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const dagar = vardnad === "ensam" ? 390 : 195;
 
-        const genereraTabell = (dailyRate, dagar) => {
+        const genereraTabell = (dailyRate, dagar, arsinkomst, inkomst) => {
             let rows = '';
             for (let i = 1; i <= 7; i++) {
                 const veckor = Math.floor(dagar / i);
@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     </tr>
                 `;
             }
-            if (ar > 588000)
+            if (arsinkomst > 588000)
             return `
                 <p>Du kan preliminärt få <strong>${dailyRate} kr</strong> per dag i föräldrapenning</p>
                 <p>Eftersom du tjänar mer än 588 000 kronor per år får du maxbeloppet (1250 kronor) för föräldrapenning.</p>
@@ -154,7 +154,7 @@ document.addEventListener("DOMContentLoaded", function () {
             output += `
                 <div class="result-block">
                     <h2>Förälder 1</h2>
-                    ${genereraTabell(dag1, dagar)}
+                    ${genereraTabell(dag1, dagar, income1 * 12, income1)}                    )}
                 </div>`;
         }
 
@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", function () {
             output += `
                 <div class="result-block">
                     <h2>Förälder 2</h2>
-                    ${genereraTabell(dag2, dagar)}
+                    ${genereraTabell(dag2, dagar, income2 * 12, income2)}                    }
                 </div>`;
         }
 
@@ -208,4 +208,3 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
     const details = `${totalBarn} barn ger ${Math.round(barnbidrag)} kr barnbidrag${tillagg > 0 ? " + " + tillagg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
     return { barnbidrag: Math.round(barnbidrag), tillagg: Math.round(tillagg), total: Math.round(total), details };
 }
-console.log('Barnval init:', groupId, inputId, group.querySelectorAll('button').length);
