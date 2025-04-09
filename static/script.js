@@ -8,8 +8,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('calc-form');
     const resultBlock = document.getElementById('result-block');
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
+    const barnTidigareInput = document.getElementById('barn-tidigare');
+    const barnPlaneradeInput = document.getElementById('barn-planerade');
 
-    // Vårdnad-knappar
+    // Knappar - Vårdnad
     vardnadButtons.forEach(button => {
         button.addEventListener('click', () => {
             vardnadButtons.forEach(b => b.classList.remove('active'));
@@ -28,13 +30,25 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Partner-knappar
+    // Knappar - Partner
     partnerButtons.forEach(button => {
         button.addEventListener('click', () => {
             partnerButtons.forEach(b => b.classList.remove('active'));
             button.classList.add('active');
             partnerInput.value = button.dataset.value;
             inkomstBlock2.style.display = button.dataset.value === 'ja' ? "block" : "none";
+        });
+    });
+
+    // Knappar - Barnval
+    document.querySelectorAll('.barnval').forEach(group => {
+        const input = group.querySelector('input[type="hidden"]');
+        group.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', () => {
+                group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                input.value = button.dataset.value;
+            });
         });
     });
 
@@ -46,6 +60,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const beraknaPartner = partnerInput.value;
         const income1 = parseInt(document.getElementById("inkomst1").value);
         const income2 = parseInt(document.getElementById("inkomst2").value) || 0;
+        const barnTidigare = parseInt(barnTidigareInput.value) || 0;
+        const barnPlanerade = parseInt(barnPlaneradeInput.value) || 0;
+        const antalBarnTotalt = barnTidigare + barnPlanerade;
 
         const beraknaDaglig = (inkomst) => {
             const ar = inkomst * 12;
@@ -86,6 +103,21 @@ document.addEventListener("DOMContentLoaded", function () {
             `;
         };
 
+        const barnbidragData = {
+            delad: [625, 1250, 1875, 2500, 3125, 3750],
+            tillagg: [0, 75, 365, 870, 1495, 2120],
+            ensam: [1250, 2500, 3750, 5000, 6250, 7500],
+            tillagg_ensam: [0, 150, 730, 1740, 2990, 4240]
+        };
+
+        const getBarnbidrag = (antal, ensam) => {
+            if (antal === 0) return 0;
+            const index = Math.min(antal - 1, 5);
+            const base = ensam ? barnbidragData.ensam[index] : barnbidragData.delad[index];
+            const tillagg = ensam ? barnbidragData.tillagg_ensam[index] : barnbidragData.tillagg[index];
+            return base + tillagg;
+        };
+
         let output = "<div class='result'>";
 
         if (!isNaN(income1)) {
@@ -97,6 +129,13 @@ document.addEventListener("DOMContentLoaded", function () {
             const dag2 = beraknaDaglig(income2);
             output += `<h2>Förälder 2</h2>${genereraTabell(dag2, dagar)}`;
         }
+
+        // Barnbidrag
+        const totalBarnbidrag = getBarnbidrag(antalBarnTotalt, vardnad === "ensam");
+        output += `<div class='result-block'>
+            <h2>Sammanlagt barnbidrag</h2>
+            <p>Med ${antalBarnTotalt} barn får du <strong>${totalBarnbidrag.toLocaleString()} kr</strong> i barnbidrag inklusive flerbarnstillägg.</p>
+        </div>`;
 
         output += "</div>";
         resultBlock.innerHTML = output;
