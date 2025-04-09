@@ -11,6 +11,7 @@
         <h1>Föräldrapenningkalkylator</h1>
 
         <form id="calc-form">
+            <!-- Block 1: Vårdnadsform + Partnerberäkning -->
             <div class="form-section">
                 <label for="vardnad">Har du Gemensam eller Ensam vårdnad?</label>
                 <div class="button-group" id="vardnad-group">
@@ -29,10 +30,11 @@
                 </div>
                 <input type="hidden" name="berakna_partner" id="berakna-partner" value="">
             </div>
-                        <!-- Barn sedan tidigare -->
-            <div class="form-section barnval">
-                <label>Hur många barn har du/ni sedan tidigare?</label>
-                <div class="button-group">
+
+            <!-- Block 2: Barnantal -->
+            <div class="form-section">
+                <label for="barn-tidigare">Hur många barn har du/ni sedan tidigare?</label>
+                <div class="button-group" id="barn-tidigare">
                     <button type="button" class="toggle-btn" data-value="0">0</button>
                     <button type="button" class="toggle-btn" data-value="1">1</button>
                     <button type="button" class="toggle-btn" data-value="2">2</button>
@@ -41,13 +43,12 @@
                     <button type="button" class="toggle-btn" data-value="5">5</button>
                     <button type="button" class="toggle-btn" data-value="6">6</button>
                 </div>
-                <input type="hidden" id="barn-tidigare" value="0">
+                <input type="hidden" name="barn_tidigare" id="barn_tidigare" value="">
             </div>
 
-            <!-- Planerade barn -->
-            <div class="form-section barnval">
-                <label>Hur många fler barn planerar du/ni att få?</label>
-                <div class="button-group">
+            <div class="form-section">
+                <label for="barn-planerade">Hur många fler barn planerar du/ni att få?</label>
+                <div class="button-group" id="barn-planerade">
                     <button type="button" class="toggle-btn" data-value="0">0</button>
                     <button type="button" class="toggle-btn" data-value="1">1</button>
                     <button type="button" class="toggle-btn" data-value="2">2</button>
@@ -56,22 +57,25 @@
                     <button type="button" class="toggle-btn" data-value="5">5</button>
                     <button type="button" class="toggle-btn" data-value="6">6</button>
                 </div>
-                <input type="hidden" id="barn-planerade" value="0">
+                <input type="hidden" name="barn_planerade" id="barn_planerade" value="">
             </div>
 
-            <div id="inkomst-block-1">
+            <!-- Block 3: Inkomster -->
+            <div class="form-section">
                 <label for="inkomst1">Vad är din månadsinkomst före skatt?</label>
                 <input type="number" name="inkomst1" id="inkomst1" placeholder="30000" required>
             </div>
 
-            <div id="inkomst-block-2" style="display:none;">
+            <div id="inkomst-block-2" style="display:none;" class="form-section">
                 <label for="inkomst2">Månadsinkomst förälder 2 (före skatt):</label>
                 <input type="number" name="inkomst2" id="inkomst2" placeholder="30000">
             </div>
 
+            <!-- Submit -->
             <button type="submit">Visa resultat</button>
         </form>
 
+        <!-- Block 4: Resultat -->
         <div id="result-block"></div>
     </div>
 
