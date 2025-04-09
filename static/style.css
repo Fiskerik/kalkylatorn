@@ -2,7 +2,7 @@ body {
     font-family: 'Inter', sans-serif;
     background: #f2f2f2;
     padding: 2rem;
-
+    max-width: 800px;
     margin: auto;
 }
 
@@ -200,10 +200,11 @@ canvas {
 }
 
 .benefit-card {
-    flex: 1 1 48%;
+    flex: 1 1 47%;
     background-color: #f5f8ff;
     border-radius: 10px;
     padding: 1.2rem;
+    min-width: 300px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -259,3 +260,7 @@ canvas {
     }
 }
 
+.container {
+    max-width: 1000px;
+    margin: auto;
+}
