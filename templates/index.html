@@ -14,10 +14,13 @@
             <!-- Block 1: Vårdnadsform + Partnerberäkning -->
             <div class="form-section">
                 <label for="vardnad">Har du Gemensam eller Ensam vårdnad?</label>
+                <!-- Vårdnadsval -->
                 <div class="button-group" id="vardnad-group">
-                    <button type="button" class="toggle-btn" data-value="gemensam">Gemensam vårdnad</button>
-                    <button type="button" class="toggle-btn" data-value="ensam">Ensam vårdnad</button>
+                    <button type="button" class="vardnad-btn" data-value="gemensam">Gemensam vårdnad</button>
+                    <button type="button" class="vardnad-btn" data-value="ensam">Ensam vårdnad</button>
                 </div>
+
+                  
                 <input type="hidden" name="vardnad" id="vardnad" value="">
                 <p id="vardnad-info" class="info-text"></p>
             </div>
@@ -33,32 +36,33 @@
 
             <!-- Block 2: Barnantal -->
             <div class="form-section">
-                <label for="barn-tidigare">Hur många barn har du/ni sedan tidigare?</label>
-                <div class="button-group" id="barn-tidigare">
-                    <button type="button" class="toggle-btn" data-value="0">0</button>
-                    <button type="button" class="toggle-btn" data-value="1">1</button>
-                    <button type="button" class="toggle-btn" data-value="2">2</button>
-                    <button type="button" class="toggle-btn" data-value="3">3</button>
-                    <button type="button" class="toggle-btn" data-value="4">4</button>
-                    <button type="button" class="toggle-btn" data-value="5">5</button>
-                    <button type="button" class="toggle-btn" data-value="6">6</button>
+                <label>Hur många barn har du/ni sedan tidigare?</label>
+                <div class="button-group barnval" id="barn-tidigare-group">
+                  <button type="button" class="toggle-btn" data-value="0">0</button>
+                  <button type="button" class="toggle-btn" data-value="1">1</button>
+                  <button type="button" class="toggle-btn" data-value="2">2</button>
+                  <button type="button" class="toggle-btn" data-value="3">3</button>
+                  <button type="button" class="toggle-btn" data-value="4">4</button>
+                  <button type="button" class="toggle-btn" data-value="5">5</button>
+                  <button type="button" class="toggle-btn" data-value="6">6</button>
                 </div>
-                <input type="hidden" name="barn_tidigare" id="barn_tidigare" value="">
-            </div>
-
-            <div class="form-section">
-                <label for="barn-planerade">Hur många fler barn planerar du/ni att få?</label>
-                <div class="button-group" id="barn-planerade">
-                    <button type="button" class="toggle-btn" data-value="0">0</button>
-                    <button type="button" class="toggle-btn" data-value="1">1</button>
-                    <button type="button" class="toggle-btn" data-value="2">2</button>
-                    <button type="button" class="toggle-btn" data-value="3">3</button>
-                    <button type="button" class="toggle-btn" data-value="4">4</button>
-                    <button type="button" class="toggle-btn" data-value="5">5</button>
-                    <button type="button" class="toggle-btn" data-value="6">6</button>
+                <input type="hidden" id="barn-tidigare" value="0">
+              </div>
+              
+              <div class="form-section">
+                <label>Hur många fler barn planerar du/ni att få?</label>
+                <div class="button-group barnval" id="barn-planerade-group">
+                  <button type="button" class="toggle-btn" data-value="0">0</button>
+                  <button type="button" class="toggle-btn" data-value="1">1</button>
+                  <button type="button" class="toggle-btn" data-value="2">2</button>
+                  <button type="button" class="toggle-btn" data-value="3">3</button>
+                  <button type="button" class="toggle-btn" data-value="4">4</button>
+                  <button type="button" class="toggle-btn" data-value="5">5</button>
+                  <button type="button" class="toggle-btn" data-value="6">6</button>
                 </div>
-                <input type="hidden" name="barn_planerade" id="barn_planerade" value="">
-            </div>
+                <input type="hidden" id="barn-planerade" value="0">
+              </div>
+              
 
             <!-- Block 3: Inkomster -->
             <div class="form-section">
