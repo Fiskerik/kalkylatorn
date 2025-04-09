@@ -67,12 +67,12 @@
             <!-- Block 3: Inkomster -->
             <div class="form-section">
                 <label for="inkomst1">Vad är din månadsinkomst före skatt?</label>
-                <input type="number" name="inkomst1" id="inkomst1" placeholder="30000" required>
+                <input type="number" name="inkomst1" id="inkomst1" placeholder="30000 kr" required>
             </div>
 
             <div id="inkomst-block-2" style="display:none;" class="form-section">
                 <label for="inkomst2">Månadsinkomst förälder 2 (före skatt):</label>
-                <input type="number" name="inkomst2" id="inkomst2" placeholder="30000">
+                <input type="number" name="inkomst2" id="inkomst2" placeholder="30000 kr">
             </div>
 
             <!-- Submit -->
@@ -80,7 +80,38 @@
         </form>
 
         <!-- Block 4: Resultat -->
-        <div id="result-block"></div>
+        <div id="result-block">
+            <div class="result-section">
+                <h2>Förälder 1</h2>
+                <p>Nedan sammanfattas hur mycket föräldrapenning på sjukpenningnivå du kan få under din föräldraledighet</p>
+            
+                <div class="benefit-grid">
+                    <!-- Daglig ersättning -->
+                    <div class="benefit-card">
+                        <div class="benefit-title">Daglig ersättning på sjukpenningnivå</div>
+                        <div class="benefit-value-large">
+                            <span id="daily-payment-parent-1">765</span> <span class="unit">kr/dag</span>
+                        </div>
+                        <div class="benefit-bar">
+                            <div class="benefit-bar-fill" id="daily-fill-parent-1" style="width: 61%;"></div>
+                        </div>
+                        <div class="benefit-bar-labels">
+                            <span>250 kr</span>
+                            <span>1 250 kr</span>
+                        </div>
+                    </div>
+            
+                    <!-- Månadslön -->
+                    <div class="benefit-card">
+                        <div class="benefit-title">Preliminär föräldralön</div>
+                        <div class="benefit-value-large">
+                            <span id="monthly-payment-parent-1">23 900</span> <span class="unit">kr/månad</span>
+                        </div>
+                    </div>
+                </div>
+            </div>  
+        </div>
+        
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
