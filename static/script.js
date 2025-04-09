@@ -1,5 +1,8 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const vardnadButtons = document.querySelectorAll('#vardnad-group .toggle-btn');
+    setupBarnval('barn-tidigare-group', 'barn-tidigare');
+    setupBarnval('barn-planerade-group', 'barn-planerade');
+
+    const vardnadButtons = document.querySelectorAll('#vardnad-group .vardnad-btn');
     const vardnadInput = document.getElementById('vardnad');
     const vardnadInfo = document.getElementById('vardnad-info');
     const partnerQuestion = document.getElementById('partner-question');
@@ -8,6 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('calc-form');
     const resultBlock = document.getElementById('result-block');
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
+    console.log('Barnval init:', groupId, inputId, group.querySelectorAll('button').length);
 
     // Vårdnad
     vardnadButtons.forEach(button => {
@@ -39,8 +43,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Barnval
-    document.querySelectorAll('.barnval').forEach(group => {
-        const input = group.querySelector('input[type="hidden"]');
+    function setupBarnval(groupId, inputId) {
+        const group = document.getElementById(groupId);
+        const input = document.getElementById(inputId);
         group.querySelectorAll('button').forEach(button => {
             button.addEventListener('click', () => {
                 group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -48,7 +53,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.value = button.dataset.value;
             });
         });
-    });
+    }
+    
+    setupBarnval('barn-tidigare-group', 'barn-tidigare');
+    setupBarnval('barn-planerade-group', 'barn-planerade');
+    
 
     // Form-submit
     form.addEventListener("submit", function (e) {

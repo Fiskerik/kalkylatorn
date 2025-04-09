@@ -142,3 +142,30 @@ canvas {
     background-color: #007acc;
     color: white;
 }
+.vardnad-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #e3e3e3;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    color: #333;
+}
+
+.vardnad-btn:hover {
+    background-color: #d0d0d0;
+}
+
+.vardnad-btn.active {
+    background-color: #007acc;
+    color: white;
+}
+.result-block {
+    background: #fff;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
