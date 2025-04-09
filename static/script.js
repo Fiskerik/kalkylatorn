@@ -8,36 +8,27 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('calc-form');
     const resultBlock = document.getElementById('result-block');
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
-    const avtalBlock2 = document.getElementById('avtal-question-2');
 
-    function setupBarnval(groupId, inputId) {
-        const group = document.getElementById(groupId);
+    function setupToggleButtons(groupId, inputId) {
+        const group = document.querySelectorAll(`#${groupId} .toggle-btn`);
         const input = document.getElementById(inputId);
-        group.querySelectorAll('button').forEach(button => {
+        group.forEach(button => {
             button.addEventListener('click', () => {
-                group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                group.forEach(b => b.classList.remove('active'));
                 button.classList.add('active');
                 input.value = button.dataset.value;
             });
         });
     }
 
-    function setupAvtalKnapp(gruppId, inputId) {
-        const group = document.getElementById(gruppId);
-        const input = document.getElementById(inputId);
-        group.querySelectorAll('button').forEach(button => {
-            button.addEventListener('click', () => {
-                group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                button.classList.add('active');
-                input.value = button.dataset.value;
-            });
-        });
+    function setupBarnval(groupId, inputId) {
+        setupToggleButtons(groupId, inputId);
     }
 
     setupBarnval('barn-tidigare-group', 'barn-tidigare');
     setupBarnval('barn-planerade-group', 'barn-planerade');
-    setupAvtalKnapp('avtal-group-1', 'har-avtal-1');
-    setupAvtalKnapp('avtal-group-2', 'har-avtal-2');
+    setupToggleButtons('avtal-group-1', 'har-avtal-1');
+    setupToggleButtons('avtal-group-2', 'har-avtal-2');
 
     vardnadButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -48,12 +39,14 @@ document.addEventListener("DOMContentLoaded", function () {
             if (button.dataset.value === 'gemensam') {
                 vardnadInfo.innerHTML = "När du och den andra föräldern har gemensam vårdnad får ni <strong>195 dagar</strong> var på sjukpenningnivå.";
                 partnerQuestion.style.display = "block";
+                inkomstBlock2.style.display = "block";
+                document.getElementById('avtal-question-2').style.display = "block";
             } else {
                 vardnadInfo.innerHTML = "Du som har ensam vårdnad får <strong>390 dagar</strong> på sjukpenningnivå.";
                 partnerQuestion.style.display = "none";
                 partnerInput.value = "";
                 inkomstBlock2.style.display = "none";
-                avtalBlock2.style.display = "none";
+                document.getElementById('avtal-question-2').style.display = "none";
             }
         });
     });
@@ -64,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
             button.classList.add('active');
             partnerInput.value = button.dataset.value;
             inkomstBlock2.style.display = button.dataset.value === 'ja' ? "block" : "none";
-            avtalBlock2.style.display = button.dataset.value === 'ja' ? "block" : "none";
+            document.getElementById('avtal-question-2').style.display = button.dataset.value === 'ja' ? "block" : "none";
         });
     });
 
@@ -77,13 +70,10 @@ document.addEventListener("DOMContentLoaded", function () {
         const income2 = parseInt(document.getElementById("inkomst2")?.value || "0");
         const barnTidigare = parseInt(document.getElementById("barn-tidigare")?.value || "0");
         const barnPlanerade = parseInt(document.getElementById("barn-planerade")?.value || "0");
+        const avtal1 = document.getElementById("har-avtal-1").value === "ja";
+        const avtal2 = document.getElementById("har-avtal-2")?.value === "ja";
+
         const totalBarn = barnTidigare + barnPlanerade;
-
-        const avtal1 = document.getElementById("har-avtal-1").value;
-        const avtal2 = document.getElementById("har-avtal-2").value;
-
-        const kollektivavtalErs1 = avtal1 === "ja" ? (income1 <= 49000 ? Math.round(income1 * 0.10) : 4900) : 0;
-        const kollektivavtalErs2 = (vardnad === "gemensam" && beraknaPartner === "ja" && avtal2 === "ja") ? (income2 <= 49000 ? Math.round(income2 * 0.10) : 4900) : 0;
 
         const { barnbidrag, tillagg, total, details } = beraknaBarnbidrag(totalBarn, vardnad === "ensam");
 
@@ -97,12 +87,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const dagar = vardnad === "ensam" ? 390 : 195;
 
-        const genereraTabell = (dailyRate, dagar, arsinkomst, inkomst, extraAvtal) => {
+        const genereraTabell = (dailyRate, dagar, extra = 0) => {
             let rows = '';
             for (let i = 1; i <= 7; i++) {
-                const veckor = Math.floor(dagar / i);
                 const manadsersattning = Math.round((dailyRate * i * 4.3) / 100) * 100;
-                const totalDisponibelt = manadsersattning + total + extraAvtal;
+                const totalDisponibelt = manadsersattning + total + extra;
+                const veckor = Math.floor(dagar / i);
                 rows += `
                     <tr>
                         <td>${i} dag${i > 1 ? 'ar' : ''}</td>
@@ -112,8 +102,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     </tr>
                 `;
             }
+
             return `
-                <p>Du kan preliminärt få <strong>${dailyRate} kr</strong> per dag i föräldrapenning</p>
                 <table>
                     <thead>
                         <tr>
@@ -132,12 +122,68 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!isNaN(income1)) {
             const dag1 = beraknaDaglig(income1);
-            output += genereraTabell(dag1, dagar, income1 * 12, income1, kollektivavtalErs1);
+            const extra1 = avtal1 ? (income1 <= 49000 ? Math.round(income1 * 0.10) : 4900) : 0;
+            const manad1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
+
+            output += `
+                <div class="result-section">
+                    <h2>Förälder 1</h2>
+                    <div class="benefit-grid">
+                        <div class="benefit-card">
+                            <div class="benefit-title">Daglig ersättning på sjukpenningnivå</div>
+                            <div class="benefit-value-large">
+                                <span>${dag1.toLocaleString()}</span><span class="unit">kr/dag</span>
+                            </div>
+                            <div class="benefit-bar">
+                                <div class="benefit-bar-fill" style="width: ${(dag1 - 250) / (1250 - 250) * 100}%;"></div>
+                            </div>
+                            <div class="benefit-bar-labels">
+                                <span>250 kr</span><span>1 250 kr</span>
+                            </div>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-title">Preliminär föräldralön</div>
+                            <div class="benefit-value-large">
+                                <span>${manad1.toLocaleString()}</span><span class="unit">kr/månad</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${genereraTabell(dag1, dagar, extra1)}
+                </div>
+            `;
         }
 
         if (vardnad === "gemensam" && beraknaPartner === "ja" && income2 > 0) {
             const dag2 = beraknaDaglig(income2);
-            output += genereraTabell(dag2, dagar, income2 * 12, income2, kollektivavtalErs2);
+            const extra2 = avtal2 ? (income2 <= 49000 ? Math.round(income2 * 0.10) : 4900) : 0;
+            const manad2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
+
+            output += `
+                <div class="result-section">
+                    <h2>Förälder 2</h2>
+                    <div class="benefit-grid">
+                        <div class="benefit-card">
+                            <div class="benefit-title">Daglig ersättning på sjukpenningnivå</div>
+                            <div class="benefit-value-large">
+                                <span>${dag2.toLocaleString()}</span><span class="unit">kr/dag</span>
+                            </div>
+                            <div class="benefit-bar">
+                                <div class="benefit-bar-fill" style="width: ${(dag2 - 250) / (1250 - 250) * 100}%;"></div>
+                            </div>
+                            <div class="benefit-bar-labels">
+                                <span>250 kr</span><span>1 250 kr</span>
+                            </div>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-title">Preliminär föräldralön</div>
+                            <div class="benefit-value-large">
+                                <span>${manad2.toLocaleString()}</span><span class="unit">kr/månad</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${genereraTabell(dag2, dagar, extra2)}
+                </div>
+            `;
         }
 
         output += `
@@ -147,11 +193,11 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
         `;
 
-        output += "</div>";
         resultBlock.innerHTML = output;
     });
 });
 
+// Barnbidrag
 function beraknaBarnbidrag(totalBarn, ensamVardnad) {
     const bidragPerBarn = 1250;
     const flerbarnstillägg = {
@@ -164,12 +210,18 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
 
     let barnbidrag = bidragPerBarn * totalBarn;
     let tillagg = flerbarnstillägg[totalBarn] || 0;
+
     if (!ensamVardnad) {
-        barnbidrag = (bidragPerBarn * totalBarn) / 2;
+        barnbidrag = barnbidrag / 2;
         tillagg = tillagg / 2;
     }
 
     const total = barnbidrag + tillagg;
-    const details = `${totalBarn} barn ger ${Math.round(barnbidrag)} kr barnbidrag${tillagg > 0 ? " + " + tillagg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
-    return { barnbidrag: Math.round(barnbidrag), tillagg: Math.round(tillagg), total: Math.round(total), details };
+    const details = `${totalBarn} barn ger ${Math.round(barnbidrag)} kr barnbidrag${tillagg ? " + " + tillagg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
+    return {
+        barnbidrag: Math.round(barnbidrag),
+        tillagg: Math.round(tillagg),
+        total: Math.round(total),
+        details
+    };
 }
