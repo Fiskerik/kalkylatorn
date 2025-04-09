@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <tbody>${rows}</tbody>
                 </table>
             `;
-            else if (ar < 117590)
+            else if (arsinkomst < 117590)
             return `
                 <p>Du kan preliminärt få <strong>${dailyRate} kr</strong> per dag i föräldrapenning</p>
                 <p>Eftersom du tjänar mer än 588 000 kronor per år får du minimibeloppet (250 kronor) för föräldrapenning.</p>
@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", function () {
             else
                 return `
                     <p>Du kan preliminärt få <strong>${dailyRate} kr</strong> per dag i föräldrapenning</p>
-                    <p>Eftersom du tjänar <strong>${inkomst} kr</strong> kronor per år får du ${manadsersattning} för föräldrapenning.</p>
+                    <p>Eftersom du har en årsinkomst på <strong>${arsinkomst.toLocaleString()} kr</strong> får du en dagsersättning på <strong>${dailyRate} kr</strong>.</p>
                     <table>
                         <thead>
                             <tr>
@@ -154,7 +154,8 @@ document.addEventListener("DOMContentLoaded", function () {
             output += `
                 <div class="result-block">
                     <h2>Förälder 1</h2>
-                    ${genereraTabell(dag1, dagar, income1 * 12, income1)}                    )}
+                    ${genereraTabell(dag1, dagar, income1 * 12, income1)}
+
                 </div>`;
         }
 
@@ -163,7 +164,8 @@ document.addEventListener("DOMContentLoaded", function () {
             output += `
                 <div class="result-block">
                     <h2>Förälder 2</h2>
-                    ${genereraTabell(dag2, dagar, income2 * 12, income2)}                    }
+                    ${genereraTabell(dag1, dagar, income1 * 12, income2)}
+
                 </div>`;
         }
 
