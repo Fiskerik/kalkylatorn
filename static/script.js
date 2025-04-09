@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-document.getElementById('daily-payment-parent-1').textContent = dag1.toLocaleString();
+
 document.getElementById('monthly-payment-parent-1').textContent = monthly1.toLocaleString();
 document.getElementById('daily-fill-parent-1').style.width = ((dag1 - 250) / (1250 - 250) * 100) + "%";
 
@@ -155,21 +155,77 @@ document.getElementById('daily-fill-parent-1').style.width = ((dag1 - 250) / (12
         if (!isNaN(income1)) {
             const dag1 = beraknaDaglig(income1);
             output += `
-                <div class="result-block">
-                    <h2>Förälder 1</h2>
-                    ${genereraTabell(dag1, dagar, income1 * 12, income1)}
-
-                </div>`;
+            <div class="result-section">
+                <h2>Förälder 1</h2>
+                <p>Nedan sammanfattas hur mycket föräldrapenning på sjukpenningnivå du kan få under din föräldraledighet</p>
+          
+                <div class="benefit-grid">
+                    <!-- Daglig ersättning -->
+                    <div class="benefit-card">
+                        <div class="benefit-title">Daglig ersättning på sjukpenningnivå</div>
+                        <div class="benefit-value-large">
+                            <span id="daily-payment-parent-1">${dag1.toLocaleString()}</span>
+                            <span class="unit">kr/dag</span>
+                        </div>
+                        <div class="benefit-bar">
+                            <div class="benefit-bar-fill" style="width: ${(dag1 - 250) / (1250 - 250) * 100}%;"></div>
+                        </div>
+                        <div class="benefit-bar-labels">
+                            <span>250 kr</span>
+                            <span>1 250 kr</span>
+                        </div>
+                    </div>
+          
+                    <!-- Månadslön -->
+                    <div class="benefit-card">
+                        <div class="benefit-title">Preliminär föräldralön</div>
+                        <div class="benefit-value-large">
+                            <span>${Math.round((dag1 * 7 * 4.3) / 100) * 100}</span>
+                            <span class="unit">kr/månad</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          `;
+          
         }
 
         if (vardnad === "gemensam" && beraknaPartner === "ja" && income2 > 0) {
             const dag2 = beraknaDaglig(income2);
             output += `
-                <div class="result-block">
-                    <h2>Förälder 2</h2>
-                    ${genereraTabell(dag1, dagar, income1 * 12, income2)}
-
-                </div>`;
+            <div class="result-section">
+                <h2>Förälder 1</h2>
+                <p>Nedan sammanfattas hur mycket föräldrapenning på sjukpenningnivå du kan få under din föräldraledighet</p>
+          
+                <div class="benefit-grid">
+                    <!-- Daglig ersättning -->
+                    <div class="benefit-card">
+                        <div class="benefit-title">Daglig ersättning på sjukpenningnivå</div>
+                        <div class="benefit-value-large">
+                            <span id="daily-payment-parent-2">${dag2.toLocaleString()}</span>
+                            <span class="unit">kr/dag</span>
+                        </div>
+                        <div class="benefit-bar">
+                            <div class="benefit-bar-fill" style="width: ${(dag2 - 250) / (1250 - 250) * 100}%;"></div>
+                        </div>
+                        <div class="benefit-bar-labels">
+                            <span>250 kr</span>
+                            <span>1 250 kr</span>
+                        </div>
+                    </div>
+          
+                    <!-- Månadslön -->
+                    <div class="benefit-card">
+                        <div class="benefit-title">Preliminär föräldralön</div>
+                        <div class="benefit-value-large">
+                            <span>${Math.round((dag2 * 7 * 4.3) / 100) * 100}</span>
+                            <span class="unit">kr/månad</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          `;
+          
         }
 
         output += `
