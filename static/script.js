@@ -175,7 +175,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div class="benefit-title">Föräldradagar på lägstanivå</div>
                             <div class="benefit-value-large">
                                 <span>90 </span><span class="unit">dagar</span>
-                                 <br><div><span class="unit">180 kr/månad</span></div>
+                                 <br><div><span class="unit">180 kr/dag</span></div>
                             </div>
                         </div>
                     </div>
@@ -241,7 +241,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div class="benefit-title">Föräldradagar på lägstanivå</div>
                             <div class="benefit-value-large">
                                 <span>90 </span><span class="unit">dagar</span>
-                                <br><div><span class="unit">180 kr/månad</span></div>
+                                <br><div><span class="unit">180 kr/dag</span></div>
                             </div>
                         </div>
                     </div>
@@ -259,6 +259,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
         resultBlock.innerHTML = output;
     });
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.info-header')) {
+            const box = e.target.closest('.info-box');
+            box.classList.toggle('open');
+        }
+    });
+    
 });
 
 // Barnbidrag
@@ -289,8 +297,5 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
         details
     };
 }
-function toggleInfoBox(element) {
-    const box = element.closest('.info-box');
-    box.classList.toggle('open');
-  }
+
   
