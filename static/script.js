@@ -123,7 +123,6 @@ document.addEventListener("DOMContentLoaded", function () {
                             <th>Dagar per vecka</th>
                             <th>Så länge räcker dagarna</th>
                             <th>Föräldrapenning per månad</th>
-                            <th>Disponibel inkomst / månad</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
@@ -137,6 +136,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!isNaN(income1)) {
             dag1 = beraknaDaglig(income1);
             extra1 = avtal1 ? (income1 <= 49000 ? Math.round(income1 * 0.10) : 4900) : 0;
+            barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
+            tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
             
             const manad1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
 
@@ -229,8 +230,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     ${genereraTabell(dag1, dagar, extra1)}
                 </div>
             `;
-            const barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
-            const tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
+
 
                    // Förälder 1 - Månatlig ersättning
             output += `
@@ -283,6 +283,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (vardnad === "gemensam" && beraknaPartner === "ja" && income2 > 0) {
             dag2 = beraknaDaglig(income2);
             extra2 = avtal2 ? (income2 <= 49000 ? Math.round(income2 * 0.10) : 4900) : 0;
+            barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
+            tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
             const manad2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
 
             output += `
