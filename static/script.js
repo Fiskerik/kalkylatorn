@@ -352,7 +352,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                    </div>
                                    <div class="monthly-info">
                                        * Vid ett uttag på 7 föräldradagar/vecka<br>
-                                       ** Utbetalning av föräldralön regleras i ditt kollektivavtal
+                                       ${avtal2 ? `** Utbetalning av föräldralön regleras i ditt kollektivavtal` : ''}
                                    </div>
                                </div>
                    

@@ -362,6 +362,7 @@ canvas {
     padding: 4px 0;
     border-bottom: 1px dashed #ddd;
     font-size: 15px;
+    margin-bottom: 40px;
 }
 
 .monthly-total {
