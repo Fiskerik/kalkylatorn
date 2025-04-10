@@ -381,3 +381,23 @@ canvas {
     margin-top: 10px;
 }
 
+.monthly-wrapper {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    margin-bottom: 40px;
+}
+
+.fp-uttagsval {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    max-width: 200px;
+}
+
+.fp-uttagsval select {
+    width: 100%;
+    padding: 6px;
+    margin-top: 8px;
+}

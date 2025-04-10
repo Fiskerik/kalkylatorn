@@ -254,10 +254,19 @@ document.addEventListener("DOMContentLoaded", function () {
                         ${avtal1 ? `** Utbetalning av föräldralön regleras i ditt kollektivavtal` : ''}
                     </div>
                 </div>
-                <div class="fp-uttagsval">
-                    <label for="uttags-dagar">Antal uttag av föräldradagar per vecka:</label>
-                    <input type="number" id="uttags-dagar" min="1" max="7" value="7">
-                </div>
+                    <div class="fp-uttagsval">
+                        <label for="uttags-dagar">Antal uttag av föräldradagar per vecka:</label>
+                        <select id="uttags-dagar">
+                            <option value="1">1 dag</option>
+                            <option value="2">2 dagar</option>
+                            <option value="3">3 dagar</option>
+                            <option value="4">4 dagar</option>
+                            <option value="5">5 dagar</option>
+                            <option value="6">6 dagar</option>
+                            <option value="7" selected>7 dagar</option>
+                        </select>
+                    </div>
+
             </div>
             `;
         }
@@ -369,7 +378,17 @@ document.addEventListener("DOMContentLoaded", function () {
         
         resultBlock.innerHTML = output;
         setupInfoBoxToggle();
-
+        
+        document.getElementById('uttags-dagar').addEventListener('change', function(e) {
+            const dagarPerVecka = parseInt(e.target.value);
+        
+            const nyFp = Math.round((dag1 * dagarPerVecka * 4.3) / 100) * 100;
+            const nyTotal = nyFp + extra1 + barnbidragPerPerson + tillaggPerPerson;
+        
+            document.querySelector('.monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp.toLocaleString()} kr/månad`;
+            document.querySelector('.monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal.toLocaleString()} kr/månad`;
+        });
+        
         // Eventlyssnare för Förälder 1
             document.getElementById('uttags-dagar').addEventListener('input', function(e) {
                 let dagarPerVecka = parseInt(e.target.value);
