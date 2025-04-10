@@ -352,6 +352,8 @@ canvas {
     font-family: 'Inter', sans-serif;
     max-width: 400px;
     margin-top: 20px;
+    margin-bottom: 1rem 0;
+    overflow: hidden;
 }
 
 .monthly-row {

@@ -129,6 +129,13 @@ document.addEventListener("DOMContentLoaded", function () {
             const manad1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
 
             output += `
+            <div class="result-block">
+                <h2>Sammanlagt barnbidrag</h2>
+                <p>${details}</p>
+            </div>
+            `;
+
+            output += `
                 <div class="result-section">
                     <h2>Förälder 1</h2>
                      <h4>Ersättning</h4>
@@ -309,14 +316,41 @@ document.addEventListener("DOMContentLoaded", function () {
                     ${genereraTabell(dag2, dagar, extra2)}
                 </div>
             `;
+                               // Förälder 2 - Månatlig ersättning
+                               output += `
+                               <div class="monthly-box">
+                                   <h3>Förälder 1 – Månatlig ersättning</h3>
+                                   <div class="monthly-row">
+                                       <span>Föräldrapenning*</span>
+                                       <span>${manad1.toLocaleString()} kr/månad</span>
+                                   </div>
+                                   ${avtal2 ? `
+                                   <div class="monthly-row">
+                                       <span>Föräldralön**</span>
+                                       <span>${extra2.toLocaleString()} kr/månad</span>
+                                   </div>` : ''}
+                                   <div class="monthly-row">
+                                       <span>Barnbidrag</span>
+                                       <span>${barnbidrag.toLocaleString()} kr/månad</span>
+                                   </div>
+                                   <div class="monthly-row">
+                                       <span>Flerbarnstillägg</span>
+                                       <span>${tillagg.toLocaleString()} kr/månad</span>
+                                   </div>
+                                   <div class="monthly-total">
+                                       <span>Totalt:</span>
+                                       <span>${(manad2 + extra2 + barnbidrag + tillagg).toLocaleString()} kr/månad</span>
+                                   </div>
+                                   <div class="monthly-info">
+                                       * Vid ett uttag på 7 föräldradagar/vecka<br>
+                                       ** Utbetalning av föräldralön regleras i ditt kollektivavtal
+                                   </div>
+                               </div>
+                   
+                               `;
         }
 
-        output += `
-            <div class="result-block">
-                <h2>Sammanlagt barnbidrag</h2>
-                <p>${details}</p>
-            </div>
-        `;
+
         
         resultBlock.innerHTML = output;
         setupInfoBoxToggle();
