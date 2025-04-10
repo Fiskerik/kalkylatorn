@@ -169,19 +169,21 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="benefit-card">
                             <div class="benefit-title">Föräldradagar på sjukpenningnivå</div>
                             <div class="benefit-value-large">
-                                <span>390 </span><span class="unit">dagar</span>
+                                <span>195</span><span class="unit">dagar</span>
                             </div>
-                                <div>
-                                    <h3> Varav dagar som kan delas:
-                                    <div class="benefit-value-large">
-                                        <span>105 </span><span class="unit">dagar</span>
-                                    </div>
-                                    <h3> Varav reserverade dagar:
-                                    <div class="benefit-value-large">
-                                        <span>90 </span><span class="unit">dagar</span>
-                                    </div>
+
+                            <div class="days-split">
+                                <div class="split-row">
+                                    <span class="split-label">Varav dagar som kan delas</span>
+                                    <span class="split-value">105 dagar</span>
+                                </div>
+                                <div class="split-row">
+                                    <span class="split-label">Varav reserverade dagar</span>
+                                    <span class="split-value">90 dagar</span>
+                                </div>
                             </div>
                         </div>
+
                         <div class="benefit-card">
                             <div class="benefit-title">Föräldradagar på lägstanivå</div>
                             <div class="benefit-value-large">

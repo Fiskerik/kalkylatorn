@@ -322,3 +322,24 @@ canvas {
 .info-box.open .info-content {
     display: block;
 }
+.days-split {
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #ddd;
+}
+
+.split-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+}
+
+.split-label {
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.split-value {
+    font-weight: 600;
+    font-size: 1rem;
+}
