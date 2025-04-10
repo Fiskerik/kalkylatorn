@@ -172,11 +172,11 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span>390 </span><span class="unit">dagar</span>
                             </div>
                                 <div>
-                                    <h4> Varav dagar som kan delas:
+                                    <h3> Varav dagar som kan delas:
                                     <div class="benefit-value-large">
                                         <span>105 </span><span class="unit">dagar</span>
                                     </div>
-                                    <h4> Varav reserverade dagar:
+                                    <h3> Varav reserverade dagar:
                                     <div class="benefit-value-large">
                                         <span>90 </span><span class="unit">dagar</span>
                                     </div>
