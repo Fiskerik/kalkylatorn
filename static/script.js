@@ -73,15 +73,19 @@ document.addEventListener("DOMContentLoaded", function () {
         const avtal1 = document.getElementById("har-avtal-1").value === "ja";
         const avtal2 = document.getElementById("har-avtal-2")?.value === "ja";
     
-        let output = "<div class='result'>";   // <- Viktigt att ha först här!
-
+        let dag1 = 0;
+        let extra1 = 0;
+        let barnbidragPerPerson = 0;
+        let tillaggPerPerson = 0;
+    
+        let output = "<div class='result'>";
+    
         const totalBarn = barnTidigare + barnPlanerade;
-
+    
         const { barnbidrag, tillagg, total, details } = beraknaBarnbidrag(totalBarn, vardnad === "ensam");
-        const barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
-        const tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
-
-
+        barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
+        tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
+    
         const beraknaDaglig = (inkomst) => {
             const ar = inkomst * 12;
             if (ar < 117590) return 250;
@@ -89,7 +93,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const sgi = ar * 0.97;
             return Math.round((sgi * 0.8) / 365);
         };
-
+    
         const dagar = vardnad === "ensam" ? 390 : 195;
 
         const genereraTabell = (dailyRate, dagar, extra = 0) => {
@@ -127,8 +131,9 @@ document.addEventListener("DOMContentLoaded", function () {
         
 
         if (!isNaN(income1)) {
-            const dag1 = beraknaDaglig(income1);
-            const extra1 = avtal1 ? (income1 <= 49000 ? Math.round(income1 * 0.10) : 4900) : 0;
+            dag1 = beraknaDaglig(income1);
+            extra1 = avtal1 ? (income1 <= 49000 ? Math.round(income1 * 0.10) : 4900) : 0;
+            
             const manad1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
 
             output += `
@@ -378,13 +383,12 @@ document.addEventListener("DOMContentLoaded", function () {
         
         resultBlock.innerHTML = output;
         setupInfoBoxToggle();
-        
+    
         document.getElementById('uttags-dagar').addEventListener('change', function(e) {
             const dagarPerVecka = parseInt(e.target.value);
-        
             const nyFp = Math.round((dag1 * dagarPerVecka * 4.3) / 100) * 100;
             const nyTotal = nyFp + extra1 + barnbidragPerPerson + tillaggPerPerson;
-        
+    
             document.querySelector('.monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp.toLocaleString()} kr/månad`;
             document.querySelector('.monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal.toLocaleString()} kr/månad`;
         });

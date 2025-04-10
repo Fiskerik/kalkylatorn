@@ -353,7 +353,7 @@ canvas {
     max-width: 400px;
     margin-top: 20px;
     overflow: hidden;
-    margin-bottom: 40px;
+    
 }
 
 .monthly-row {
@@ -394,6 +394,7 @@ canvas {
     border-radius: 8px;
     box-shadow: 0 0 5px rgba(0,0,0,0.1);
     max-width: 200px;
+    margin-top: 20px;
 }
 
 .fp-uttagsval select {
