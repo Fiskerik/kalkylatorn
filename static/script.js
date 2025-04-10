@@ -225,39 +225,40 @@ document.addEventListener("DOMContentLoaded", function () {
 
                    // Förälder 1 - Månatlig ersättning
             output += `
-            <div class="monthly-box">
-                <h3>Förälder 1 – Månatlig ersättning</h3>
-                <div class="monthly-row">
-                    <span>Föräldrapenning*</span>
-                    <span>${manad1.toLocaleString()} kr/månad</span>
+            <div class="monthly-wrapper">
+                <div class="monthly-box">
+                    <h3>Förälder 1 – Månatlig ersättning</h3>
+                    <div class="monthly-row">
+                        <span>Föräldrapenning*</span>
+                        <span>${manad1.toLocaleString()} kr/månad</span>
+                    </div>
+                    ${avtal1 ? `
+                    <div class="monthly-row">
+                        <span>Föräldralön**</span>
+                        <span>${extra1.toLocaleString()} kr/månad</span>
+                    </div>` : ''}
+                    <div class="monthly-row">
+                        <span>Barnbidrag</span>
+                        <span>${barnbidragPerPerson.toLocaleString()} kr/månad</span>
+                    </div>
+                    <div class="monthly-row">
+                        <span>Flerbarnstillägg</span>
+                        <span>${tillaggPerPerson.toLocaleString()} kr/månad</span>
+                    </div>
+                    <div class="monthly-total">
+                        <span>Totalt:</span>
+                        <span>${(manad1 + extra1 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
+                    </div>
+                    <div class="monthly-info">
+                        * Vid ett uttag på 7 föräldradagar/vecka<br>
+                        ${avtal1 ? `** Utbetalning av föräldralön regleras i ditt kollektivavtal` : ''}
+                    </div>
                 </div>
-                ${avtal1 ? `
-                <div class="monthly-row">
-                    <span>Föräldralön**</span>
-                    <span>${extra1.toLocaleString()} kr/månad</span>
-                </div>` : ''}
-                <div class="monthly-row">
-                    <span>Barnbidrag</span>
-                    <span>${barnbidragPerPerson.toLocaleString()} kr/månad</span>
-                </div>
-                <div class="monthly-row">
-                    <span>Flerbarnstillägg</span>
-                    <span>${tillaggPerPerson.toLocaleString()} kr/månad</span>
-                </div>
-                <div class="monthly-total">
-                    <span>Totalt:</span>
-                    <span>${(manad1 + extra1 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
-                </div>
-                <div class="monthly-info">
-                    * Vid ett uttag på 7 föräldradagar/vecka<br>
-                    ${avtal1 ? `** Utbetalning av föräldralön regleras i ditt kollektivavtal` : ''}
+                <div class="fp-uttagsval">
+                    <label for="uttags-dagar">Antal uttag av föräldradagar per vecka:</label>
+                    <input type="number" id="uttags-dagar" min="1" max="7" value="7">
                 </div>
             </div>
-             <div class="fp-uttagsval">
-                <label for="uttags-dagar">Antal uttag av föräldradagar per vecka:</label>
-                <input type="number" id="uttags-dagar" min="1" max="7" value="7">
-            </div>
-           
             `;
         }
 
@@ -331,6 +332,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                                // Förälder 2 - Månatlig ersättning
                                output += `
+                               
                                <div class="monthly-box">
                                    <h3>Förälder 2 – Månatlig ersättning</h3>
                                    <div class="monthly-row">
@@ -367,6 +369,19 @@ document.addEventListener("DOMContentLoaded", function () {
         
         resultBlock.innerHTML = output;
         setupInfoBoxToggle();
+
+        // Eventlyssnare för Förälder 1
+            document.getElementById('uttags-dagar').addEventListener('input', function(e) {
+                let dagarPerVecka = parseInt(e.target.value);
+                if (isNaN(dagarPerVecka) || dagarPerVecka < 1) dagarPerVecka = 1;
+                if (dagarPerVecka > 7) dagarPerVecka = 7;
+
+                const nyFp = Math.round((dag1 * dagarPerVecka * 4.3) / 100) * 100;
+                const nyTotal = nyFp + extra1 + barnbidragPerPerson + tillaggPerPerson;
+
+                document.querySelector('.monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp.toLocaleString()} kr/månad`;
+                document.querySelector('.monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal.toLocaleString()} kr/månad`;
+});
 
     });
 
@@ -421,15 +436,4 @@ document.addEventListener('click', function(e) {
         box.classList.toggle('open');
     }
 });
-// Eventlyssnare för Förälder 1
-document.getElementById('uttags-dagar').addEventListener('input', function(e) {
-    let dagarPerVecka = parseInt(e.target.value);
-    if (isNaN(dagarPerVecka) || dagarPerVecka < 1) dagarPerVecka = 1;
-    if (dagarPerVecka > 7) dagarPerVecka = 7;
 
-    const nyFp = Math.round((dag1 * dagarPerVecka * 4.3) / 100) * 100;
-    const nyTotal = nyFp + extra1 + barnbidragPerPerson + tillaggPerPerson;
-
-    document.querySelector('.monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp.toLocaleString()} kr/månad`;
-    document.querySelector('.monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal.toLocaleString()} kr/månad`;
-});
