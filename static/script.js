@@ -402,9 +402,7 @@ document.addEventListener("DOMContentLoaded", function () {
         resultBlock.innerHTML = output;
         setupInfoBoxToggle();
     
-        resultBlock.innerHTML = output;
-        setupInfoBoxToggle();
-        
+       
             // Eventlisteners för dropdowns - efter att HTML är inlagd!
             
             document.getElementById('uttags-dagar-1')?.addEventListener('change', function(e) {
