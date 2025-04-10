@@ -226,6 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                         </div>
 
+
                     </div>
                     <h4>Föräldradagar</h4>
                      <div class="benefit-grid">
@@ -292,3 +293,4 @@ function toggleInfoBox(element) {
     const box = element.closest('.info-box');
     box.classList.toggle('open');
   }
+  
