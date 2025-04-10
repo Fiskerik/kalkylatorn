@@ -220,6 +220,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     ${genereraTabell(dag1, dagar, extra1)}
                 </div>
             `;
+            const barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
+            const tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
+
                    // Förälder 1 - Månatlig ersättning
             output += `
             <div class="monthly-box">
@@ -319,6 +322,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     ${genereraTabell(dag2, dagar, extra2)}
                 </div>
             `;
+            const barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
+            const tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
+
                                // Förälder 2 - Månatlig ersättning
                                output += `
                                <div class="monthly-box">
