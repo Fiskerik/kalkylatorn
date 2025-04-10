@@ -9,6 +9,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const resultBlock = document.getElementById('result-block');
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
 
+    let dag1 = 0;
+    let dag2 = 0;
+    let extra1 = 0;
+    let extra2 = 0;
+    let barnbidragPerPerson = 0;
+    let tillaggPerPerson = 0;
+
+
     function setupToggleButtons(groupId, inputId) {
         const group = document.querySelectorAll(`#${groupId} .toggle-btn`);
         const input = document.getElementById(inputId);
@@ -94,11 +102,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const barnPlanerade = parseInt(document.getElementById("barn-planerade")?.value || "0");
         const avtal1 = document.getElementById("har-avtal-1").value === "ja";
         const avtal2 = document.getElementById("har-avtal-2")?.value === "ja";
-    
-        let dag1 = 0;
-        let extra1 = 0;
-        let barnbidragPerPerson = 0;
-        let tillaggPerPerson = 0;
     
         let output = "<div class='result'>";
     
