@@ -397,40 +397,29 @@ document.addEventListener("DOMContentLoaded", function () {
         resultBlock.innerHTML = output;
         setupInfoBoxToggle();
     
+       
+        // Förälder 1
         document.getElementById('uttags-dagar').addEventListener('change', function(e) {
             const dagarPerVecka = parseInt(e.target.value);
             const nyFp = Math.round((dag1 * dagarPerVecka * 4.3) / 100) * 100;
             const nyTotal = nyFp + extra1 + barnbidragPerPerson + tillaggPerPerson;
-    
-            document.querySelector('.monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp.toLocaleString()} kr/månad`;
-            document.querySelector('.monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal.toLocaleString()} kr/månad`;
-        });
-        
-        // Eventlyssnare för Förälder 1
-            document.getElementById('uttags-dagar').addEventListener('input', function(e) {
-                let dagarPerVecka = parseInt(e.target.value);
-                if (isNaN(dagarPerVecka) || dagarPerVecka < 1) dagarPerVecka = 1;
-                if (dagarPerVecka > 7) dagarPerVecka = 7;
 
-                const nyFp = Math.round((dag1 * dagarPerVecka * 4.3) / 100) * 100;
-                const nyTotal = nyFp + extra1 + barnbidragPerPerson + tillaggPerPerson;
-
-                document.querySelector('.monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp.toLocaleString()} kr/månad`;
-                document.querySelector('.monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal.toLocaleString()} kr/månad`;
+            document.querySelector('.monthly-wrapper:nth-of-type(1) .monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp.toLocaleString()} kr/månad`;
+            document.querySelector('.monthly-wrapper:nth-of-type(1) .monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal.toLocaleString()} kr/månad`;
         });
 
-                // Eventlyssnare för Förälder 2
-                document.getElementById('uttags-dagar2').addEventListener('input', function(e) {
-                    let dagarPerVecka = parseInt(e.target.value);
-                    if (isNaN(dagarPerVecka) || dagarPerVecka < 1) dagarPerVecka = 1;
-                    if (dagarPerVecka > 7) dagarPerVecka = 7;
-    
-                    const nyFp2 = Math.round((dag2 * dagarPerVecka * 4.3) / 100) * 100;
-                    const nyTotal = nyFp2 + extra2 + barnbidragPerPerson + tillaggPerPerson;
-    
-                    document.querySelector('.monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp2.toLocaleString()} kr/månad`;
-                    document.querySelector('.monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal2.toLocaleString()} kr/månad`;
-            });
+        // Förälder 2
+        document.getElementById('uttags-dagar2').addEventListener('change', function(e) {
+            let dagarPerVecka = parseInt(e.target.value);
+            if (isNaN(dagarPerVecka) || dagarPerVecka < 1) dagarPerVecka = 1;
+            if (dagarPerVecka > 7) dagarPerVecka = 7;
+
+            const nyFp2 = Math.round((dag2 * dagarPerVecka * 4.3) / 100) * 100;
+            const nyTotal2 = nyFp2 + extra2 + barnbidragPerPerson + tillaggPerPerson;
+
+            document.querySelector('.monthly-wrapper:nth-of-type(2) .monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp2.toLocaleString()} kr/månad`;
+            document.querySelector('.monthly-wrapper:nth-of-type(2) .monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal2.toLocaleString()} kr/månad`;
+        });
 
     });
 
