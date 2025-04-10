@@ -346,35 +346,48 @@ document.addEventListener("DOMContentLoaded", function () {
 
                                // Förälder 2 - Månatlig ersättning
                                output += `
-                               
-                               <div class="monthly-box">
-                                   <h3>Förälder 2 – Månatlig ersättning</h3>
-                                   <div class="monthly-row">
-                                       <span>Föräldrapenning*</span>
-                                       <span>${manad2.toLocaleString()} kr/månad</span>
-                                   </div>
-                                   ${avtal2 ? `
-                                   <div class="monthly-row">
-                                       <span>Föräldralön**</span>
-                                       <span>${extra2.toLocaleString()} kr/månad</span>
-                                   </div>` : ''}
-                                   <div class="monthly-row">
-                                       <span>Barnbidrag</span>
-                                       <span>${barnbidragPerPerson.toLocaleString()} kr/månad</span>
-                                   </div>
-                                   <div class="monthly-row">
-                                       <span>Flerbarnstillägg</span>
-                                       <span>${tillaggPerPerson.toLocaleString()} kr/månad</span>
-                                   </div>
-                                   <div class="monthly-total">
-                                       <span>Totalt:</span>
-                                       <span>${(manad2 + extra2 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
-                                   </div>
-                                   <div class="monthly-info">
-                                       * Vid ett uttag på 7 föräldradagar/vecka<br>
-                                       ${avtal2 ? `** Utbetalning av föräldralön regleras i ditt kollektivavtal` : ''}
-                                   </div>
-                               </div>
+                               <div class="monthly-wrapper">
+                                    <div class="monthly-box">
+                                        <h3>Förälder 2 – Månatlig ersättning</h3>
+                                        <div class="monthly-row">
+                                            <span>Föräldrapenning*</span>
+                                            <span>${manad2.toLocaleString()} kr/månad</span>
+                                        </div>
+                                        ${avtal2 ? `
+                                        <div class="monthly-row">
+                                            <span>Föräldralön**</span>
+                                            <span>${extra2.toLocaleString()} kr/månad</span>
+                                        </div>` : ''}
+                                        <div class="monthly-row">
+                                            <span>Barnbidrag</span>
+                                            <span>${barnbidragPerPerson.toLocaleString()} kr/månad</span>
+                                        </div>
+                                        <div class="monthly-row">
+                                            <span>Flerbarnstillägg</span>
+                                            <span>${tillaggPerPerson.toLocaleString()} kr/månad</span>
+                                        </div>
+                                        <div class="monthly-total">
+                                            <span>Totalt:</span>
+                                            <span>${(manad2 + extra2 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
+                                        </div>
+                                        <div class="monthly-info">
+                                            * Vid ett uttag på 7 föräldradagar/vecka<br>
+                                            ${avtal2 ? `** Utbetalning av föräldralön regleras i ditt kollektivavtal` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="fp-uttagsval">
+                                        <label for="uttags-dagar">Antal uttag av föräldradagar per vecka:</label>
+                                        <select id="uttags-dagar2">
+                                            <option value="1">1 dag</option>
+                                            <option value="2">2 dagar</option>
+                                            <option value="3">3 dagar</option>
+                                            <option value="4">4 dagar</option>
+                                            <option value="5">5 dagar</option>
+                                            <option value="6">6 dagar</option>
+                                            <option value="7" selected>7 dagar</option>
+                                        </select>
+                                    </div>
+                                </div>
                    
                                `;
         }
@@ -404,7 +417,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 document.querySelector('.monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp.toLocaleString()} kr/månad`;
                 document.querySelector('.monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal.toLocaleString()} kr/månad`;
-});
+        });
+
+                // Eventlyssnare för Förälder 2
+                document.getElementById('uttags-dagar2').addEventListener('input', function(e) {
+                    let dagarPerVecka = parseInt(e.target.value);
+                    if (isNaN(dagarPerVecka) || dagarPerVecka < 1) dagarPerVecka = 1;
+                    if (dagarPerVecka > 7) dagarPerVecka = 7;
+    
+                    const nyFp2 = Math.round((dag2 * dagarPerVecka * 4.3) / 100) * 100;
+                    const nyTotal = nyFp2 + extra2 + barnbidragPerPerson + tillaggPerPerson;
+    
+                    document.querySelector('.monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp2.toLocaleString()} kr/månad`;
+                    document.querySelector('.monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal2.toLocaleString()} kr/månad`;
+            });
 
     });
 
