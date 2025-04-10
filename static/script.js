@@ -120,7 +120,37 @@ document.addEventListener("DOMContentLoaded", function () {
             `;
         };
          
-
+       // Förälder 1 - Månatlig ersättning
+       output += `
+       <div class="monthly-box">
+           <h3>Förälder 1 – Månatlig ersättning</h3>
+           <div class="monthly-row">
+               <span>Föräldrapenning*</span>
+               <span>${manad1.toLocaleString()} kr/månad</span>
+           </div>
+           ${avtal1 ? `
+           <div class="monthly-row">
+               <span>Föräldralön**</span>
+               <span>${extra1.toLocaleString()} kr/månad</span>
+           </div>` : ''}
+           <div class="monthly-row">
+               <span>Barnbidrag</span>
+               <span>${barnbidrag.toLocaleString()} kr/månad</span>
+           </div>
+           <div class="monthly-row">
+               <span>Flerbarnstillägg</span>
+               <span>${tillagg.toLocaleString()} kr/månad</span>
+           </div>
+           <div class="monthly-total">
+               <span>Totalt:</span>
+               <span>${(manad1 + extra1 + barnbidrag + tillagg).toLocaleString()} kr/månad</span>
+           </div>
+           <div class="monthly-info">
+               * Vid ett uttag på 7 föräldradagar/vecka<br>
+               ** Utbetalning av föräldralön regleras i ditt kollektivavtal
+           </div>
+       </div>
+       `;
         
 
         if (!isNaN(income1)) {
@@ -285,37 +315,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <p>${details}</p>
             </div>
         `;
-               // Förälder 1 - Månatlig ersättning
-        output += `
-               <div class="monthly-box">
-                   <h3>Förälder 1 – Månatlig ersättning</h3>
-                   <div class="monthly-row">
-                       <span>Föräldrapenning*</span>
-                       <span>${manad1.toLocaleString()} kr/månad</span>
-                   </div>
-                   ${avtal1 ? `
-                   <div class="monthly-row">
-                       <span>Föräldralön**</span>
-                       <span>${extra1.toLocaleString()} kr/månad</span>
-                   </div>` : ''}
-                   <div class="monthly-row">
-                       <span>Barnbidrag</span>
-                       <span>${barnbidrag.toLocaleString()} kr/månad</span>
-                   </div>
-                   <div class="monthly-row">
-                       <span>Flerbarnstillägg</span>
-                       <span>${tillagg.toLocaleString()} kr/månad</span>
-                   </div>
-                   <div class="monthly-total">
-                       <span>Totalt:</span>
-                       <span>${(manad1 + extra1 + barnbidrag + tillagg).toLocaleString()} kr/månad</span>
-                   </div>
-                   <div class="monthly-info">
-                       * Vid ett uttag på 7 föräldradagar/vecka<br>
-                       ** Utbetalning av föräldralön regleras i ditt kollektivavtal
-                   </div>
-               </div>
-               `;
+        
         resultBlock.innerHTML = output;
         setupInfoBoxToggle();
 
