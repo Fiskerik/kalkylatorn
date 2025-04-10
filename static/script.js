@@ -78,6 +78,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const totalBarn = barnTidigare + barnPlanerade;
 
         const { barnbidrag, tillagg, total, details } = beraknaBarnbidrag(totalBarn, vardnad === "ensam");
+        const barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
+        const tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
+
 
         const beraknaDaglig = (inkomst) => {
             const ar = inkomst * 12;
@@ -232,15 +235,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>` : ''}
                 <div class="monthly-row">
                     <span>Barnbidrag</span>
-                    <span>${barnbidrag.toLocaleString()} kr/månad</span>
+                    <span>${barnbidragPerPerson.toLocaleString()} kr/månad</span>
                 </div>
                 <div class="monthly-row">
                     <span>Flerbarnstillägg</span>
-                    <span>${tillagg.toLocaleString()} kr/månad</span>
+                    <span>${tillaggPerPerson.toLocaleString()} kr/månad</span>
                 </div>
                 <div class="monthly-total">
                     <span>Totalt:</span>
-                    <span>${(manad1 + extra1 + barnbidrag + tillagg).toLocaleString()} kr/månad</span>
+                    <span>${(manad1 + extra1 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
                 </div>
                 <div class="monthly-info">
                     * Vid ett uttag på 7 föräldradagar/vecka<br>
@@ -331,15 +334,15 @@ document.addEventListener("DOMContentLoaded", function () {
                                    </div>` : ''}
                                    <div class="monthly-row">
                                        <span>Barnbidrag</span>
-                                       <span>${barnbidrag.toLocaleString()} kr/månad</span>
+                                       <span>${barnbidragPerPerson.toLocaleString()} kr/månad</span>
                                    </div>
                                    <div class="monthly-row">
                                        <span>Flerbarnstillägg</span>
-                                       <span>${tillagg.toLocaleString()} kr/månad</span>
+                                       <span>${tillaggPerPerson.toLocaleString()} kr/månad</span>
                                    </div>
                                    <div class="monthly-total">
                                        <span>Totalt:</span>
-                                       <span>${(manad2 + extra2 + barnbidrag + tillagg).toLocaleString()} kr/månad</span>
+                                       <span>${(manad2 + extra2 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
                                    </div>
                                    <div class="monthly-info">
                                        * Vid ett uttag på 7 föräldradagar/vecka<br>
