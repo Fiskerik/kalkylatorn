@@ -260,6 +260,8 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
         resultBlock.innerHTML = output;
+        setupInfoBoxToggle();
+
     });
 
     document.addEventListener('click', function(e) {
@@ -298,6 +300,15 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
         total: Math.round(total),
         details
     };
+}
+function setupInfoBoxToggle() {
+    const infoHeaders = document.querySelectorAll('.info-header');
+    infoHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const box = header.closest('.info-box');
+            box.classList.toggle('open');
+        });
+    });
 }
 
   // Event delegation för info-box toggling
