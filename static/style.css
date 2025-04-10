@@ -3,6 +3,7 @@ body {
     background: #f2f2f2;
     padding: 2rem;
     margin: 0; /* ingen auto */
+    
 }
 
 h1 {
@@ -343,3 +344,37 @@ canvas {
     font-weight: 600;
     font-size: 1rem;
 }
+.monthly-box {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    font-family: 'Inter', sans-serif;
+    max-width: 400px;
+    margin-top: 20px;
+}
+
+.monthly-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px dashed #ddd;
+    font-size: 15px;
+}
+
+.monthly-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-top: 2px solid #333;
+    font-weight: 700;
+    margin-top: 10px;
+    font-size: 16px;
+}
+
+.monthly-info {
+    font-size: 12px;
+    color: #666;
+    margin-top: 10px;
+}
+

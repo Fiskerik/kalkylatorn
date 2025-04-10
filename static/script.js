@@ -240,6 +240,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     ** Utbetalning av föräldralön regleras i ditt kollektivavtal
                 </div>
             </div>
+
             `;
         }
 
