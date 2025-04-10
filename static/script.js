@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="info-box">
                             <div class="info-header">
                                 <span class="info-icon">ℹ️</span>
-                                <span>Information om föräldralön</span>
+                                <span><strong>Information om föräldralön</strong></span>
                                 <span class="info-arrow">▾</span>
                             </div>
                             <div class="info-content">
@@ -171,12 +171,34 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div class="benefit-value-large">
                                 <span>390 </span><span class="unit">dagar</span>
                             </div>
+                                <div>
+                                    <h4> Varav dagar som kan delas:
+                                    <div class="benefit-value-large">
+                                        <span>105 </span><span class="unit">dagar</span>
+                                    </div>
+                                    <h4> Varav reserverade dagar:
+                                    <div class="benefit-value-large">
+                                        <span>90 </span><span class="unit">dagar</span>
+                                    </div>
+                            </div>
                         </div>
                         <div class="benefit-card">
                             <div class="benefit-title">Föräldradagar på lägstanivå</div>
                             <div class="benefit-value-large">
                                 <span>90 </span><span class="unit">dagar</span>
                                  <br><div><span class="unit">180 kr/dag</span></div>
+                            </div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-header">
+                                <span class="info-icon">ℹ️</span>
+                                <span><strong>Information om föräldradagar</strong></span>
+                                <span class="info-arrow">▾</span>
+                            </div>
+                            <div class="info-content">
+                                <p>
+                                    Föräldrapenningen omfattar totalt 480 dagar för ett barn. Av dessa baseras 390 dagar på din inkomst och betalas ut på sjukpenningnivå, medan de resterande 90 dagarna ger en fast ersättning på 180 kr/dag, vilket är den så kallade lägstanivån.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -217,7 +239,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="info-box">
                             <div class="info-header">
                                 <span class="info-icon">ℹ️</span>
-                                <span>Information om föräldralön</span>
+                                <span><strong>Information om föräldralön</strong></span>
                                 <span class="info-arrow">▾</span>
                             </div>
                             <div class="info-content">
