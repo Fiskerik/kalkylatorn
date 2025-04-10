@@ -319,10 +319,10 @@ document.addEventListener("DOMContentLoaded", function () {
                                // Förälder 2 - Månatlig ersättning
                                output += `
                                <div class="monthly-box">
-                                   <h3>Förälder 1 – Månatlig ersättning</h3>
+                                   <h3>Förälder 2 – Månatlig ersättning</h3>
                                    <div class="monthly-row">
                                        <span>Föräldrapenning*</span>
-                                       <span>${manad1.toLocaleString()} kr/månad</span>
+                                       <span>${manad2.toLocaleString()} kr/månad</span>
                                    </div>
                                    ${avtal2 ? `
                                    <div class="monthly-row">
