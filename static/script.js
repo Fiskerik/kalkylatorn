@@ -112,7 +112,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         <td>${i} dag${i > 1 ? 'ar' : ''}</td>
                         <td>${veckor} veckor</td>
                         <td>${manadsersattning.toLocaleString()} kr</td>
-                        <td>${totalDisponibelt.toLocaleString()} kr</td>
                     </tr>
                 `;
             }
@@ -282,8 +281,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (vardnad === "gemensam" && beraknaPartner === "ja" && income2 > 0) {
-            const dag2 = beraknaDaglig(income2);
-            const extra2 = avtal2 ? (income2 <= 49000 ? Math.round(income2 * 0.10) : 4900) : 0;
+            dag2 = beraknaDaglig(income2);
+            extra2 = avtal2 ? (income2 <= 49000 ? Math.round(income2 * 0.10) : 4900) : 0;
             const manad2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
 
             output += `
