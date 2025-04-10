@@ -380,13 +380,9 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
     let barnbidrag = bidragPerBarn * totalBarn;
     let tillagg = flerbarnstillägg[totalBarn] || 0;
 
-    if (!ensamVardnad) {
-        barnbidrag = barnbidrag / 2;
-        tillagg = tillagg / 2;
-    }
-
     const total = barnbidrag + tillagg;
-    const details = `${totalBarn} barn ger ${Math.round(barnbidrag)} kr barnbidrag${tillagg ? " + " + tillagg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
+    const details = `${totalBarn} barn ger ${barnbidrag.toLocaleString()} kr barnbidrag${tillagg ? " + " + tillagg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
+
     return {
         barnbidrag: Math.round(barnbidrag),
         tillagg: Math.round(tillagg),
@@ -394,6 +390,7 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
         details
     };
 }
+
 function setupInfoBoxToggle() {
     const infoHeaders = document.querySelectorAll('.info-header');
     infoHeaders.forEach(header => {
