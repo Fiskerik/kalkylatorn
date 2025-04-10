@@ -268,3 +268,44 @@ canvas {
     }
 }
 
+.info-box {
+    background-color: #f6f6fb;
+    border-left: 4px solid #007acc;
+    border-radius: 6px;
+    margin: 1rem 0;
+    overflow: hidden;
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.info-icon {
+    color: #007acc;
+    font-size: 1.2rem;
+}
+
+.info-arrow {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+}
+
+.info-box.open .info-arrow {
+    transform: rotate(180deg);
+}
+
+.info-content {
+    display: none;
+    padding: 0 1rem 1rem;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.info-box.open .info-content {
+    display: block;
+}

@@ -150,17 +150,18 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                         </div>
                         <div class="info-box">
-                            <div class="info-header" onclick="toggleInfoBox(this)">
+                            <div class="info-header">
                                 <span class="info-icon">ℹ️</span>
                                 <span>Information om föräldralön</span>
                                 <span class="info-arrow">▾</span>
                             </div>
                             <div class="info-content">
                                 <p>
-                                Eftersom du har kollektivavtal har du sannolikt rätt till föräldrapenningtillägg, även kallat föräldralön, från din arbetsgivare. Detta innebär ofta att du kan få upp till 90 % av din lön under en viss period av din föräldraledighet. Kontakta din arbetsgivare eller fackförening för exakta villkor och belopp, då dessa kan variera beroende på ditt specifika avtal.
+                                    Eftersom du har kollektivavtal har du sannolikt rätt till föräldrapenningtillägg, även kallat föräldralön, från din arbetsgivare. Detta innebär ofta att du kan få upp till 90 % av din lön under en viss period av din föräldraledighet. Kontakta din arbetsgivare eller fackförening för exakta villkor och belopp, då dessa kan variera beroende på ditt specifika avtal.
                                 </p>
                             </div>
                         </div>
+
                     </div>
                       <h4>Föräldradagar</h4>
                     <div class="benefit-grid">
@@ -214,17 +215,18 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                         </div>
                         <div class="info-box">
-                            <div class="info-header" onclick="toggleInfoBox(this)">
+                            <div class="info-header">
                                 <span class="info-icon">ℹ️</span>
                                 <span>Information om föräldralön</span>
                                 <span class="info-arrow">▾</span>
                             </div>
                             <div class="info-content">
                                 <p>
-                                Eftersom du har kollektivavtal har du sannolikt rätt till föräldrapenningtillägg, även kallat föräldralön, från din arbetsgivare. Detta innebär ofta att du kan få upp till 90 % av din lön under en viss period av din föräldraledighet. Kontakta din arbetsgivare eller fackförening för exakta villkor och belopp, då dessa kan variera beroende på ditt specifika avtal.
+                                    Eftersom du har kollektivavtal har du sannolikt rätt till föräldrapenningtillägg, även kallat föräldralön, från din arbetsgivare. Detta innebär ofta att du kan få upp till 90 % av din lön under en viss period av din föräldraledighet. Kontakta din arbetsgivare eller fackförening för exakta villkor och belopp, då dessa kan variera beroende på ditt specifika avtal.
                                 </p>
                             </div>
                         </div>
+
 
 
                     </div>
@@ -298,4 +300,10 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
     };
 }
 
-  
+  // Event delegation för info-box toggling
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.info-header')) {
+        const box = e.target.closest('.info-box');
+        box.classList.toggle('open');
+    }
+});
