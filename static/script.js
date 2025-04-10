@@ -260,8 +260,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                 </div>
                     <div class="fp-uttagsval">
-                        <label for="uttags-dagar">Antal uttag av föräldradagar per vecka:</label>
-                        <select id="uttags-dagar">
+                        <label for="uttags-dagar-1">Antal uttag av föräldradagar per vecka:</label>
+                        <select id="uttags-dagar-1">
                             <option value="1">1 dag</option>
                             <option value="2">2 dagar</option>
                             <option value="3">3 dagar</option>
@@ -376,8 +376,8 @@ document.addEventListener("DOMContentLoaded", function () {
                                         </div>
                                     </div>
                                     <div class="fp-uttagsval">
-                                        <label for="uttags-dagar">Antal uttag av föräldradagar per vecka:</label>
-                                        <select id="uttags-dagar2">
+                                        <label for="uttags-dagar-2">Antal uttag av föräldradagar per vecka:</label>
+                                        <select id="uttags-dagar-2">
                                             <option value="1">1 dag</option>
                                             <option value="2">2 dagar</option>
                                             <option value="3">3 dagar</option>
@@ -399,7 +399,7 @@ document.addEventListener("DOMContentLoaded", function () {
     
        
         // Förälder 1
-        document.getElementById('uttags-dagar').addEventListener('change', function(e) {
+        document.getElementById('uttags-dagar-1').addEventListener('change', function(e) {
             const dagarPerVecka = parseInt(e.target.value);
             const nyFp = Math.round((dag1 * dagarPerVecka * 4.3) / 100) * 100;
             const nyTotal = nyFp + extra1 + barnbidragPerPerson + tillaggPerPerson;
@@ -409,7 +409,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         // Förälder 2
-        document.getElementById('uttags-dagar2').addEventListener('change', function(e) {
+        document.getElementById('uttags-dagar-2')?.addEventListener('change', function(e) {
             let dagarPerVecka = parseInt(e.target.value);
             if (isNaN(dagarPerVecka) || dagarPerVecka < 1) dagarPerVecka = 1;
             if (dagarPerVecka > 7) dagarPerVecka = 7;
