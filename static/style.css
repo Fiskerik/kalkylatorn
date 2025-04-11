@@ -356,10 +356,10 @@ canvas {
     border-radius: 8px;
     box-shadow: 0 0 5px rgba(0,0,0,0.1);
     font-family: 'Inter', sans-serif;
-    max-width: 400px;
+    min-width: 400px; /* Minimum width */
+    max-width: 600px; /* Optional: keeps a cap */
     margin-top: 20px;
     overflow: hidden;
-    
 }
 
 .monthly-row {
@@ -368,7 +368,7 @@ canvas {
     padding: 4px 0;
     border-bottom: 1px dashed #ddd;
     font-size: 15px;
-
+    white-space: nowrap; /* Prevents text wrapping */
 }
 
 .monthly-total {

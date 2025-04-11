@@ -9,13 +9,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const resultBlock = document.getElementById('result-block');
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
 
+    // Deklarera variabler i ett bredare scope
     let dag1 = 0;
-    let dag2 = 0;
     let extra1 = 0;
-    let extra2 = 0;
     let barnbidragPerPerson = 0;
     let tillaggPerPerson = 0;
-
+    let dag2 = 0;
+    let extra2 = 0;
 
     function setupToggleButtons(groupId, inputId) {
         const group = document.querySelectorAll(`#${groupId} .toggle-btn`);
@@ -38,8 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setupToggleButtons('avtal-group-1', 'har-avtal-1');
     setupToggleButtons('avtal-group-2', 'har-avtal-2');
 
-
-
+    // Hantering av vårdnadsval
     vardnadButtons.forEach(button => {
         button.addEventListener('click', () => {
             vardnadButtons.forEach(b => b.classList.remove('active'));
@@ -61,6 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    // Hantering av partnerfrågan
     partnerButtons.forEach(button => {
         button.addEventListener('click', () => {
             partnerButtons.forEach(b => b.classList.remove('active'));
@@ -71,9 +71,130 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    // Funktion för att sätta upp dropdown-event listeners
+    function setupDropdownListeners() {
+        // Helper function to update monthly-box values
+        function updateMonthlyBox(wrapperId, dagarPerVecka, dag, extra, barnbidrag, tillagg, avtal) {
+            console.log(`Updating monthly-box for ${wrapperId} with ${dagarPerVecka} days/week`);
+    
+            // Try finding by ID first
+            let wrapper = document.getElementById(wrapperId);
+            if (!wrapper) {
+                console.warn(`Wrapper #${wrapperId} not found, falling back to dropdown`);
+                // Fallback: Find wrapper via dropdown
+                const dropdownId = wrapperId.replace('monthly-wrapper', 'uttags-dagar');
+                const dropdown = document.getElementById(dropdownId);
+                wrapper = dropdown?.closest('.monthly-wrapper');
+            }
+    
+            if (!wrapper) {
+                console.error(`Could not find wrapper ${wrapperId}`);
+                alert(`Error: Could not find monthly wrapper ${wrapperId}`);
+                return;
+            }
+    
+            const monthlyBox = wrapper.querySelector('.monthly-box');
+            if (!monthlyBox) {
+                console.error(`monthly-box not found in ${wrapperId}`);
+                alert(`Error: monthly-box not found in ${wrapperId}`);
+                return;
+            }
+    
+            // Calculate new values
+            const nyFp = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
+            const nyTotal = nyFp + (extra || 0) + (barnbidrag || 0) + (tillagg || 0);
+    
+            console.log(`Calculated: nyFp=${nyFp}, nyTotal=${nyTotal}, dag=${dag}, extra=${extra}, barnbidrag=${barnbidrag}, tillagg=${tillagg}`);
+    
+            // Find elements within the specific monthly-box
+            const fpElement = monthlyBox.querySelector('.fp-row .fp-value');
+            const totalElement = monthlyBox.querySelector('.monthly-total .total-value');
+            const infoElement = monthlyBox.querySelector('.monthly-info');
+    
+            if (!fpElement || !totalElement) {
+                console.error(`Could not find fp-value or total-value in ${wrapperId}`);
+                alert(`Error: Could not find value elements in ${wrapperId}`);
+                return;
+            }
+    
+            // Update DOM
+            fpElement.textContent = `${nyFp.toLocaleString()} kr/månad`;
+            totalElement.textContent = `${nyTotal.toLocaleString()} kr/månad`;
+            if (infoElement) {
+                infoElement.innerHTML = `* Vid ett uttag på ${dagarPerVecka} föräldradagar/vecka<br>${
+                    avtal ? '** Utbetalning av föräldralön regleras i ditt kollektivavtal' : ''
+                }`;
+            }
+            console.log(`Successfully updated ${wrapperId}: Föräldrapenning=${nyFp}, Total=${nyTotal}`);
+        }
+    
+        // Parent 1 dropdown
+        const uttagDagar1 = document.getElementById('uttags-dagar-1');
+        if (uttagDagar1) {
+            console.log('Found uttags-dagar-1, attaching listener');
+            uttagDagar1.replaceWith(uttagDagar1.cloneNode(true));
+            const newUttagDagar1 = document.getElementById('uttags-dagar-1');
+    
+            newUttagDagar1.addEventListener('change', function (e) {
+                const dagarPerVecka = parseInt(e.target.value) || 7;
+                console.log(`Parent 1 dropdown changed to: ${dagarPerVecka}`);
+    
+                if (dag1 === undefined || dag1 <= 0) {
+                    console.error('dag1 is undefined or invalid:', dag1);
+                    alert('Error: Invalid daily rate for Parent 1');
+                    return;
+                }
+    
+                updateMonthlyBox(
+                    'monthly-wrapper-1',
+                    dagarPerVecka,
+                    dag1,
+                    extra1,
+                    barnbidragPerPerson,
+                    tillaggPerPerson,
+                    document.getElementById('har-avtal-1')?.value === 'ja'
+                );
+            });
+        } else {
+            console.warn('Dropdown uttags-dagar-1 not found');
+        }
+    
+        // Parent 2 dropdown
+        const uttagDagar2 = document.getElementById('uttags-dagar-2');
+        if (uttagDagar2) {
+            console.log('Found uttags-dagar-2, attaching listener');
+            uttagDagar2.replaceWith(uttagDagar2.cloneNode(true));
+            const newUttagDagar2 = document.getElementById('uttags-dagar-2');
+    
+            newUttagDagar2.addEventListener('change', function (e) {
+                const dagarPerVecka = parseInt(e.target.value) || 7;
+                console.log(`Parent 2 dropdown changed to: ${dagarPerVecka}`);
+    
+                if (dag2 === undefined || dag2 <= 0) {
+                    console.error('dag2 is undefined or invalid:', dag2);
+                    alert('Error: Invalid daily rate for Parent 2');
+                    return;
+                }
+    
+                updateMonthlyBox(
+                    'monthly-wrapper-2',
+                    dagarPerVecka,
+                    dag2,
+                    extra2,
+                    barnbidragPerPerson,
+                    tillaggPerPerson,
+                    document.getElementById('har-avtal-2')?.value === 'ja'
+                );
+            });
+        } else {
+            console.warn('Dropdown uttags-dagar-2 not found');
+        }
+    }
+
     form.addEventListener("submit", function (e) {
         e.preventDefault();
-    
+        console.log("Formulär submit utlöst"); // Felsökningslogg
+
         const vardnad = vardnadInput.value;
         const beraknaPartner = partnerInput.value;
         const income1 = parseInt(document.getElementById("inkomst1").value);
@@ -82,15 +203,46 @@ document.addEventListener("DOMContentLoaded", function () {
         const barnPlanerade = parseInt(document.getElementById("barn-planerade")?.value || "0");
         const avtal1 = document.getElementById("har-avtal-1").value === "ja";
         const avtal2 = document.getElementById("har-avtal-2")?.value === "ja";
-    
+
+        // Validering av obligatoriska fält
+        if (!vardnad) {
+            alert("Välj vårdnadsform (gemensam eller ensam).");
+            return;
+        }
+        if (isNaN(income1) || income1 <= 0) {
+            alert("Ange en giltig månadsinkomst för förälder 1.");
+            return;
+        }
+        if (!document.getElementById("har-avtal-1").value) {
+            alert("Välj om förälder 1 har kollektivavtal.");
+            return;
+        }
+        if (vardnad === "gemensam" && beraknaPartner === "ja" && (isNaN(income2) || income2 <= 0)) {
+            alert("Ange en giltig månadsinkomst för förälder 2.");
+            return;
+        }
+        if (vardnad === "gemensam" && beraknaPartner === "ja" && !document.getElementById("har-avtal-2")?.value) {
+            alert("Välj om förälder 2 har kollektivavtal.");
+            return;
+        }
+
+        // Uppdatera globala variabler
+        dag1 = 0;
+        extra1 = 0;
+        barnbidragPerPerson = 0;
+        tillaggPerPerson = 0;
+        dag2 = 0;
+        extra2 = 0;
+
         let output = "<div class='result'>";
-    
+
         const totalBarn = barnTidigare + barnPlanerade;
-    
+        const dagar = vardnad === "ensam" ? 390 : 195;
+
         const { barnbidrag, tillagg, total, details } = beraknaBarnbidrag(totalBarn, vardnad === "ensam");
         barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
         tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
-    
+
         const beraknaDaglig = (inkomst) => {
             const ar = inkomst * 12;
             if (ar < 117590) return 250;
@@ -98,8 +250,6 @@ document.addEventListener("DOMContentLoaded", function () {
             const sgi = ar * 0.97;
             return Math.round((sgi * 0.8) / 365);
         };
-    
-        const dagar = vardnad === "ensam" ? 390 : 195;
 
         const genereraTabell = (dailyRate, dagar, extra = 0) => {
             let rows = '';
@@ -108,11 +258,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 const totalDisponibelt = manadsersattning + total + extra;
                 const veckor = Math.floor(dagar / i);
                 rows += `
-                    <tr>
-                        <td>${i} dag${i > 1 ? 'ar' : ''}</td>
-                        <td>${veckor} veckor</td>
-                        <td>${manadsersattning.toLocaleString()} kr</td>
-                    </tr>
+                <tr>
+                    <td>${i} dag${i > 1 ? 'ar' : ''}</td>
+                    <td>${veckor} veckor</td>
+                    <td>${manadsersattning.toLocaleString()} kr</td>
+                </tr>
                 `;
             }
 
@@ -129,31 +279,25 @@ document.addEventListener("DOMContentLoaded", function () {
                 </table>
             `;
         };
-         
 
-        
-
+        // Förälder 1
         if (!isNaN(income1)) {
             dag1 = beraknaDaglig(income1);
             extra1 = avtal1 ? (income1 <= 49000 ? Math.round(income1 * 0.10) : 4900) : 0;
-            barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
-            tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
-            
             const manad1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
 
             output += `
-            <div class="result-block">
-                <h2>Sammanlagt barnbidrag</h2>
-                <p>${details}</p>
-            </div>
+                <div class="result-block">
+                    <h2>Sammanlagt barnbidrag</h2>
+                    <p>${details}</p>
+                </div>
             `;
 
             output += `
                 <div class="result-section">
                     <h2>Förälder 1</h2>
-                     <h4>Ersättning</h4>
+                    <h4>Ersättning</h4>
                     <div class="benefit-grid">
-                       
                         <div class="benefit-card">
                             <div class="benefit-title">Daglig ersättning på sjukpenningnivå</div>
                             <div class="benefit-value-large">
@@ -166,12 +310,14 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span>250 kr</span><span>1 250 kr</span>
                             </div>
                         </div>
+
                         <div class="benefit-card">
                             <div class="benefit-title">Preliminär föräldralön</div>
                             <div class="benefit-value-large">
                                 <span>${extra1.toLocaleString()}</span><span class="unit">kr/månad</span>
                             </div>
                         </div>
+
                         <div class="info-box">
                             <div class="info-header">
                                 <span class="info-icon">ℹ️</span>
@@ -184,85 +330,62 @@ document.addEventListener("DOMContentLoaded", function () {
                                 </p>
                             </div>
                         </div>
-
                     </div>
-                      <h4>Föräldradagar</h4>
+
+                    <h4>Föräldradagar</h4>
                     <div class="benefit-grid">
-                      
                         <div class="benefit-card">
                             <div class="benefit-title">Föräldradagar på sjukpenningnivå</div>
                             <div class="benefit-value-large">
-                                <span>195</span><span class="unit">dagar</span>
-                            </div>
-
-                            <div class="days-split">
-                                <div class="split-row">
-                                    <span class="split-label">Varav dagar som kan delas</span>
-                                    <span class="split-value">105 dagar</span>
-                                </div>
-                                <div class="split-row">
-                                    <span class="split-label">Varav reserverade dagar</span>
-                                    <span class="split-value">90 dagar</span>
-                                </div>
+                                <span>${vardnad === 'ensam' ? 390 : 195}</span><span class="unit">dagar</span>
                             </div>
                         </div>
 
                         <div class="benefit-card">
                             <div class="benefit-title">Föräldradagar på lägstanivå</div>
                             <div class="benefit-value-large">
-                                <span>90 </span><span class="unit">dagar</span>
-                                 <br><div><span class="unit">180 kr/dag</span></div>
-                            </div>
-                        </div>
-                        <div class="info-box">
-                            <div class="info-header">
-                                <span class="info-icon">ℹ️</span>
-                                <span><strong>Information om föräldradagar</strong></span>
-                                <span class="info-arrow">▾</span>
-                            </div>
-                            <div class="info-content">
-                                <p>
-                                    Föräldrapenningen omfattar totalt 480 dagar för ett barn. Av dessa baseras 390 dagar på din inkomst och betalas ut på sjukpenningnivå, medan de resterande 90 dagarna ger en fast ersättning på 180 kr/dag, vilket är den så kallade lägstanivån.
-                                </p>
+                                <span>90</span><span class="unit">dagar</span>
+                                <br><div><span class="unit">180 kr/dag</span></div>
                             </div>
                         </div>
                     </div>
+
                     ${genereraTabell(dag1, dagar, extra1)}
                 </div>
             `;
 
-
-                   // Förälder 1 - Månatlig ersättning
-            output += `
-            <div class="monthly-wrapper">
-                <div class="monthly-box">
-                    <h3>Förälder 1 – Månatlig ersättning</h3>
-                    <div class="monthly-row">
-                        <span>Föräldrapenning*</span>
-                        <span>${manad1.toLocaleString()} kr/månad</span>
+            // Förälder 1 - Månatlig ersättning
+  
+                output += `
+                <div class="monthly-wrapper" id="monthly-wrapper-1">
+                    <div class="monthly-box">
+                        <h3>Förälder 1 – Månatlig ersättning</h3>
+                        <div class="monthly-row fp-row">
+                            <span>Föräldrapenning*</span>
+                            <span class="fp-value">${manad1.toLocaleString()} kr/månad</span>
+                        </div>
+                        ${avtal1 ? `
+                        <div class="monthly-row extra-row">
+                            <span>Föräldralön**</span>
+                            <span class="extra-value">${extra1.toLocaleString()} kr/månad</span>
+                        </div>` : ''}
+                        <div class="monthly-row barnbidrag-row">
+                            <span>Barnbidrag</span>
+                            <span class="barnbidrag-value">${barnbidragPerPerson.toLocaleString()} kr/månad</span>
+                        </div>
+                        <div class="monthly-row tillagg-row">
+                            <span>Flerbarnstillägg</span>
+                            <span class="tillagg-value">${tillaggPerPerson.toLocaleString()} kr/månad</span>
+                        </div>
+                        <div class="monthly-total">
+                            <span>Totalt:</span>
+                            <span class="total-value">${(manad1 + extra1 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
+                        </div>
+                        <div class="monthly-info">
+                            * Vid ett uttag på 7 föräldradagar/vecka<br>
+                            ${avtal1 ? '** Utbetalning av föräldralön regleras i ditt kollektivavtal' : ''}
+                        </div>
                     </div>
-                    ${avtal1 ? `
-                    <div class="monthly-row">
-                        <span>Föräldralön**</span>
-                        <span>${extra1.toLocaleString()} kr/månad</span>
-                    </div>` : ''}
-                    <div class="monthly-row">
-                        <span>Barnbidrag</span>
-                        <span>${barnbidragPerPerson.toLocaleString()} kr/månad</span>
-                    </div>
-                    <div class="monthly-row">
-                        <span>Flerbarnstillägg</span>
-                        <span>${tillaggPerPerson.toLocaleString()} kr/månad</span>
-                    </div>
-                    <div class="monthly-total">
-                        <span>Totalt:</span>
-                        <span>${(manad1 + extra1 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
-                    </div>
-                    <div class="monthly-info">
-                        * Vid ett uttag på 7 föräldradagar/vecka<br>
-                        ${avtal1 ? `** Utbetalning av föräldralön regleras i ditt kollektivavtal` : ''}
-                    </div>
-                </div>
                     <div class="fp-uttagsval">
                         <label for="uttags-dagar-1">Antal uttag av föräldradagar per vecka:</label>
                         <select id="uttags-dagar-1">
@@ -275,16 +398,14 @@ document.addEventListener("DOMContentLoaded", function () {
                             <option value="7" selected>7 dagar</option>
                         </select>
                     </div>
-
-            </div>
-            `;
+                </div>
+                `;
         }
 
+        // Förälder 2
         if (vardnad === "gemensam" && beraknaPartner === "ja" && income2 > 0) {
             dag2 = beraknaDaglig(income2);
             extra2 = avtal2 ? (income2 <= 49000 ? Math.round(income2 * 0.10) : 4900) : 0;
-            barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
-            tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
             const manad2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
 
             output += `
@@ -292,7 +413,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     <h2>Förälder 2</h2>
                     <h4>Ersättning</h4>
                     <div class="benefit-grid">
-                        
                         <div class="benefit-card">
                             <div class="benefit-title">Daglig ersättning på sjukpenningnivå</div>
                             <div class="benefit-value-large">
@@ -305,12 +425,14 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span>250 kr</span><span>1 250 kr</span>
                             </div>
                         </div>
+
                         <div class="benefit-card">
                             <div class="benefit-title">Preliminär föräldralön</div>
                             <div class="benefit-value-large">
                                 <span>${extra2.toLocaleString()}</span><span class="unit">kr/månad</span>
                             </div>
                         </div>
+
                         <div class="info-box">
                             <div class="info-header">
                                 <span class="info-icon">ℹ️</span>
@@ -319,27 +441,25 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                             <div class="info-content">
                                 <p>
-                                    Eftersom du har kollektivavtal har du sannolikt rätt till föräldrapenningtillägg, även kallat föräldralön, från din arbetsgivare. Detta innebär ofta att du kan få upp till 90 % av din lön under en viss period av din föräldraledighet. Kontakta din arbetsgivare eller fackförening för exakta villkor och belopp, då dessa kan variera beroende på ditt specifika avtal.
+                                    Eftersom du har kollektivavtal har du sannolikt rätt till föräldrapenningtillägg, även kallat föräldralön, från din arbetsgivare. Detta innebär ofta att du kan få upp till 90 % av din lön under en viss period av din föräldraledighet.
                                 </p>
                             </div>
                         </div>
-
-
-
                     </div>
+
                     <h4>Föräldradagar</h4>
-                     <div class="benefit-grid">
-                     
+                    <div class="benefit-grid">
                         <div class="benefit-card">
                             <div class="benefit-title">Föräldradagar på sjukpenningnivå</div>
                             <div class="benefit-value-large">
-                                <span>390 </span><span class="unit">dagar</span>
+                                <span>195</span><span class="unit">dagar</span>
                             </div>
                         </div>
+
                         <div class="benefit-card">
                             <div class="benefit-title">Föräldradagar på lägstanivå</div>
                             <div class="benefit-value-large">
-                                <span>90 </span><span class="unit">dagar</span>
+                                <span>90</span><span class="unit">dagar</span>
                                 <br><div><span class="unit">180 kr/dag</span></div>
                             </div>
                         </div>
@@ -347,99 +467,93 @@ document.addEventListener("DOMContentLoaded", function () {
                     ${genereraTabell(dag2, dagar, extra2)}
                 </div>
             `;
-            const barnbidragPerPerson = vardnad === "ensam" ? barnbidrag : Math.round(barnbidrag / 2);
-            const tillaggPerPerson = vardnad === "ensam" ? tillagg : Math.round(tillagg / 2);
 
-                               // Förälder 2 - Månatlig ersättning
-                               output += `
-                               <div class="monthly-wrapper">
-                                    <div class="monthly-box">
-                                        <h3>Förälder 2 – Månatlig ersättning</h3>
-                                        <div class="monthly-row">
-                                            <span>Föräldrapenning*</span>
-                                            <span>${manad2.toLocaleString()} kr/månad</span>
-                                        </div>
-                                        ${avtal2 ? `
-                                        <div class="monthly-row">
-                                            <span>Föräldralön**</span>
-                                            <span>${extra2.toLocaleString()} kr/månad</span>
-                                        </div>` : ''}
-                                        <div class="monthly-row">
-                                            <span>Barnbidrag</span>
-                                            <span>${barnbidragPerPerson.toLocaleString()} kr/månad</span>
-                                        </div>
-                                        <div class="monthly-row">
-                                            <span>Flerbarnstillägg</span>
-                                            <span>${tillaggPerPerson.toLocaleString()} kr/månad</span>
-                                        </div>
-                                        <div class="monthly-total">
-                                            <span>Totalt:</span>
-                                            <span>${(manad2 + extra2 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
-                                        </div>
-                                        <div class="monthly-info">
-                                            * Vid ett uttag på 7 föräldradagar/vecka<br>
-                                            ${avtal2 ? `** Utbetalning av föräldralön regleras i ditt kollektivavtal` : ''}
-                                        </div>
-                                    </div>
-                                    <div class="fp-uttagsval">
-                                        <label for="uttags-dagar-2">Antal uttag av föräldradagar per vecka:</label>
-                                        <select id="uttags-dagar-2">
-                                            <option value="1">1 dag</option>
-                                            <option value="2">2 dagar</option>
-                                            <option value="3">3 dagar</option>
-                                            <option value="4">4 dagar</option>
-                                            <option value="5">5 dagar</option>
-                                            <option value="6">6 dagar</option>
-                                            <option value="7" selected>7 dagar</option>
-                                        </select>
-                                    </div>
-                                </div>
-                   
-                               `;
+            // Förälder 2 - Månatlig ersättning
+            if (vardnad === "gemensam" && beraknaPartner === "ja" && income2 > 0) {
+                output += `
+                    <div class="monthly-wrapper" id="monthly-wrapper-2">
+                        <div class="monthly-box">
+                            <h3>Förälder 2 – Månatlig ersättning</h3>
+                            <div class="monthly-row fp-row">
+                                <span>Föräldrapenning*</span>
+                                <span class="fp-value">${manad2.toLocaleString()} kr/månad</span>
+                            </div>
+                            ${avtal2 ? `
+                            <div class="monthly-row extra-row">
+                                <span>Föräldralön**</span>
+                                <span class="extra-value">${extra2.toLocaleString()} kr/månad</span>
+                            </div>` : ''}
+                            <div class="monthly-row barnbidrag-row">
+                                <span>Barnbidrag</span>
+                                <span class="barnbidrag-value">${barnbidragPerPerson.toLocaleString()} kr/månad</span>
+                            </div>
+                            <div class="monthly-row tillagg-row">
+                                <span>Flerbarnstillägg</span>
+                                <span class="tillagg-value">${tillaggPerPerson.toLocaleString()} kr/månad</span>
+                            </div>
+                            <div class="monthly-total">
+                                <span>Totalt:</span>
+                                <span class="total-value">${(manad2 + extra2 + barnbidragPerPerson + tillaggPerPerson).toLocaleString()} kr/månad</span>
+                            </div>
+                            <div class="monthly-info">
+                                * Vid ett uttag på 7 föräldradagar/vecka<br>
+                                ${avtal2 ? '** Utbetalning av föräldralön regleras i ditt kollektivavtal' : ''}
+                            </div>
+                        </div>
+                        <div class="fp-uttagsval">
+                            <label for="uttags-dagar-2">Antal uttag av föräldradagar per vecka:</label>
+                            <select id="uttags-dagar-2">
+                                <option value="1">1 dag</option>
+                                <option value="2">2 dagar</option>
+                                <option value="3">3 dagar</option>
+                                <option value="4">4 dagar</option>
+                                <option value="5">5 dagar</option>
+                                <option value="6">6 dagar</option>
+                                <option value="7" selected>7 dagar</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
-
-        
+        output += "</div>"; // Avsluta result-div
         resultBlock.innerHTML = output;
-        setupInfoBoxToggle();
+        
+        console.log('Result block updated with output');
+        console.log('Checking DOM after render:');
+        console.log('monthly-wrapper-1 exists:', !!document.getElementById('monthly-wrapper-1'));
+        console.log('monthly-wrapper-2 exists:', !!document.getElementById('monthly-wrapper-2'));
+        console.log('uttags-dagar-1 exists:', !!document.getElementById('uttags-dagar-1'));
+        console.log('uttags-dagar-2 exists:', !!document.getElementById('uttags-dagar-2'));
     
-       
-            // Eventlisteners för dropdowns - efter att HTML är inlagd!
-            
-            document.getElementById('uttags-dagar-1')?.addEventListener('change', function(e) {
-                const dagarPerVecka = parseInt(e.target.value);
-                const nyFp = Math.round((dag1 * dagarPerVecka * 4.3) / 100) * 100;
-                const nyTotal = nyFp + extra1 + barnbidragPerPerson + tillaggPerPerson;
-            
-                document.querySelector('.monthly-wrapper:nth-of-type(1) .monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp.toLocaleString()} kr/månad`;
-                document.querySelector('.monthly-wrapper:nth-of-type(1) .monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal.toLocaleString()} kr/månad`;
-            });
-            
-            document.getElementById('uttags-dagar-2')?.addEventListener('change', function(e) {
-                const dagarPerVecka = parseInt(e.target.value);
-                const nyFp2 = Math.round((dag2 * dagarPerVecka * 4.3) / 100) * 100;
-                const nyTotal2 = nyFp2 + extra2 + barnbidragPerPerson + tillaggPerPerson;
-            
-                document.querySelector('.monthly-wrapper:nth-of-type(2) .monthly-box .monthly-row:nth-child(2) span:last-child').innerHTML = `${nyFp2.toLocaleString()} kr/månad`;
-                document.querySelector('.monthly-wrapper:nth-of-type(2) .monthly-box .monthly-total span:last-child').innerHTML = `${nyTotal2.toLocaleString()} kr/månad`;
-            });
-            
-
-
+        setupInfoBoxToggle();
+        setupDropdownListeners();
     });
 
+    // InfoBox Toggle Funktion
+    function setupInfoBoxToggle() {
+        const infoHeaders = document.querySelectorAll('.info-header');
+        infoHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const box = header.closest('.info-box');
+                box.classList.toggle('open');
+            });
+        });
+    }
+
+    // Extra säkerhet - toggling av info-box via event delegation
     document.addEventListener('click', function(e) {
         if (e.target.closest('.info-header')) {
             const box = e.target.closest('.info-box');
             box.classList.toggle('open');
         }
     });
-    
 });
 
-// Barnbidrag
+// Funktion för att räkna ut barnbidrag + flerbarnstillägg
 function beraknaBarnbidrag(totalBarn, ensamVardnad) {
-    const bidragPerBarn = 1250;
+    const bidragPerBarn = 1250; // Fast belopp per barn
     const flerbarnstillägg = {
         2: 150,
         3: 730,
@@ -452,6 +566,7 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
     let tillagg = flerbarnstillägg[totalBarn] || 0;
 
     const total = barnbidrag + tillagg;
+
     const details = `${totalBarn} barn ger ${barnbidrag.toLocaleString()} kr barnbidrag${tillagg ? " + " + tillagg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
 
     return {
@@ -461,22 +576,3 @@ function beraknaBarnbidrag(totalBarn, ensamVardnad) {
         details
     };
 }
-
-function setupInfoBoxToggle() {
-    const infoHeaders = document.querySelectorAll('.info-header');
-    infoHeaders.forEach(header => {
-        header.addEventListener('click', () => {
-            const box = header.closest('.info-box');
-            box.classList.toggle('open');
-        });
-    });
-}
-
-  // Event delegation för info-box toggling
-document.addEventListener('click', function(e) {
-    if (e.target.closest('.info-header')) {
-        const box = e.target.closest('.info-box');
-        box.classList.toggle('open');
-    }
-});
-
