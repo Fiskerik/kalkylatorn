@@ -19,6 +19,8 @@ def berakna_daglig_ersattning(inkomst):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    print("Received request to /")
+
     daily_rate_1 = None
     daily_rate_2 = None
     monthly_fp_1 = None
@@ -54,4 +56,5 @@ def index():
                            monthly_fp_2=monthly_fp_2)
 
 if __name__ == "__main__":
+    print("Starting Flask server...")
     app.run(debug=True)
