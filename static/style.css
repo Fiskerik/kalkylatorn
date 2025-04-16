@@ -160,7 +160,7 @@ canvas {
     background-color: #3bc9b2;
     color: white;
 }
-.vardnad-btn {
+.vårdnad-btn {
     flex: 1;
     padding: 10px 0;
     font-size: 16px;
@@ -174,12 +174,12 @@ canvas {
     text-align: center;
 }
 
-.vardnad-btn:hover {
+.vårdnad-btn:hover {
     background-color: #d0d0d0;
 }
 
 
-.vardnad-btn.active {
+.vårdnad-btn.active {
     background-color: #3bc9b2;
     color: white;
 }
@@ -190,7 +190,7 @@ canvas {
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
-#vardnad-group {
+#vårdnad-group {
     display: flex;
     gap: 10px;
     margin-top: 0.5rem;
@@ -702,4 +702,107 @@ p.duration-text {
     color: #3bc9b2; /* Match your color scheme */
     font-size: 24px;
     text-align: left;
+}
+canvas#gantt-canvas {
+    height: 400px !important;
+    min-height: 400px;
+    width: 100%;
+    max-width: 800px;
+}
+
+#gantt-chart {
+    width: 100%;
+    max-width: 800px;
+    margin: 20px 0;
+    overflow-x: auto;
+    min-height: 450px;
+    overflow-y: visible; /* Ensure vertical content isn’t clipped */
+}
+
+
+.gantt-bar {
+    position: absolute;
+    height: 40px; /* Increased height */
+    color: white;
+    padding: 5px;
+    box-sizing: border-box;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+
+
+.gantt-bar:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    white-space: nowrap;
+    font-size: 12px;
+    z-index: 10;
+}
+
+.gantt-bar:hover::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #333;
+    z-index: 10;
+}
+
+.income-graph {
+    margin-top: 20px;
+}
+.combined-chart {
+    margin: 20px 0;
+}
+
+.toggle-group {
+    margin-bottom: 20px;
+}
+.toggle-btn {
+    padding: 10px 20px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+.toggle-btn.active {
+    background-color: #4CAF50;
+    color: white;
+}
+.gantt-bar.transferred {
+    background: #f28c38;
+}
+.date-picker-container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.date-picker-container input[type="date"] {
+    width: 100%;
+    padding: 0.8rem 2.5rem 0.8rem 0.8rem; /* Space for the icon */
+    margin-top: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 16px;
+    text-align: center;
+}
+
+.date-picker-container .calendar-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    pointer-events: none; /* So the icon doesn't interfere with clicking the input */
 }
