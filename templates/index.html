@@ -5,7 +5,7 @@
     <title>Föräldrapenningkalkylator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -140,17 +140,23 @@
                 <input type="number" id="min-inkomst" name="min-inkomst" min="0" placeholder="Ange belopp">
             </div>
             <div id="leave-duration-error" style="color: red; display: none; margin-top: 10px;">
-                Ogiltig ledighetsduration. Kontrollera antalet dagar och försök igen.
+                Ogiltig ledighetslängd. Kontrollera antalet dagar och försök igen.
             </div>
             <button type="button" id="optimize-btn" style="display: none;">Optimera föräldraledighet</button>
         </div>
         <div id="optimization-result" style="display: none;">
             <h3>Optimerat schema för föräldraledighet</h3>
             <div id="gantt-chart"></div>
+            <div id="calendar-container"></div>
         </div>
     </div>
 
-    <script src="/static/script.js"></script>
+    <script type="module" src="{{ url_for('static', filename='config.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='calculations.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='ui.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='chart.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='calendar.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
