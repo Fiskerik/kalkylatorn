@@ -7,6 +7,8 @@
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -24,7 +26,6 @@
         <h1>Föräldrapenningkalkylator</h1>
         
         <form id="calc-form">
-            <!-- Block 1: Vårdnadsform + Partnerberäkning -->
             <div class="form-section">
                 <label for="vårdnad">Har du Gemensam eller Ensam vårdnad?</label>
                 <div class="button-group" id="vårdnad-group">
@@ -44,17 +45,16 @@
                 <input type="hidden" name="beräkna_partner" id="beräkna-partner" value="">
             </div>
 
-            <!-- Block 2: Barnantal -->
             <div class="form-section">
                 <label>Hur många barn har du/ni sedan tidigare?</label>
                 <div class="button-group barnval" id="barn-tidigare-group">
-                  <button type="button" class="toggle-btn" data-value="0">0</button>
-                  <button type="button" class="toggle-btn" data-value="1">1</button>
-                  <button type="button" class="toggle-btn" data-value="2">2</button>
-                  <button type="button" class="toggle-btn" data-value="3">3</button>
-                  <button type="button" class="toggle-btn" data-value="4">4</button>
-                  <button type="button" class="toggle-btn" data-value="5">5</button>
-                  <button type="button" class="toggle-btn" data-value="6">6</button>
+                    <button type="button" class="toggle-btn" data-value="0">0</button>
+                    <button type="button" class="toggle-btn" data-value="1">1</button>
+                    <button type="button" class="toggle-btn" data-value="2">2</button>
+                    <button type="button" class="toggle-btn" data-value="3">3</button>
+                    <button type="button" class="toggle-btn" data-value="4">4</button>
+                    <button type="button" class="toggle-btn" data-value="5">5</button>
+                    <button type="button" class="toggle-btn" data-value="6">6</button>
                 </div>
                 <input type="hidden" id="barn-tidigare" value="0">
             </div>
@@ -62,12 +62,12 @@
             <div class="form-section">
                 <label>Hur många fler barn planerar du/ni att få?</label>
                 <div class="button-group barnval" id="barn-planerade-group">
-                  <button type="button" class="toggle-btn" data-value="1">1</button>
-                  <button type="button" class="toggle-btn" data-value="2">2</button>
-                  <button type="button" class="toggle-btn" data-value="3">3</button>
-                  <button type="button" class="toggle-btn" data-value="4">4</button>
-                  <button type="button" class="toggle-btn" data-value="5">5</button>
-                  <button type="button" class="toggle-btn" data-value="6">6</button>
+                    <button type="button" class="toggle-btn" data-value="1">1</button>
+                    <button type="button" class="toggle-btn" data-value="2">2</button>
+                    <button type="button" class="toggle-btn" data-value="3">3</button>
+                    <button type="button" class="toggle-btn" data-value="4">4</button>
+                    <button type="button" class="toggle-btn" data-value="5">5</button>
+                    <button type="button" class="toggle-btn" data-value="6">6</button>
                 </div>
                 <input type="hidden" id="barn-planerade" value="0">
             </div>
@@ -75,7 +75,6 @@
                 Vänligen välj både antal barn idag och antal barn du planerar att ha.
             </div>
 
-            <!-- Block 3: Inkomster -->
             <div class="form-section">
                 <label for="inkomst1">Vad är din månadsinkomst före skatt?</label>
                 <input type="number" name="inkomst1" id="inkomst1" placeholder="30000 kr" required>
@@ -103,13 +102,10 @@
                 <input type="hidden" name="har_avtal_2" id="har-avtal-2" value="">
             </div>
             
-            <!-- Submit -->
             <button type="submit" id="calculate-btn">Visa resultat</button>
         </form>
 
-        <!-- Block 4: Resultat -->
         <div id="result-block"></div>
-        <!-- Strategi -->
         <div class="toggle-group" id="strategy-group" style="display: none;">
             <label>Välj strategi:</label>
             <button class="toggle-btn active" data-value="longer">Längre ledighet</button>
@@ -117,10 +113,8 @@
             <input type="hidden" id="strategy" value="longer">
         </div>
         
-        <!-- Block 5: Optimering -->
         <div class="form-section" id="preferences-section" style="display: none;">
             <h3>Preferenser för föräldraledighet</h3>
-            <!-- När är barnet beräknat? -->
             <div class="form-section">
                 <label>När är barnet beräknat?</label>
                 <div class="date-picker-container">
@@ -129,15 +123,34 @@
             </div>
             <div class="preference-group">
                 <label>Hur länge vill du vara ledig? (månader)</label>
-                <input type="number" id="ledig-tid-1" name="ledig-tid-1" min="0" placeholder="Ange antal månader">
+                <input type="number" id="ledig-tid-5823" name="ledig-tid-1" min="0" placeholder="Ange antal månader">
             </div>
-            <div class="preference-group" id="partner-ledig-tid" style="display: none;">
+            <div class="preference-group" id="parent-ledig-tid" style="display: none;">
                 <label>Hur länge vill din partner vara ledig? (månader)</label>
                 <input type="number" id="ledig-tid-2" name="ledig-tid-2" min="0" placeholder="Ange antal månader">
             </div>
             <div class="preference-group">
                 <label>Vad är minimigränsen för din månadsinkomst? (kr/månad)</label>
                 <input type="number" id="min-inkomst" name="min-inkomst" min="0" placeholder="Ange belopp">
+                <div class="info-box">
+                <div class="info-header" onclick="toggleInfoBox(this)">
+                    <span class="info-icon">ℹ️</span>
+                    <span><strong>Typiska hushållsutgifter i Sverige</strong></span>
+                    <span class="info-arrow">▾</span>
+                </div>
+                <div class="info-content">
+                    <p>För att hjälpa dig sätta en realistisk minimigräns, här är genomsnittliga månatliga utgifter för ett hushåll (SCB 2024, justerat för 2025):</p>
+                    <ul>
+                        <li><strong>Bostad (hyra/lån)</strong>: 8,000–12,000 kr (1–3 rum, varierar per stad)</li>
+                        <li><strong>El, vatten, värme, internet</strong>: 2,000–3,000 kr</li>
+                        <li><strong>Förskola (dagis)</strong>: Upp till 1,400 kr per barn (inkomstbaserat)</li>
+                        <li><strong>Mat</strong>: 4,000–6,000 kr (1–2 barn)</li>
+                        <li><strong>Transport</strong>: 1,500–3,000 kr (kollektivtrafik eller bil)</li>
+                        <li><strong>Övrigt (försäkring, kläder, fritid)</strong>: 2,000–4,000 kr</li>
+                    </ul>
+                    <p><strong>Totalt</strong>: ~18,000–29,000 kr/månad för en familj med 1–2 barn. Anpassa efter din situation, t.ex. Stockholm är dyrare än mindre orter.</p>
+                </div>
+            </div>
             </div>
             <div id="leave-duration-error" style="color: red; display: none; margin-top: 10px;">
                 Ogiltig ledighetslängd. Kontrollera antalet dagar och försök igen.
@@ -147,15 +160,53 @@
         <div id="optimization-result" style="display: none;">
             <h3>Optimerat schema för föräldraledighet</h3>
             <div id="gantt-chart"></div>
-            <div id="calendar-container"></div>
+        <div id="calendar-container"  style="display: none;"> 
+
+                <div class="blocks-container">
+                    <h3>Disponibla Veckoblock</h3>
+                    <div id="blocks-panel" class="blocks-panel">
+                        <div class="draggable-block block-parent1" data-parent="1">Förälder 1 (30 dagar)</div>
+                        <div class="draggable-block block-parent2" data-parent="2">Förälder 2 (30 dagar)</div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: darkgreen;"></div>
+                        <span>Förälder 1 Start/Slut</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: lightgreen;"></div>
+                        <span>Förälder 1 Mellan</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: darkblue;"></div>
+                        <span>Förälder 2 Start/Slut</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: lightblue;"></div>
+                        <span>Förälder 2 Mellan</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: purple;"></div>
+                        <span>Överlappning</span>
+                    </div>
+                </div>
+                <div id="calendar"></div>
+                <div>
+                    <button class="transfer-button">Överför optimering</button>
+                    <button class="reset-button">Återställ Kalender</button>
+                </div>
+                <div id="total-income">Total inkomst: <span id="income-value">0</span> kr</div>
+                
+            </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <script type="module" src="{{ url_for('static', filename='config.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='calculations.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='ui.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='chart.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='calendar.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
