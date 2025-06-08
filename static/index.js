@@ -13,7 +13,7 @@ import {
     generateParentSection, setupStrategyToggle, updateMonthlyBox 
 } from './ui.js';
 import { renderGanttChart } from './chart.js';
-import { renderCalendar } from './calendar.js';
+
 
 // Initialize on DOM content loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -97,18 +97,17 @@ function handleVårdnadChange(value) {
 function handlePartnerChange(value) {
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
     const avtalQuestion2 = document.getElementById('avtal-question-2');
-    const partnerLedigTid = document.getElementById('partner-ledig-tid');
+    const parentLedigTid = document.getElementById('parent-ledig-tid'); // Fixed ID
 
     if (value === 'ja') {
         inkomstBlock2.style.display = 'block';
         avtalQuestion2.style.display = 'block';
-        partnerLedigTid.style.display = 'block';
+        parentLedigTid.style.display = 'block';
     } else {
         inkomstBlock2.style.display = 'none';
         avtalQuestion2.style.display = 'none';
-        partnerLedigTid.style.display = 'none';
+        parentLedigTid.style.display = 'none';
     }
-    updateProgress(3);
 }
 
 /**
@@ -226,11 +225,25 @@ function setupDropdownListeners() {
  * Handle optimization button click
  */
 function handleOptimize() {
-    const barnDatum = document.getElementById('barn-datum').value || '2025-05-01';
-    const ledigTid1 = parseFloat(document.getElementById('ledig-tid-1').value) || 6;
-    const ledigTid2 = parseFloat(document.getElementById('ledig-tid-2').value) || 0;
-    const minInkomst = parseInt(document.getElementById('min-inkomst').value) || 10000;
-    const strategy = document.getElementById('strategy').value || 'longer';
+    const barnDatumInput = document.getElementById('barn-datum');
+    const ledigTid1Input = document.getElementById('ledig-tid-5823');
+    const ledigTid2Input = document.getElementById('ledig-tid-2');
+    const minInkomstInput = document.getElementById('min-inkomst');
+    const strategyInput = document.getElementById('strategy');
+
+    // Validate inputs
+    if (!barnDatumInput || !ledigTid1Input || !minInkomstInput || !strategyInput) {
+        console.error('Required input elements not found');
+        document.getElementById('leave-duration-error').style.display = 'block';
+        document.getElementById('leave-duration-error').textContent = 'Formulärfel: Kontrollera att alla fält är korrekt ifyllda.';
+        return;
+    }
+
+    const barnDatum = barnDatumInput.value || '2025-05-01';
+    const ledigTid1 = parseFloat(ledigTid1Input.value) || 6;
+    const ledigTid2 = window.appState.beräknaPartner === 'ja' && ledigTid2Input ? parseFloat(ledigTid2Input.value) || 0 : 0;
+    const minInkomst = parseInt(minInkomstInput.value) || 10000;
+    const strategy = strategyInput.value || 'longer';
     const deltid = defaultPreferences.deltid; // From config, could be made dynamic
 
     const preferences = {
@@ -252,6 +265,13 @@ function handleOptimize() {
         tilläggPerPerson: window.appState.tilläggPerPerson,
         barnDatum
     };
+    const optimizationResult = document.getElementById('optimization-result');
+    if (optimizationResult) {
+        optimizationResult.style.display = 'block'; // Ensure the section is visible
+    } else {
+        console.error('optimization-result element not found');
+        return;
+    }
 
     try {
         const result = optimizeParentalLeave(preferences, inputs);
@@ -295,8 +315,7 @@ function handleOptimize() {
             result.arbetsInkomst2
         );
 
-        // Render calendar
-        renderCalendar(ledigTid1, ledigTid2, barnDatum, window.appState);
+
     } catch (error) {
         console.error('Optimization failed:', error);
         document.getElementById('leave-duration-error').style.display = 'block';

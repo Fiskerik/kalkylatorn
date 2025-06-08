@@ -806,3 +806,175 @@ canvas#gantt-canvas {
     font-size: 1.2rem;
     pointer-events: none; /* So the icon doesn't interfere with clicking the input */
 }
+#calendar {
+    background-color: white;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    min-height: 600px;
+}
+.daypilot-scheduler .scheduler_default_event {
+    border-radius: 4px;
+    font-size: 12px;
+    padding: 4px;
+    color: white;
+}
+.daypilot-scheduler .scheduler_default_event.p1 {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+.daypilot-scheduler .scheduler_default_event.p2 {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+.daypilot-scheduler .scheduler_default_event.lagstaniva.p1 {
+    background-color: #2ecc71;
+    border-color: #2ecc71;
+}
+.daypilot-scheduler .scheduler_default_event.lagstaniva.p2 {
+    background-color: #66b3ff;
+    border-color: #66b3ff;
+}
+.daypilot-scheduler .scheduler_default_event.borrowed, .daypilot-scheduler .scheduler_default_event.transferred {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #2d3748;
+}
+.event-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.days-select {
+    padding: 2px;
+    font-size: 12px;
+    border-radius: 4px;
+    background-color: #ffffff;
+    color: #2d3748;
+    border: 1px solid #cbd5e0;
+    max-width: 100px;
+}
+.lagstaniva-checkbox {
+    font-size: 12px;
+    color: inherit;
+    display: flex;
+    align-items: center;
+}
+.lagstaniva-checkbox input {
+    cursor: pointer;
+}
+.lagstaniva-checkbox input:disabled {
+    cursor: not-allowed;
+}
+.delete-btn {
+    background: #2d3748;
+    color: white;
+    border: none;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.pagination {
+    text-align: center;
+    margin: 20px 0;
+}
+.pagination button {
+    padding: 8px 14px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 0 10px;
+    background-color: #007bff;
+}
+.pagination button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+.pagination button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+.tooltip {
+    position: absolute;
+    background: #2d3748;
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    width: 240px;
+    z-index: 1000;
+    white-space: pre-wrap;
+    text-align: left;
+    display: none;
+}
+.daypilot-scheduler .scheduler_default_matrix_vertical_line:hover + .tooltip {
+    display: block;
+}
+.reset-button, .transfer-button {
+    padding: 8px 14px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 10px 5px;
+}
+.reset-button {
+    background-color: #dc3545;
+}
+.reset-button:hover {
+    background-color: #c82333;
+}
+.transfer-button {
+    background-color: #28a745;
+}
+.transfer-button:hover {
+    background-color: #218838;
+}
+
+/* Day cell default */
+.day-cell {
+    background-color: white;
+}
+.day-cell.parent1-start, .day-cell.parent1-end, .day-cell.parent1-single {
+    background-color: #2e7d32 !important; /* Dark green */
+}
+.day-cell.parent1-between {
+    background-color: #81c784 !important; /* Lighter green */
+}
+.day-cell.parent2-start, .day-cell.parent2-end, .day-cell.parent2-single {
+    background-color: #1565c0 !important; /* Dark blue */
+}
+.day-cell.parent2-between {
+    background-color: #90caf9 !important; /* Lighter blue */
+}
+.day-cell.combined-start, .day-cell.combined-end, .day-cell.combined-single {
+    background-color: #6a1b9a !important; /* Dark purple */
+}
+.day-cell.combined-between {
+    background-color: #ce93d8 !important; /* Lighter purple */
+}
+.parent1-start, .parent1-end, .parent1-single { background-color: #006400; color: white; } /* Dark Green */
+.parent1-between { background-color: #90ee90; } /* Light Green */
+.parent2-start, .parent2-end, .parent2-single { background-color: #00008b; color: white; } /* Dark Blue */
+.parent2-between { background-color: #add8e6; } /* Light Blue */
+.combined-start, .combined-end, .combined-single { background-color: #800080; color: white; } /* Purple */
+.combined-between { background-color: #dda0dd; } /* Light Purple */
+.remove-btn { 
+    position: absolute; 
+    top: 2px; 
+    right: 2px; 
+    background: red; 
+    color: white; 
+    border: none; 
+    cursor: pointer; 
+    font-size: 12px; 
+    padding: 0 4px;
+}
+.day-cell { position: relative; }

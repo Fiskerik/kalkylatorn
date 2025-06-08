@@ -43,7 +43,7 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
     const canvas = document.createElement('canvas');
     canvas.id = 'gantt-canvas';
     canvas.style.width = '100%';
-    canvas.style.maxWidth = '800px';
+    canvas.style.maxWidth = '1200px'; // Increased to accommodate more ticks
     canvas.style.height = '400px';
 
     const period1Weeks = plan1.weeks || 0;
@@ -63,9 +63,10 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
         console.warn("Invalid barnDatum provided, using current date:", barnDatum);
         startDate = new Date();
     }
+    startDate.setHours(0, 0, 0, 0); // Normalize timezone
 
     const period1Start = new Date(startDate);
-    const period1TotalWeeks = period1Weeks;
+    let period1TotalWeeks = period1Weeks;
     const period1End = new Date(period1Start);
     period1End.setDate(period1End.getDate() + (period1TotalWeeks * 7) - 1);
 
@@ -82,15 +83,74 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
 
     const totalaWeeks = Math.max(period1TotalWeeks + period2Weeks, 60);
 
+    // Generate week labels and month labels
     const weekLabels = [];
+    const monthLabels = new Array(totalaWeeks).fill('');
     const date = new Date(startDate);
+    const weekStartDates = [];
+
+    // Generate week labels and store week start dates
     for (let i = 0; i < totalaWeeks; i++) {
         const weekStart = new Date(date);
+        weekStart.setHours(0, 0, 0, 0);
         const weekEnd = new Date(date);
         weekEnd.setDate(weekEnd.getDate() + 6);
-        const label = `${weekStart.toLocaleString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' })} - ${weekEnd.toLocaleString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-        weekLabels.push(label);
+        weekEnd.setHours(23, 59, 59, 999);
+        const weekLabel = `${weekStart.toLocaleString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' })} - ${weekEnd.toLocaleString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+        weekLabels.push(weekLabel);
+        weekStartDates.push(weekStart);
         date.setDate(date.getDate() + 7);
+    }
+
+    // Assign month labels to the week containing the 1st of each month
+    let currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    currentMonth.setHours(0, 0, 0, 0); // Normalize timezone
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + totalaWeeks * 7 + 7);
+    endDate.setHours(0, 0, 0, 0);
+    console.log(`startDate: ${startDate.toISOString()}, endDate: ${endDate.toISOString()}, totalaWeeks: ${totalaWeeks}`);
+    
+    while (currentMonth <= endDate) {
+        const monthLabel = currentMonth.toLocaleString('sv-SE', { month: 'long', year: 'numeric' });
+        const monthFirst = new Date(currentMonth);
+        monthFirst.setHours(0, 0, 0, 0);
+        // Find the week that contains the 1st of the month or starts immediately after
+        let closestWeekIndex = 0;
+        for (let i = 0; i < weekStartDates.length; i++) {
+            const weekStart = weekStartDates[i];
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            if (monthFirst >= weekStart && monthFirst <= weekEnd) {
+                closestWeekIndex = i;
+                break;
+            }
+            if (monthFirst > weekEnd && weekEnd >= weekStartDates[closestWeekIndex]) {
+                closestWeekIndex = i;
+            }
+        }
+        // Ensure the label is not overwritten by a later month
+        if (!monthLabels[closestWeekIndex]) {
+            monthLabels[closestWeekIndex] = monthLabel;
+        }
+        console.log(`Month ${monthLabel} assigned to week ${closestWeekIndex}: ${weekLabels[closestWeekIndex]}, 1st: ${monthFirst.toISOString()}`);
+        // Move to the next month
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+    }
+
+    // Reassign skipped months to the nearest previous non-empty week
+    const criticalWeeks = [13, 17, 21, 35, 39, 43, 47]; // Weeks for missing months
+    for (const week of criticalWeeks) {
+        if (monthLabels[week] && !monthLabels.slice(0, week).includes(monthLabels[week])) {
+            // Find the nearest previous week with no label
+            for (let i = week - 1; i >= 0; i--) {
+                if (!monthLabels[i]) {
+                    monthLabels[i] = monthLabels[week];
+                    monthLabels[week] = ''; // Clear original to avoid duplication
+                    console.log(`Reassigned ${monthLabels[i]} from week ${week} to week ${i}: ${weekLabels[i]}`);
+                    break;
+                }
+            }
+        }
     }
 
     const safeDagarPerVecka = (value) => value > 0 ? value : 1;
@@ -285,29 +345,32 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
                     if (chart.dragging.point.type === 'period1End') {
                         const newPeriod1Weeks = Math.max(minX, Math.min(newX + 1, maxX));
                         period1TotalWeeks = newPeriod1Weeks;
-                        const förälder2StartWeek = period1TotalWeeks;
+                        const period1EndDate = new Date(period1Start);
+                        period1EndDate.setDate(period1EndDate.getDate() + (period1TotalWeeks * 7) - 1);
+                        const period2StartDate = new Date(period1EndDate);
+                        period2StartDate.setDate(period2StartDate.getDate() + 1);
+                        const period2EndDate = new Date(period2StartDate);
+                        period2EndDate.setDate(period2EndDate.getDate() + (period2Weeks * 7) - 1);
 
                         const period1TotalDays = period1TotalWeeks * safeDagarPerVecka(plan1.dagarPerVecka);
                         const daysAvailable = förälder1InkomstDagar + förälder1MinDagar;
                         if (period1TotalDays > daysAvailable) {
                             period1TotalWeeks = Math.floor(daysAvailable / safeDagarPerVecka(plan1.dagarPerVecka));
-                            förälder2StartWeek = period1TotalWeeks;
                         }
 
                         const period1IncomeDaysUsed = Math.min(period1TotalDays, förälder1InkomstDagar);
-                        period1NoExtraAdjustedWeeks = 0;
-                        period1MinAdjustedWeeks = period1TotalDays > period1IncomeDaysUsed ? Math.round((period1TotalDays - period1IncomeDaysUsed) / safeDagarPerVecka(plan1.dagarPerVecka)) : 0;
+                        const period1NoExtraAdjustedWeeks = 0;
+                        const period1MinAdjustedWeeks = period1TotalDays > period1IncomeDaysUsed ? Math.round((period1TotalDays - period1IncomeDaysUsed) / safeDagarPerVecka(plan1.dagarPerVecka)) : 0;
 
-                        period2TotalWeeks = Math.round((ledigTid2 * 4.3) - (förälder2StartWeek - Math.round(ledigTid1 * 4.3)));
-                        if (period2TotalWeeks < 0) period2TotalWeeks = 0;
-                        const period2TotalDays = period2TotalWeeks * safeDagarPerVecka(plan2.dagarPerVecka);
+                        const period2TotalDays = period2Weeks * safeDagarPerVecka(plan2.dagarPerVecka);
                         const period2IncomeDaysUsed = Math.min(period2TotalDays, förälder2InkomstDagar);
-                        period2NoExtraAdjustedWeeks = 0;
-                        period2MinAdjustedWeeks = period2TotalDays > period2IncomeDaysUsed ? Math.round((period2TotalDays - period2IncomeDaysUsed) / safeDagarPerVecka(plan2.dagarPerVecka)) : 0;
+                        const period2NoExtraAdjustedWeeks = 0;
+                        const period2MinAdjustedWeeks = period2TotalDays > period2IncomeDaysUsed ? Math.round((period2TotalDays - period2IncomeDaysUsed) / safeDagarPerVecka(plan2.dagarPerVecka)) : 0;
 
                         generateInkomstData();
                         chart.data.datasets[0].data = inkomstData;
                         chart.update();
+                        updateMessage();
                     }
                 }
             });
@@ -435,14 +498,25 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
                 x: {
                     type: 'linear',
                     min: 0,
-                    max: totalaWeeks,
+                    max: totalaWeeks - 1,
                     ticks: {
                         stepSize: 1,
+                        autoSkip: false, // Force all ticks to render
+                        maxTicksLimit: 60, // Allow up to 60 ticks
                         callback: function(value) {
-                            return value % 2 === 0 ? weekLabels[value] : '';
+                            console.log(`Tick callback: value=${value}, monthLabels[${value}]=${monthLabels[value] || 'undefined'}`);
+                            return monthLabels[value] || '';
+                        },
+                        font: function(context) {
+                            const value = context?.tick?.value;
+                            console.log(`Font callback: value=${value}, label=${context?.tick?.label || 'undefined'}`);
+                            return {
+                                size: 12,
+                                weight: typeof value === 'number' && value >= 0 && value < monthLabels.length && monthLabels[value] ? 'bold' : 'normal'
+                            };
                         }
                     },
-                    title: { display: true, text: 'Tid (Vecka)' }
+                    title: { display: true, text: 'Tid (Månad)' }
                 },
                 y: {
                     position: 'right',

@@ -8,15 +8,13 @@ let förälder1MinDagar = vårdnad === "ensam" ? 90 : 45;
 let förälder2MinDagar = vårdnad === "ensam" ? 0 : 45;
 let förälder1IckeÖverförbaraDagar = vårdnad === "ensam" ? 0 : 90;
 let förälder2IckeÖverförbaraDagar = vårdnad === "ensam" ? 0 : 90;
-// State for mandatory barn selections
-let barnIdag = 0; // Initialize to 0 instead of null
-let barnPlanerat = 0; // Initialize to 0 instead of null
-let hasCalculated = false; // Track if the first calculation has been performed
+let barnIdag = 0;
+let barnPlanerat = 0;
+let hasCalculated = false;
 
 function beräknaMånadsinkomst(dag, dagarPerVecka, extra, barnbidrag = 625, tillägg = 0) {
     const fp = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
     const resultat = fp + (extra || 0) + barnbidrag + tillägg;
-    /*console.log("beräknaMånadsinkomst:", { dag, dagarPerVecka, extra, barnbidrag, tillägg, fp, resultat });*/
     return resultat || 0;
 }
 
@@ -24,7 +22,7 @@ function beräknaDaglig(inkomst) {
     if (!inkomst || inkomst <= 0) return 0;
     const sgi = Math.min(inkomst, 49000);
     const calculatedDailyRate = Math.round((sgi * 0.8 * 12) / 365);
-    return Math.min(calculatedDailyRate, 1250); // Cap at 1,250 SEK/day
+    return Math.min(calculatedDailyRate, 1250);
 }
 
 const defaultPreferences = {
@@ -59,15 +57,22 @@ function setupToggleButtons(groupId, inputId, callback = null) {
 }
 
 function setupInfoBoxToggle() {
-    const infoHeaders = document.querySelectorAll('.info-header');
-    infoHeaders.forEach(header => {
-        header.removeEventListener('click', toggleInfoBox);
-        header.addEventListener('click', toggleInfoBox);
-    });
+    // Remove existing listener to prevent duplicates
+    document.removeEventListener('click', handleInfoBoxClick);
+    document.addEventListener('click', handleInfoBoxClick);
 
-    function toggleInfoBox(e) {
-        const box = e.currentTarget.closest('.info-box');
-        if (box) box.classList.toggle('open');
+    function handleInfoBoxClick(e) {
+        const header = e.target.closest('.info-header');
+        if (header) {
+            const box = header.closest('.info-box');
+            const content = header.nextElementSibling;
+            const arrow = header.querySelector('.info-arrow');
+            if (box && content && arrow) {
+                box.classList.toggle('open');
+                content.classList.toggle('open');
+                arrow.classList.toggle('open');
+            }
+        }
     }
 }
 
@@ -276,11 +281,8 @@ function setupDropdownListeners() {
     }
 
     function updateTotalTotal() {
-        //console.log("updateTotalTotal - dag1:", dag1, "dag2:", dag2, "inkomst1:", inkomst1, "inkomst2:", inkomst2, "vårdnad:", vårdnad, "beräknaPartner:", beräknaPartner);
-        
-        // Ensure global variables are updated, no default for inkomst2
         inkomst1 = parseFloat(document.getElementById('inkomst1')?.value) || 0;
-        inkomst2 = parseFloat(document.getElementById('inkomst2')?.value) || 0; // Removed default 35000
+        inkomst2 = parseFloat(document.getElementById('inkomst2')?.value) || 0;
         vårdnad = document.getElementById('vårdnad')?.value || "gemensam";
         beräknaPartner = document.getElementById('beräkna-partner')?.value || "ja";
         deltid = document.getElementById('deltid')?.value || "nej";
@@ -317,8 +319,6 @@ function setupDropdownListeners() {
         fp2 = result.plan2.inkomst;
         justeradExtra1 = result.extra1;
         justeradExtra2 = result.extra2;
-        
-        //console.log("updateTotalTotal - fp1:", fp1, "fp2:", fp2, "justeradExtra1:", justeradExtra1, "justeradExtra2:", justeradExtra2);
         
         renderGanttChart(
             result.plan1,
@@ -358,8 +358,8 @@ function setupDropdownListeners() {
                 const extra = num === 1 ? window.extra1 : window.extra2;
                 const avtal = num === 1 ? document.getElementById('har-avtal-1')?.value === 'ja' : document.getElementById('har-avtal-2')?.value === 'ja';
                 const dagar = vårdnad === "ensam" ? 390 : 195;
-                const inkomst1 = parseFloat(document.getElementById('inkomst1')?.value) || 0; // Removed default
-                const inkomst2 = parseFloat(document.getElementById('inkomst2')?.value) || 0; // Removed default
+                const inkomst1 = parseFloat(document.getElementById('inkomst1')?.value) || 0;
+                const inkomst2 = parseFloat(document.getElementById('inkomst2')?.value) || 0;
                 const barnbidrag = barnbidragPerPerson;
                 const tillägg = tilläggPerPerson;
 
@@ -374,8 +374,8 @@ function setupDropdownListeners() {
             const extra = num === 1 ? window.extra1 : window.extra2;
             const avtal = num === 1 ? document.getElementById('har-avtal-1')?.value === 'ja' : document.getElementById('har-avtal-2')?.value === 'ja';
             const dagar = vårdnad === "ensam" ? 390 : 195;
-            const inkomst1 = parseFloat(document.getElementById('inkomst1')?.value) || 0; // Removed default
-            const inkomst2 = parseFloat(document.getElementById('inkomst2')?.value) || 0; // Removed default
+            const inkomst1 = parseFloat(document.getElementById('inkomst1')?.value) || 0;
+            const inkomst2 = parseFloat(document.getElementById('inkomst2')?.value) || 0;
             const barnbidrag = barnbidragPerPerson;
             const tillägg = tilläggPerPerson;
             if (dag > 0) {
@@ -427,15 +427,14 @@ function optimizeParentalLeave(preferences, inputs) {
 
     let dagarPerVecka1 = 0;
     let dagarPerVecka2 = 0;
-    let weeks1 = Math.round(ledigTid1 * 4.3); // 12 * 4.3 = 52
-    let weeks2 = Math.round(ledigTid2 * 4.3); // 6 * 4.3 = 26
+    let weeks1 = Math.round(ledigTid1 * 4.3);
+    let weeks2 = Math.round(ledigTid2 * 4.3);
     let inkomst1Result = arbetsInkomst1;
     let inkomst2Result = arbetsInkomst2;
     let kombineradInkomst = 0;
 
     console.log("Initial calculations:", { weeks1, weeks2, inkomst1, inkomst2, dag1, dag2, extra1, extra2 });
 
-    // Step 1: Allocate for Parent 1
     if (weeks1 > 0) {
         const maxDagarPerVecka = deltid === "ja" ? 5 : 7;
         dagarPerVecka1 = strategy === "maximize" ? maxDagarPerVecka : 1;
@@ -465,7 +464,6 @@ function optimizeParentalLeave(preferences, inputs) {
         let totalDagarBehövda1 = weeks1 * dagarPerVecka1;
         let maxDagar1 = förälder1InkomstDagar;
 
-        // Borrow days from Parent 2 if needed
         if (totalDagarBehövda1 > maxDagar1 && inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja") {
             const bristDagar1 = totalDagarBehövda1 - maxDagar1;
             const minDagarBehövda2 = weeks2 * Math.min(dagarPerVecka2 || 1, maxDagarPerVecka);
@@ -488,7 +486,6 @@ function optimizeParentalLeave(preferences, inputs) {
         kombineradInkomst = inkomst1Result + inkomst2Result;
     }
 
-    // Step 2: Allocate for Parent 2
     if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && weeks2 > 0) {
         const maxDagarPerVecka = deltid === "ja" ? 5 : 7;
         dagarPerVecka2 = strategy === "maximize" ? maxDagarPerVecka : 1;
@@ -528,22 +525,20 @@ function optimizeParentalLeave(preferences, inputs) {
         kombineradInkomst = inkomst1Result + inkomst2Result;
     }
 
-    // Step 3: Allocate days for Period 1 (Förälder 1)
     let minDagarWeeks1 = 0;
     let weeks1NoExtra = 0;
     if (dagarPerVecka1 > 0) {
         const dagarBehövda1 = weeks1 * dagarPerVecka1;
-        const maxFöräldralönWeeks = 6 * 4.3; // 25.8 weeks
+        const maxFöräldralönWeeks = 6 * 4.3;
 
         if (weeks1 > maxFöräldralönWeeks) {
-            weeks1NoExtra = Math.round(weeks1 - maxFöräldralönWeeks); // Round to avoid floating-point issues
+            weeks1NoExtra = Math.round(weeks1 - maxFöräldralönWeeks);
             weeks1 = Math.round(maxFöräldralönWeeks);
         }
 
         användaInkomstDagar1 = dagarBehövda1;
-        förälder1InkomstDagar -= användaInkomstDagar1;
+        förälder1InkomstDagar -= Math.min(användaInkomstDagar1, förälder1InkomstDagar);
         användaMinDagar1 = 0;
-        minDagarWeeks1 = 0;
 
         plan1 = {
             startWeek: 0,
@@ -584,7 +579,6 @@ function optimizeParentalLeave(preferences, inputs) {
     console.log("Period 1 dagarpervecka1:", dagarPerVecka1);
     console.log("Period 1 Mindagarweeks1:", minDagarWeeks1);
 
-    // Step 4: Allocate days for Period 2 (Förälder 2)
     let minDagarWeeks2 = 0;
     let weeks2NoExtra = 0;
     if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && weeks2 > 0) {
@@ -597,9 +591,8 @@ function optimizeParentalLeave(preferences, inputs) {
         }
 
         användaInkomstDagar2 = dagarBehövda2;
-        förälder2InkomstDagar -= användaInkomstDagar2;
+        förälder2InkomstDagar -= Math.min(användaInkomstDagar2, förälder2InkomstDagar);
         användaMinDagar2 = 0;
-        minDagarWeeks2 = 0;
 
         plan2 = {
             startWeek: weeks1 + weeks1NoExtra,
@@ -626,7 +619,6 @@ function optimizeParentalLeave(preferences, inputs) {
         };
     }
 
-    // Step 5: Handle overlap days (10 days for Förälder 2)
     if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja") {
         const overlapDays = 10;
         if (overlapDays <= förälder2InkomstDagar) {
@@ -637,7 +629,7 @@ function optimizeParentalLeave(preferences, inputs) {
             användaInkomstDagar2 += förälder2InkomstDagar;
             förälder2InkomstDagar = 0;
             användaMinDagar2 += remainingOverlapDays;
-            förälder2MinDagar -= remainingOverlapDays;
+            förälder2MinDagar.minDagar -= remainingOverlapDays;
         }
     }
 
@@ -696,7 +688,6 @@ function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1MinDaga
     const period2MinWeeks = plan2MinDagar.weeks || 0;
     const period1OverlapWeeks = plan1Overlap.weeks || 0;
 
-    // Calculate weeks for transferred days
     const transferredDays = genomförbarhet.transferredDays || 0;
     const transferredWeeks = transferredDays > 0 && plan1.dagarPerVecka > 0 ? Math.ceil(transferredDays / plan1.dagarPerVecka) : 0;
     const transferredStartWeek = transferredWeeks > 0 ? Math.max(0, period1Weeks - transferredWeeks) : period1Weeks;
@@ -1177,6 +1168,14 @@ function setupStrategyToggle() {
     });
 }
 
+function toggleInfoBox(header) {
+            const content = header.nextElementSibling;
+            const arrow = header.querySelector('.info-arrow');
+            content.classList.toggle('open');
+            arrow.classList.toggle('open');
+}
+
+
 document.addEventListener("DOMContentLoaded", function () {
     updateProgress(1);
 
@@ -1199,10 +1198,10 @@ document.addEventListener("DOMContentLoaded", function () {
         plannedChildren: document.getElementById('barn-planerade'),
         preferencesSection: document.getElementById('preferences-section'),
         deltid: document.getElementById('deltid'),
-        ledigTid1: document.getElementById('ledig-tid-1'),
+        ledigTid1: document.getElementById('ledig-tid-5823'), // Updated ID to match index.html
         ledigTid2: document.getElementById('ledig-tid-2'),
         minInkomst: document.getElementById('min-inkomst'),
-        partnerLedigTid: document.getElementById('partner-ledig-tid'),
+        parentLedigTid: document.getElementById('parent-ledig-tid'), // Correct ID from index.html
         optimizeBtn: document.getElementById('optimize-btn'),
         barnDatum: document.getElementById('barn-datum'),
         leaveDurationError: document.getElementById('leave-duration-error'),
@@ -1220,9 +1219,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function updatePartnerPreferencesVisibility() {
         if (vårdnad === "gemensam" && beräknaPartner === "ja") {
-            elements.partnerLedigTid.style.display = "block";
+            if (elements.parentLedigTid) {
+                elements.parentLedigTid.style.display = "block";
+            } else {
+                console.warn("parentLedigTid element not found");
+            }
         } else {
-            elements.partnerLedigTid.style.display = "none";
+            if (elements.parentLedigTid) {
+                elements.parentLedigTid.style.display = "none";
+            } else {
+                console.warn("parentLedigTid element not found");
+            }
         }
     }
 
@@ -1516,3 +1523,5 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+       
