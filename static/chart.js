@@ -45,6 +45,8 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
     canvas.style.width = '100%';
     canvas.style.maxWidth = '1200px'; // Increased to accommodate more ticks
     canvas.style.height = '400px';
+    const summaryDiv = document.createElement('div');
+    summaryDiv.id = 'chart-summary';
 
     const period1Weeks = plan1.weeks || 0;
     const period1NoExtraWeeks = plan1NoExtra.weeks || 0;
@@ -318,6 +320,7 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
     messageDiv.innerHTML = meddelandeHtml;
     ganttChart.appendChild(messageDiv);
     ganttChart.appendChild(canvas);
+    ganttChart.appendChild(summaryDiv);
 
     const dragPlugin = {
         id: 'dragPlugin',
@@ -336,6 +339,13 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
             });
 
             chart.canvas.addEventListener('mousemove', (e) => {
+                const points = chart.getElementsAtEventForMode(
+                    e,
+                    'nearest',
+                    { intersect: false },
+                    false
+                );
+                if (points.length) updateSummaryBox(points[0].index);
                 if (chart.dragging) {
                     const deltaX = (e.clientX - chart.dragStartX) / chart.scales.x.width * (chart.scales.x.max - chart.scales.x.min);
                     const newX = Math.round(inkomstData[chart.dragging.index].x + deltaX);
@@ -383,6 +393,7 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
             });
 
             chart.canvas.addEventListener('mouseleave', () => {
+                summaryDiv.textContent = '';
                 if (chart.dragging) {
                     chart.dragging = null;
                     updateMessage();
@@ -434,6 +445,30 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
         `;
 
         messageDiv.innerHTML = newMeddelandeHtml;
+    }
+
+    function updateSummaryBox(index) {
+        const data = inkomstData[index];
+        if (!data) {
+            summaryDiv.textContent = '';
+            return;
+        }
+        let html = `<strong>${weekLabels[index]}</strong><br>` +
+            `Period: ${data.periodLabel}<br>` +
+            `Kombinerad: ${data.y.toLocaleString()} kr/månad<br>` +
+            `Förälder 1: ${data.förälder1Inkomst.toLocaleString()} kr/månad<br>` +
+            `&nbsp; Föräldrapenning: ${data.förälder1Components.fp.toLocaleString()} kr/månad<br>` +
+            `&nbsp; Föräldralön: ${data.förälder1Components.extra.toLocaleString()} kr/månad<br>` +
+            `&nbsp; Barnbidrag: ${data.förälder1Components.barnbidrag.toLocaleString()} kr/månad<br>` +
+            `&nbsp; Flerbarnstillägg: ${data.förälder1Components.tillägg.toLocaleString()} kr/månad`;
+        if (vårdnad !== 'ensam') {
+            html += `<br>Förälder 2: ${data.förälder2Inkomst.toLocaleString()} kr/månad<br>` +
+                `&nbsp; Föräldrapenning: ${data.förälder2Components.fp.toLocaleString()} kr/månad<br>` +
+                `&nbsp; Föräldralön: ${data.förälder2Components.extra.toLocaleString()} kr/månad<br>` +
+                `&nbsp; Barnbidrag: ${data.förälder2Components.barnbidrag.toLocaleString()} kr/månad<br>` +
+                `&nbsp; Flerbarnstillägg: ${data.förälder2Components.tillägg.toLocaleString()} kr/månad`;
+        }
+        summaryDiv.innerHTML = html;
     }
 
     const ctx = canvas.getContext('2d');
@@ -545,44 +580,7 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
                     }
                 },
                 tooltip: {
-                    callbacks: {
-                        title: function(context) {
-                            if (!context || !context.length || context[0].dataIndex == null) {
-                                return "Ingen data";
-                            }
-                            const index = context[0].dataIndex;
-                            return weekLabels[index] || "Okänd vecka";
-                        },
-                        label: function(context) {
-                            if (!context || context.dataIndex == null) {
-                                return ["Ingen data tillgänglig"];
-                            }
-                            const index = context.dataIndex;
-                            const data = inkomstData[index];
-                            if (!data) {
-                                return ["Ingen data för denna punkt"];
-                            }
-                            const lines = [
-                                `Period: ${data.periodLabel || "Okänd period"}`,
-                                `Kombinerad: ${data.y.toLocaleString()} kr/månad`,
-                                `Förälder 1: ${data.förälder1Inkomst.toLocaleString()} kr/månad`,
-                                `  Föräldrapenning: ${data.förälder1Components.fp.toLocaleString()} kr/månad`,
-                                `  Föräldralön: ${data.förälder1Components.extra.toLocaleString()} kr/månad`,
-                                `  Barnbidrag: ${data.förälder1Components.barnbidrag.toLocaleString()} kr/månad`,
-                                `  Flerbarnstillägg: ${data.förälder1Components.tillägg.toLocaleString()} kr/månad`
-                            ];
-                            if (vårdnad !== "ensam") {
-                                lines.push(
-                                    `Förälder 2: ${data.förälder2Inkomst.toLocaleString()} kr/månad`,
-                                    `  Föräldrapenning: ${data.förälder2Components.fp.toLocaleString()} kr/månad`,
-                                    `  Föräldralön: ${data.förälder2Components.extra.toLocaleString()} kr/månad`,
-                                    `  Barnbidrag: ${data.förälder2Components.barnbidrag.toLocaleString()} kr/månad`,
-                                    `  Flerbarnstillägg: ${data.förälder2Components.tillägg.toLocaleString()} kr/månad`
-                                );
-                            }
-                            return lines.filter(Boolean);
-                        }
-                    }
+                    enabled: false
                 }
             }
         },
