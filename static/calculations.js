@@ -316,3 +316,99 @@ export function optimizeParentalLeave(preferences, inputs) {
         arbetsInkomst2
     };
 }
+
+export function calculateAverageIncome(result, inputs) {
+    const {
+        plan1,
+        plan1NoExtra,
+        plan1MinDagar,
+        plan2,
+        plan2NoExtra,
+        plan2MinDagar,
+        plan1Overlap,
+        dag1,
+        dag2,
+        extra1,
+        extra2,
+        arbetsInkomst1,
+        arbetsInkomst2
+    } = result;
+
+    const barnbidrag = inputs.barnbidragPerPerson || DEFAULT_BARNBIDRAG;
+    const tillägg = inputs.tilläggPerPerson || 0;
+
+    let weeks = 0;
+    let incomeSum = 0;
+
+    if (inputs.beräknaPartner === 'ja' && inputs.vårdnad === 'gemensam') {
+        weeks += plan1Overlap.weeks;
+        const overlapIncome =
+            beräknaMånadsinkomst(dag1, plan1.dagarPerVecka, extra1, barnbidrag, tillägg) +
+            beräknaMånadsinkomst(dag2, 5, extra2, barnbidrag, tillägg);
+        incomeSum += plan1Overlap.weeks * overlapIncome;
+    }
+
+    weeks += plan1.weeks;
+    incomeSum += plan1.weeks * (plan1.inkomst + arbetsInkomst2);
+    weeks += plan1NoExtra.weeks;
+    incomeSum += plan1NoExtra.weeks * (plan1NoExtra.inkomst + arbetsInkomst2);
+    weeks += plan1MinDagar.weeks;
+    incomeSum += plan1MinDagar.weeks * (plan1MinDagar.inkomst + arbetsInkomst2);
+
+    weeks += plan2.weeks;
+    incomeSum += plan2.weeks * (arbetsInkomst1 + plan2.inkomst);
+    weeks += plan2NoExtra.weeks;
+    incomeSum += plan2NoExtra.weeks * (arbetsInkomst1 + plan2NoExtra.inkomst);
+    weeks += plan2MinDagar.weeks;
+    incomeSum += plan2MinDagar.weeks * (arbetsInkomst1 + plan2MinDagar.inkomst);
+
+    return weeks > 0 ? Math.round(incomeSum / weeks) : 0;
+}
+
+export function simulateTogetherStrategy(preferences, inputs) {
+    let weeks1 = Math.round(preferences.ledigTid1 * 4.3);
+    let weeks2 = Math.round(preferences.ledigTid2 * 4.3);
+    const dagarPerVecka = preferences.deltid === 'ja' ? 5 : 7;
+    let weeks = Math.min(weeks1, weeks2);
+
+    const dag1 = beräknaDaglig(Number(inputs.inkomst1) || 0);
+    const dag2 = beräknaDaglig(Number(inputs.inkomst2) || 0);
+    const extra1 = inputs.avtal1 ? (Number(inputs.inkomst1) <= SGI_CAP ? Math.round(Number(inputs.inkomst1) * 0.10) : FÖRÄLDRALÖN_CAP) : 0;
+    const extra2 = inputs.avtal2 ? (Number(inputs.inkomst2) <= SGI_CAP ? Math.round(Number(inputs.inkomst2) * 0.10) : FÖRÄLDRALÖN_CAP) : 0;
+
+    const barnbidrag = inputs.barnbidragPerPerson || DEFAULT_BARNBIDRAG;
+    const tillägg = inputs.tilläggPerPerson || 0;
+
+    const initIncomeDays1 = inputs.vårdnad === 'ensam' ? 390 : 195;
+    const initIncomeDays2 = inputs.vårdnad === 'ensam' ? 0 : 195;
+    const initMinDays1 = inputs.vårdnad === 'ensam' ? 90 : 45;
+    const initMinDays2 = inputs.vårdnad === 'ensam' ? 0 : 45;
+
+    let used1 = weeks * dagarPerVecka;
+    let used2 = weeks * dagarPerVecka;
+    const maxDays1 = initIncomeDays1;
+    const maxDays2 = initIncomeDays2;
+
+    if (used1 > maxDays1 || used2 > maxDays2) {
+        weeks = Math.min(
+            Math.floor(maxDays1 / dagarPerVecka),
+            Math.floor(maxDays2 / dagarPerVecka)
+        );
+        used1 = weeks * dagarPerVecka;
+        used2 = weeks * dagarPerVecka;
+    }
+
+    const income1 = beräknaMånadsinkomst(dag1, dagarPerVecka, extra1, barnbidrag, tillägg);
+    const income2 = beräknaMånadsinkomst(dag2, dagarPerVecka, extra2, barnbidrag, tillägg);
+    const combined = income1 + income2;
+    const feasible = combined >= preferences.minInkomst;
+
+    return {
+        feasible,
+        used1,
+        used2,
+        left1: maxDays1 - used1 + initMinDays1,
+        left2: maxDays2 - used2 + initMinDays2,
+        averageIncome: combined
+    };
+}

@@ -7,7 +7,13 @@ import {
     barnIdag, barnPlanerat, hasCalculated, defaultPreferences,
     förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar
 } from './config.js';
-import { beräknaDaglig, beräknaBarnbidrag, optimizeParentalLeave } from './calculations.js';
+import {
+    beräknaDaglig,
+    beräknaBarnbidrag,
+    optimizeParentalLeave,
+    calculateAverageIncome,
+    simulateTogetherStrategy
+} from './calculations.js';
 import { 
     updateProgress, setupToggleButtons, setupInfoBoxToggle, 
     generateParentSection, setupStrategyToggle, updateMonthlyBox 
@@ -315,11 +321,57 @@ function handleOptimize() {
             result.arbetsInkomst2
         );
 
+        updateStrategyComparison(preferences, inputs);
+
 
     } catch (error) {
         console.error('Optimization failed:', error);
         document.getElementById('leave-duration-error').style.display = 'block';
-        document.getElementById('leave-duration-error').textContent = 
+        document.getElementById('leave-duration-error').textContent =
             'Fel vid optimering: Kontrollera indata och försök igen.';
     }
+}
+
+function updateStrategyComparison(preferences, inputs) {
+    const container = document.getElementById('strategy-comparison');
+    const tbody = document.querySelector('#comparison-table tbody');
+    if (!container || !tbody) return;
+
+    tbody.innerHTML = '';
+    container.style.display = 'block';
+
+    const strategies = [
+        { name: 'Längre ledighet', value: 'longer' },
+        { name: 'Maximera inkomst', value: 'maximize' },
+        { name: 'Tillsammans', value: 'together' }
+    ];
+
+    strategies.forEach(strat => {
+        let summary;
+        if (strat.value === 'together') {
+            summary = simulateTogetherStrategy(preferences, inputs);
+        } else {
+            const res = optimizeParentalLeave({ ...preferences, strategy: strat.value }, inputs);
+            const avg = calculateAverageIncome(res, inputs);
+            const initIncome1 = inputs.vårdnad === 'ensam' ? 390 : 195;
+            const initMin1 = inputs.vårdnad === 'ensam' ? 90 : 45;
+            const initIncome2 = inputs.vårdnad === 'ensam' ? 0 : 195;
+            const initMin2 = inputs.vårdnad === 'ensam' ? 0 : 45;
+            summary = {
+                used1: initIncome1 + initMin1 - (res.förälder1InkomstDagar + res.förälder1MinDagar),
+                used2: initIncome2 + initMin2 - (res.förälder2InkomstDagar + res.förälder2MinDagar),
+                left1: res.förälder1InkomstDagar + res.förälder1MinDagar,
+                left2: res.förälder2InkomstDagar + res.förälder2MinDagar,
+                averageIncome: avg
+            };
+        }
+
+        const row = document.createElement('tr');
+        row.innerHTML =
+            `<td>${strat.name}</td>` +
+            `<td>${summary.used1} / ${summary.left1}</td>` +
+            `<td>${summary.used2} / ${summary.left2}</td>` +
+            `<td>${summary.averageIncome.toLocaleString()} kr</td>`;
+        tbody.appendChild(row);
+    });
 }
