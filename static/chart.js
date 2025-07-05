@@ -10,7 +10,7 @@ import { barnbidragPerPerson, tilläggPerPerson } from './config.js';
  * @param {Object} plan1 - Plan for Parent 1
  * @param {Object} plan2 - Plan for Parent 2
  * @param {Object} plan1NoExtra - Plan 1 without extra
- * @param {Object} plan2NoExtra - Plan 2 without extra
+ * @param {Object} plan2NoExtra - Plan 1 without extra
  * @param {Object} plan1MinDagar - Plan 1 minimum days
  * @param {Object} plan2MinDagar - Plan 2 minimum days
  * @param {Object} plan1Overlap - Overlap plan
@@ -43,10 +43,22 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
     const canvas = document.createElement('canvas');
     canvas.id = 'gantt-canvas';
     canvas.style.width = '100%';
-    canvas.style.maxWidth = '1200px'; // Increased to accommodate more ticks
+    canvas.style.maxWidth = '1200px';
     canvas.style.height = '400px';
-    const summaryDiv = document.createElement('div');
-    summaryDiv.id = 'chart-summary';
+
+    // Create summary box
+    const summaryBox = document.createElement('div');
+    summaryBox.id = 'summary-box';
+    summaryBox.style.marginTop = '15px';
+    summaryBox.style.padding = '10px';
+    summaryBox.style.border = '1px solid #ccc';
+    summaryBox.style.borderRadius = '5px';
+    summaryBox.style.fontFamily = 'Inter, sans-serif';
+    summaryBox.style.backgroundColor = '#f9f9f9';
+    summaryBox.style.height = '300px'; // Fixed height to fit all data
+    summaryBox.style.minHeight = '300px';
+    summaryBox.style.overflowY = 'auto'; // Scroll if content overflows
+    summaryBox.innerHTML = '<p>Hovra över en punkt för att se detaljer.</p>';
 
     const period1Weeks = plan1.weeks || 0;
     const period1NoExtraWeeks = plan1NoExtra.weeks || 0;
@@ -65,7 +77,7 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
         console.warn("Invalid barnDatum provided, using current date:", barnDatum);
         startDate = new Date();
     }
-    startDate.setHours(0, 0, 0, 0); // Normalize timezone
+    startDate.setHours(0, 0, 0, 0);
 
     const period1Start = new Date(startDate);
     let period1TotalWeeks = period1Weeks;
@@ -85,13 +97,11 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
 
     const totalaWeeks = Math.max(period1TotalWeeks + period2Weeks, 60);
 
-    // Generate week labels and month labels
     const weekLabels = [];
     const monthLabels = new Array(totalaWeeks).fill('');
     const date = new Date(startDate);
     const weekStartDates = [];
 
-    // Generate week labels and store week start dates
     for (let i = 0; i < totalaWeeks; i++) {
         const weekStart = new Date(date);
         weekStart.setHours(0, 0, 0, 0);
@@ -104,19 +114,16 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
         date.setDate(date.getDate() + 7);
     }
 
-    // Assign month labels to the week containing the 1st of each month
     let currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-    currentMonth.setHours(0, 0, 0, 0); // Normalize timezone
+    currentMonth.setHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + totalaWeeks * 7 + 7);
     endDate.setHours(0, 0, 0, 0);
-    console.log(`startDate: ${startDate.toISOString()}, endDate: ${endDate.toISOString()}, totalaWeeks: ${totalaWeeks}`);
-    
+
     while (currentMonth <= endDate) {
         const monthLabel = currentMonth.toLocaleString('sv-SE', { month: 'long', year: 'numeric' });
         const monthFirst = new Date(currentMonth);
         monthFirst.setHours(0, 0, 0, 0);
-        // Find the week that contains the 1st of the month or starts immediately after
         let closestWeekIndex = 0;
         for (let i = 0; i < weekStartDates.length; i++) {
             const weekStart = weekStartDates[i];
@@ -130,25 +137,19 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
                 closestWeekIndex = i;
             }
         }
-        // Ensure the label is not overwritten by a later month
         if (!monthLabels[closestWeekIndex]) {
             monthLabels[closestWeekIndex] = monthLabel;
         }
-        console.log(`Month ${monthLabel} assigned to week ${closestWeekIndex}: ${weekLabels[closestWeekIndex]}, 1st: ${monthFirst.toISOString()}`);
-        // Move to the next month
         currentMonth.setMonth(currentMonth.getMonth() + 1);
     }
 
-    // Reassign skipped months to the nearest previous non-empty week
-    const criticalWeeks = [13, 17, 21, 35, 39, 43, 47]; // Weeks for missing months
+    const criticalWeeks = [13, 17, 21, 35, 39, 43, 47];
     for (const week of criticalWeeks) {
         if (monthLabels[week] && !monthLabels.slice(0, week).includes(monthLabels[week])) {
-            // Find the nearest previous week with no label
             for (let i = week - 1; i >= 0; i--) {
                 if (!monthLabels[i]) {
                     monthLabels[i] = monthLabels[week];
-                    monthLabels[week] = ''; // Clear original to avoid duplication
-                    console.log(`Reassigned ${monthLabels[i]} from week ${week} to week ${i}: ${weekLabels[i]}`);
+                    monthLabels[week] = '';
                     break;
                 }
             }
@@ -320,7 +321,7 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
     messageDiv.innerHTML = meddelandeHtml;
     ganttChart.appendChild(messageDiv);
     ganttChart.appendChild(canvas);
-    ganttChart.appendChild(summaryDiv);
+    ganttChart.appendChild(summaryBox);
 
     const dragPlugin = {
         id: 'dragPlugin',
@@ -339,13 +340,6 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
             });
 
             chart.canvas.addEventListener('mousemove', (e) => {
-                const points = chart.getElementsAtEventForMode(
-                    e,
-                    'nearest',
-                    { intersect: false },
-                    false
-                );
-                if (points.length) updateSummaryBox(points[0].index);
                 if (chart.dragging) {
                     const deltaX = (e.clientX - chart.dragStartX) / chart.scales.x.width * (chart.scales.x.max - chart.scales.x.min);
                     const newX = Math.round(inkomstData[chart.dragging.index].x + deltaX);
@@ -393,7 +387,6 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
             });
 
             chart.canvas.addEventListener('mouseleave', () => {
-                summaryDiv.textContent = '';
                 if (chart.dragging) {
                     chart.dragging = null;
                     updateMessage();
@@ -417,7 +410,7 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
 
         if (transferredDays > 0) {
             newMeddelandeHtml += `
-                <span style="color: #f28c38;">Överförde ${transferredDays} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>
+                <span style="color: #f28c38;">Överförde ${transferredDays.toLocaleString()} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>
             `;
         }
 
@@ -447,66 +440,71 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
         messageDiv.innerHTML = newMeddelandeHtml;
     }
 
-    function updateSummaryBox(index) {
+    // Reusable function to format tooltip/summary data
+    function formatSummaryData(index) {
+        if (index == null || !inkomstData[index]) {
+            return '<p>Hovra över en punkt för att se detaljer.</p>';
+        }
         const data = inkomstData[index];
-        if (!data) {
-            summaryDiv.textContent = '';
-            return;
-        }
-        let html = `<strong>${weekLabels[index]}</strong><br>` +
-            `Period: ${data.periodLabel}<br>` +
-            `Kombinerad: ${data.y.toLocaleString()} kr/månad<br>` +
-            `Förälder 1: ${data.förälder1Inkomst.toLocaleString()} kr/månad<br>` +
-            `&nbsp; Föräldrapenning: ${data.förälder1Components.fp.toLocaleString()} kr/månad<br>` +
-            `&nbsp; Föräldralön: ${data.förälder1Components.extra.toLocaleString()} kr/månad<br>` +
-            `&nbsp; Barnbidrag: ${data.förälder1Components.barnbidrag.toLocaleString()} kr/månad<br>` +
-            `&nbsp; Flerbarnstillägg: ${data.förälder1Components.tillägg.toLocaleString()} kr/månad`;
+        const weekLabel = weekLabels[index] || 'Okänd vecka';
+        let html = `<strong>${weekLabel}</strong><br>`;
+        html += `Period: ${data.periodLabel || 'Okänd period'}<br>`;
+        html += `Kombinerad: ${data.y.toLocaleString()} kr/månad<br>`;
+        html += `<strong>Förälder 1</strong>: ${data.förälder1Inkomst.toLocaleString()} kr/månad<br>`;
+        html += `  Föräldrapenning: ${data.förälder1Components.fp.toLocaleString()} kr/månad<br>`;
+        html += `  Föräldralön: ${data.förälder1Components.extra.toLocaleString()} kr/månad<br>`;
+        html += `  Barnbidrag: ${data.förälder1Components.barnbidrag.toLocaleString()} kr/månad<br>`;
+        html += `  Flerbarnstillägg: ${data.förälder1Components.tillägg.toLocaleString()} kr/månad<br>`;
         if (vårdnad !== 'ensam') {
-            html += `<br>Förälder 2: ${data.förälder2Inkomst.toLocaleString()} kr/månad<br>` +
-                `&nbsp; Föräldrapenning: ${data.förälder2Components.fp.toLocaleString()} kr/månad<br>` +
-                `&nbsp; Föräldralön: ${data.förälder2Components.extra.toLocaleString()} kr/månad<br>` +
-                `&nbsp; Barnbidrag: ${data.förälder2Components.barnbidrag.toLocaleString()} kr/månad<br>` +
-                `&nbsp; Flerbarnstillägg: ${data.förälder2Components.tillägg.toLocaleString()} kr/månad`;
+            html += `<strong>Förälder 2</strong>: ${data.förälder2Inkomst.toLocaleString()} kr/månad<br>`;
+            html += `  Föräldrapenning: ${data.förälder2Components.fp.toLocaleString()} kr/månad<br>`;
+            html += `  Föräldralön: ${data.förälder2Components.extra.toLocaleString()} kr/månad<br>`;
+            html += `  Barnbidrag: ${data.förälder2Components.barnbidrag.toLocaleString()} kr/månad<br>`;
+            html += `  Flerbarnstillägg: ${data.förälder2Components.tillägg.toLocaleString()} kr/månad`;
         }
-        summaryDiv.innerHTML = html;
+        return html;
     }
+
+    // Custom plugin for summary box updates
+    const summaryPlugin = {
+        id: 'summaryPlugin',
+        afterInit: (chart) => {
+            let lastHoveredIndex = null;
+            chart.canvas.addEventListener('mousemove', (e) => {
+                const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
+                if (points.length) {
+                    const point = points[0];
+                    lastHoveredIndex = point.index;
+                    summaryBox.innerHTML = formatSummaryData(lastHoveredIndex);
+                }
+            });
+        }
+    };
 
     const ctx = canvas.getContext('2d');
     new Chart(ctx, {
         type: 'line',
         data: {
-            datasets: [
-                {
-                    label: 'Kombinerad Inkomst (kr/månad)',
-                    data: inkomstData,
-                    borderWidth: 2,
-                    fill: false,
-                    pointRadius: inkomstData.map((_, index) => draggablePoints.some(p => p.index === index) ? 6 : 4),
-                    pointHoverRadius: inkomstData.map((_, index) => draggablePoints.some(p => p.index === index) ? 8 : 6),
-                    segment: {
-                        borderColor: ctx => {
-                            const x = ctx.p0.parsed.x;
-                            if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
-                            if (x < period1TotalWeeks) {
-                                if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-                                return '#28a745';
-                            }
-                            if (x < period1TotalWeeks + period2Weeks) return '#007bff';
-                            return 'red';
-                        },
-                        backgroundColor: ctx => {
-                            const x = ctx.p0.parsed.x;
-                            if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
-                            if (x < period1TotalWeeks) {
-                                if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-                                return '#28a745';
-                            }
-                            if (x < period1TotalWeeks + period2Weeks) return '#007bff';
-                            return 'red';
+            datasets: [{
+                label: 'Kombinerad Inkomst (kr/månad)',
+                data: inkomstData,
+                borderWidth: 2,
+                fill: false,
+                pointRadius: inkomstData.map((_, index) => draggablePoints.some(p => p.index === index) ? 6 : 4),
+                pointHoverRadius: inkomstData.map((_, index) => draggablePoints.some(p => p.index === index) ? 8 : 6),
+                segment: {
+                    borderColor: ctx => {
+                        const x = ctx.p0.parsed.x;
+                        if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
+                        if (x < period1TotalWeeks) {
+                            if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
+                            return '#28a745';
                         }
+                        if (x < period1TotalWeeks + period2Weeks) return '#007bff';
+                        return 'red';
                     },
-                    pointBackgroundColor: inkomstData.map(data => {
-                        const x = data.x;
+                    backgroundColor: ctx => {
+                        const x = ctx.p0.parsed.x;
                         if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
                         if (x < period1TotalWeeks) {
                             if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
@@ -514,19 +512,29 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
                         }
                         if (x < period1TotalWeeks + period2Weeks) return '#007bff';
                         return 'red';
-                    }),
-                    pointBorderColor: inkomstData.map(data => {
-                        const x = data.x;
-                        if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
-                        if (x < period1TotalWeeks) {
-                            if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-                            return '#28a745';
-                        }
-                        if (x < period1TotalWeeks + period2Weeks) return '#007bff';
-                        return 'red';
-                    })
-                }
-            ]
+                    }
+                },
+                pointBackgroundColor: inkomstData.map(data => {
+                    const x = data.x;
+                    if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
+                    if (x < period1TotalWeeks) {
+                        if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
+                        return '#28a745';
+                    }
+                    if (x < period1TotalWeeks + period2Weeks) return '#007bff';
+                    return 'red';
+                }),
+                pointBorderColor: inkomstData.map(data => {
+                    const x = data.x;
+                    if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
+                    if (x < period1TotalWeeks) {
+                        if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
+                        return '#28a745';
+                    }
+                    if (x < period1TotalWeeks + period2Weeks) return '#007bff';
+                    return 'red';
+                })
+            }]
         },
         options: {
             scales: {
@@ -536,15 +544,13 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
                     max: totalaWeeks - 1,
                     ticks: {
                         stepSize: 1,
-                        autoSkip: false, // Force all ticks to render
-                        maxTicksLimit: 60, // Allow up to 60 ticks
+                        autoSkip: false,
+                        maxTicksLimit: 60,
                         callback: function(value) {
-                            console.log(`Tick callback: value=${value}, monthLabels[${value}]=${monthLabels[value] || 'undefined'}`);
                             return monthLabels[value] || '';
                         },
                         font: function(context) {
                             const value = context?.tick?.value;
-                            console.log(`Font callback: value=${value}, label=${context?.tick?.label || 'undefined'}`);
                             return {
                                 size: 12,
                                 weight: typeof value === 'number' && value >= 0 && value < monthLabels.length && monthLabels[value] ? 'bold' : 'normal'
@@ -580,10 +586,10 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
                     }
                 },
                 tooltip: {
-                    enabled: false
+                    enabled: false // Disable default tooltip
                 }
             }
         },
-        plugins: [dragPlugin]
+        plugins: [dragPlugin, summaryPlugin]
     });
 }
