@@ -42,17 +42,17 @@ export function setupToggleButtons(groupId, inputId, callback = null) {
 /**
  * Set up toggle for info boxes
  */
+function toggleInfoBox(e) {
+    const box = e.currentTarget.closest('.info-box');
+    if (box) box.classList.toggle('open');
+}
+
 export function setupInfoBoxToggle() {
     const infoHeaders = document.querySelectorAll('.info-header');
     infoHeaders.forEach(header => {
         header.removeEventListener('click', toggleInfoBox);
         header.addEventListener('click', toggleInfoBox);
     });
-
-    function toggleInfoBox(e) {
-        const box = e.currentTarget.closest('.info-box');
-        if (box) box.classList.toggle('open');
-    }
 }
 
 /**

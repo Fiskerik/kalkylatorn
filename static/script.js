@@ -56,24 +56,24 @@ function setupToggleButtons(groupId, inputId, callback = null) {
     });
 }
 
+function handleInfoBoxClick(e) {
+    const header = e.target.closest('.info-header');
+    if (header) {
+        const box = header.closest('.info-box');
+        const content = header.nextElementSibling;
+        const arrow = header.querySelector('.info-arrow');
+        if (box && content && arrow) {
+            box.classList.toggle('open');
+            content.classList.toggle('open');
+            arrow.classList.toggle('open');
+        }
+    }
+}
+
 function setupInfoBoxToggle() {
     // Remove existing listener to prevent duplicates
     document.removeEventListener('click', handleInfoBoxClick);
     document.addEventListener('click', handleInfoBoxClick);
-
-    function handleInfoBoxClick(e) {
-        const header = e.target.closest('.info-header');
-        if (header) {
-            const box = header.closest('.info-box');
-            const content = header.nextElementSibling;
-            const arrow = header.querySelector('.info-arrow');
-            if (box && content && arrow) {
-                box.classList.toggle('open');
-                content.classList.toggle('open');
-                arrow.classList.toggle('open');
-            }
-        }
-    }
 }
 
 function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, tillägg = 0) {
