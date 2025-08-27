@@ -40,8 +40,8 @@ function initializeForm() {
     // Setup toggle buttons for all groups
     setupToggleButtons('vårdnad-group', 'vårdnad', handleVårdnadChange);
     setupToggleButtons('partner-group', 'beräkna-partner', handlePartnerChange);
-    setupToggleButtons('barn-tidigare-group', 'barn-tidigare');
-    setupToggleButtons('barn-planerade-group', 'barn-planerade');
+    setupToggleButtons('barn-tidigare-group', 'barn-tidigare', () => updateProgress(4));
+    setupToggleButtons('barn-planerade-group', 'barn-planerade', () => updateProgress(5));
     setupToggleButtons('avtal-group-1', 'har-avtal-1');
     setupToggleButtons('avtal-group-2', 'har-avtal-2');
     setupStrategyToggle();
@@ -56,12 +56,18 @@ function initializeForm() {
 function setupEventListeners() {
     const form = document.getElementById('calc-form');
     const optimizeBtn = document.getElementById('optimize-btn');
+    const inkomst1Input = document.getElementById('inkomst1');
+    const inkomst2Input = document.getElementById('inkomst2');
 
     // Form submission
     form.addEventListener('submit', handleFormSubmit);
 
     // Optimization button
     optimizeBtn.addEventListener('click', handleOptimize);
+
+    // Income input listeners
+    inkomst1Input.addEventListener('input', handleInkomst1Change);
+    inkomst2Input.addEventListener('input', handleInkomst2Change);
 
     // Dropdown listeners for uttag
     setupDropdownListeners();
@@ -76,6 +82,7 @@ function handleVårdnadChange(value) {
     const inkomstBlock2 = document.getElementById('inkomst-block-2');
     const avtalQuestion2 = document.getElementById('avtal-question-2');
     const partnerLedigTid = document.getElementById('partner-ledig-tid');
+    const step6 = document.querySelector('.step-6');
 
     if (value === 'ensam') {
         partnerQuestion.style.display = 'none';
@@ -83,12 +90,15 @@ function handleVårdnadChange(value) {
         avtalQuestion2.style.display = 'none';
         partnerLedigTid.style.display = 'none';
         document.getElementById('beräkna-partner').value = 'nej';
+        if (step6) step6.style.display = 'none';
         updateProgress(3); // Skip partner question
     } else {
         partnerQuestion.style.display = 'block';
+        if (step6) step6.style.display = 'block';
         updateProgress(2);
     }
 }
+
 
 /**
  * Handle partner calculation change
@@ -107,6 +117,34 @@ function handlePartnerChange(value) {
         inkomstBlock2.style.display = 'none';
         avtalQuestion2.style.display = 'none';
         parentLedigTid.style.display = 'none';
+    }
+
+    updateProgress(3);
+}
+
+/**
+ * Handle first income field change
+ */
+function handleInkomst1Change() {
+    const inkomst1 = document.getElementById('inkomst1').value;
+    if (inkomst1 !== '') {
+        const vårdnadValue = document.getElementById('vårdnad').value;
+        const partnerValue = document.getElementById('beräkna-partner').value;
+        if (vårdnadValue === 'gemensam' && partnerValue === 'ja') {
+            updateProgress(6);
+        } else {
+            updateProgress(7);
+        }
+    }
+}
+
+/**
+ * Handle second income field change
+ */
+function handleInkomst2Change() {
+    const inkomst2 = document.getElementById('inkomst2').value;
+    if (inkomst2 !== '') {
+        updateProgress(7);
     }
 }
 
@@ -171,7 +209,7 @@ function handleFormSubmit(e) {
     document.getElementById('strategy-group').style.display = 'block';
     document.getElementById('preferences-section').style.display = 'block';
     document.getElementById('optimize-btn').style.display = 'block';
-    updateProgress(8);
+    updateProgress(7);
 
     // Reinitialize info box toggles for dynamically added content
     setupInfoBoxToggle();
@@ -225,6 +263,7 @@ function setupDropdownListeners() {
  * Handle optimization button click
  */
 function handleOptimize() {
+    updateProgress(8);
     const barnDatumInput = document.getElementById('barn-datum');
     const ledigTid1Input = document.getElementById('ledig-tid-5823');
     const ledigTid2Input = document.getElementById('ledig-tid-2');
