@@ -48,6 +48,9 @@ function setupEventListeners() {
 
     // Dropdown listeners for uttag
     setupDropdownListeners();
+
+    // Leave distribution slider
+    setupLeaveSlider();
 }
 
 
@@ -169,7 +172,6 @@ function handleOptimize() {
     updateProgress(8);
     const barnDatumInput = document.getElementById('barn-datum');
     const ledigTid1Input = document.getElementById('ledig-tid-5823');
-    const ledigTid2Input = document.getElementById('ledig-tid-2');
     const minInkomstInput = document.getElementById('min-inkomst');
     const strategyInput = document.getElementById('strategy');
 
@@ -182,8 +184,10 @@ function handleOptimize() {
     }
 
     const barnDatum = barnDatumInput.value || '2025-05-01';
-    const ledigTid1 = parseFloat(ledigTid1Input.value) || 6;
-    const ledigTid2 = window.appState.beräknaPartner === 'ja' && ledigTid2Input ? parseFloat(ledigTid2Input.value) || 0 : 0;
+    const totalMonths = parseFloat(ledigTid1Input.value) || 0;
+    const slider = document.getElementById('leave-slider');
+    const ledigTid1 = slider ? parseFloat(slider.value) || 0 : 0;
+    const ledigTid2 = Math.max(totalMonths - ledigTid1, 0);
     const minInkomst = parseInt(minInkomstInput.value) || 10000;
     const strategy = strategyInput.value || 'longer';
     const deltid = defaultPreferences.deltid; // From config, could be made dynamic
@@ -281,4 +285,38 @@ function handleOptimize() {
         document.getElementById('leave-duration-error').textContent = 
             'Fel vid optimering: Kontrollera indata och försök igen.';
     }
+}
+
+function setupLeaveSlider() {
+    const totalInput = document.getElementById('ledig-tid-5823');
+    const slider = document.getElementById('leave-slider');
+    const container = document.getElementById('leave-slider-container');
+    if (!totalInput || !slider || !container) return;
+
+    container.style.display = 'none';
+
+    totalInput.addEventListener('input', () => {
+        const total = parseInt(totalInput.value) || 0;
+        slider.max = total;
+        const half = Math.floor(total / 2);
+        slider.value = half;
+        updateLeaveDisplay(slider, total);
+        container.style.display = total > 0 ? 'block' : 'none';
+    });
+
+    slider.addEventListener('input', () => {
+        const total = parseInt(totalInput.value) || 0;
+        updateLeaveDisplay(slider, total);
+    });
+}
+
+function updateLeaveDisplay(slider, total) {
+    const p1 = parseInt(slider.value) || 0;
+    const p2 = Math.max(total - p1, 0);
+    const p1Elem = document.getElementById('p1-months');
+    const p2Elem = document.getElementById('p2-months');
+    if (p1Elem) p1Elem.textContent = p1;
+    if (p2Elem) p2Elem.textContent = p2;
+    const percent = total > 0 ? (p1 / total) * 100 : 0;
+    slider.style.background = `linear-gradient(to right, green 0%, green ${percent}%, blue ${percent}%, blue 100%)`;
 }
