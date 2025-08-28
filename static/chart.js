@@ -474,23 +474,38 @@ export function renderGanttChart(
         }
         const data = inkomstData[index];
         const weekLabel = weekLabels[index] || 'Okänd vecka';
-        let html = `<strong>${weekLabel}</strong><br>`;
-        html += `Period: ${data.periodLabel || 'Okänd period'}<br>`;
-        html += `Kombinerad: <span class="combined-income">${data.y.toLocaleString()} kr/månad</span><br>`;
-        html += `<strong>Förälder 1</strong>: ${data.förälder1Inkomst.toLocaleString()} kr/månad<br>`;
-        html += `  Föräldrapenning: ${data.förälder1Components.fp.toLocaleString()} kr/månad<br>`;
-        html += `  Föräldralön: ${data.förälder1Components.extra.toLocaleString()} kr/månad<br>`;
-        html += `  Barnbidrag: ${data.förälder1Components.barnbidrag.toLocaleString()} kr/månad<br>`;
-        html += `  Flerbarnstillägg: ${data.förälder1Components.tillägg.toLocaleString()} kr/månad<br>`;
+        let html =
+            `<div class="summary-section"><strong>${weekLabel}</strong><br>` +
+            `Period: ${data.periodLabel || 'Okänd period'}</div>`;
+        html +=
+            `<div class="summary-section">Total inkomst: ` +
+            `<span class="combined-income">${data.y.toLocaleString()} kr/månad</span></div>`;
+        html +=
+            `<div class="summary-section"><strong>Förälder 1</strong>: ` +
+            `${data.förälder1Inkomst.toLocaleString()} kr/månad<br>`;
+        html += `  Föräldrapenning: ` +
+            `${data.förälder1Components.fp.toLocaleString()} kr/månad<br>`;
+        html += `  Föräldralön: ` +
+            `${data.förälder1Components.extra.toLocaleString()} kr/månad<br>`;
+        html += `  Barnbidrag: ` +
+            `${data.förälder1Components.barnbidrag.toLocaleString()} kr/månad<br>`;
+        html += `  Flerbarnstillägg: ` +
+            `${data.förälder1Components.tillägg.toLocaleString()} kr/månad</div>`;
         const showParent2 = vårdnad !== 'ensam' && beräknaPartner === 'ja';
         if (showParent2) {
-            html += `<strong>Förälder 2</strong>: ${data.förälder2Inkomst.toLocaleString()} kr/månad<br>`;
-            html += `  Föräldrapenning: ${data.förälder2Components.fp.toLocaleString()} kr/månad<br>`;
-            html += `  Föräldralön: ${data.förälder2Components.extra.toLocaleString()} kr/månad<br>`;
-            html += `  Barnbidrag: ${data.förälder2Components.barnbidrag.toLocaleString()} kr/månad<br>`;
-            html += `  Flerbarnstillägg: ${data.förälder2Components.tillägg.toLocaleString()} kr/månad<br>`;
+            html +=
+                `<div class="summary-section"><strong>Förälder 2</strong>: ` +
+                `${data.förälder2Inkomst.toLocaleString()} kr/månad<br>`;
+            html += `  Föräldrapenning: ` +
+                `${data.förälder2Components.fp.toLocaleString()} kr/månad<br>`;
+            html += `  Föräldralön: ` +
+                `${data.förälder2Components.extra.toLocaleString()} kr/månad<br>`;
+            html += `  Barnbidrag: ` +
+                `${data.förälder2Components.barnbidrag.toLocaleString()} kr/månad<br>`;
+            html += `  Flerbarnstillägg: ` +
+                `${data.förälder2Components.tillägg.toLocaleString()} kr/månad</div>`;
         }
-        return html + '<br>';
+        return html;
     }
 
     // Custom plugin for summary box updates
