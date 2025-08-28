@@ -2,8 +2,8 @@
  * index.js - Main initialization and form handling for the Föräldrapenningkalkylator
  * Sets up event listeners and orchestrates calculations, UI, and chart rendering.
  */
-import { 
-    vårdnad, beräknaPartner, barnbidragPerPerson, tilläggPerPerson, 
+import {
+    vårdnad, beräknaPartner, setBarnBenefits,
     barnIdag, barnPlanerat, hasCalculated, defaultPreferences,
     förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar
 } from './config.js';
@@ -82,6 +82,7 @@ function handleFormSubmit(e) {
     // Calculate child benefits
     const totalBarn = barnTidigare + barnPlanerade;
     const barnbidragResult = beräknaBarnbidrag(totalBarn, vårdnad === 'ensam');
+    setBarnBenefits(barnbidragResult.barnbidrag, barnbidragResult.tillägg);
 
     // Calculate daily rates and parental supplement
     const dag1 = beräknaDaglig(inkomst1);
@@ -291,6 +292,8 @@ function setupLeaveSlider() {
     const totalInput = document.getElementById('ledig-tid-5823');
     const slider = document.getElementById('leave-slider');
     const container = document.getElementById('leave-slider-container');
+    const minLabel = document.getElementById('slider-start');
+    const maxLabel = document.getElementById('slider-end');
     if (!totalInput || !slider || !container) return;
 
     // Sync slider state with total leave and toggle visibility
@@ -300,6 +303,8 @@ function setupLeaveSlider() {
         const half = Math.floor(total / 2);
         slider.value = half;
         updateLeaveDisplay(slider, total);
+        if (minLabel) minLabel.textContent = '0';
+        if (maxLabel) maxLabel.textContent = total;
         container.style.display = total > 0 ? 'block' : 'none';
     };
 
@@ -322,5 +327,17 @@ function updateLeaveDisplay(slider, total) {
     if (p1Elem) p1Elem.textContent = p1;
     if (p2Elem) p2Elem.textContent = p2;
     const percent = total > 0 ? (p1 / total) * 100 : 0;
-    slider.style.background = `linear-gradient(to right, green 0%, green ${percent}%, blue ${percent}%, blue 100%)`;
+    const green = '#28a745';
+    const blue = '#007bff';
+    const base = `linear-gradient(to right, ${green} 0%, ${green} ${percent}%, ${blue} ${percent}%, ${blue} 100%)`;
+    if (total > 2) {
+        const step = 100 / total;
+        const grid =
+            `repeating-linear-gradient(to right, transparent, transparent ` +
+            `calc(${step}% - 1px), rgba(255,255,255,0.7) calc(${step}% - 1px), ` +
+            `rgba(255,255,255,0.7) ${step}%)`;
+        slider.style.background = `${grid}, ${base}`;
+    } else {
+        slider.style.background = base;
+    }
 }

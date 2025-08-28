@@ -19,8 +19,18 @@ export const förälder1MinDagar = 45; // Minimum reserved days for Parent 1
 export const förälder2MinDagar = 45; // Minimum reserved days for Parent 2
 
 // Benefits
-export const barnbidragPerPerson = 625; // Child allowance per person (SEK/month)
-export const tilläggPerPerson = 0; // Additional allowance per person (SEK/month)
+export let barnbidragPerPerson = 625; // Child allowance per person (SEK/month)
+export let tilläggPerPerson = 0; // Additional allowance per person (SEK/month)
+
+/**
+ * Update child benefit and supplement amounts per parent.
+ * @param {number} bidrag - Child allowance per parent
+ * @param {number} tillägg - Flerbarnstillägg per parent
+ */
+export function setBarnBenefits(bidrag, tillägg) {
+    barnbidragPerPerson = bidrag;
+    tilläggPerPerson = tillägg;
+}
 
 // Constants
 export const INCOME_CAP = 1250; // SEK/day max parental benefit
