@@ -26,7 +26,7 @@
         <h1>Föräldrapenningkalkylator</h1>
         
         <form id="calc-form">
-            <div class="form-section">
+            <div class="form-section wizard-step">
                 <label for="vårdnad">Har du Gemensam eller Ensam vårdnad?</label>
                 <div class="button-group" id="vårdnad-group">
                     <button type="button" class="vårdnad-btn toggle-btn" data-value="gemensam">Gemensam vårdnad</button>
@@ -36,7 +36,7 @@
                 <p id="vårdnad-info" class="info-text"></p>
             </div>
 
-            <div id="partner-question" style="display:none;" class="form-section">
+            <div id="partner-question" class="form-section wizard-step">
                 <label for="beräkna-partner">Vill du beräkna föräldrapenning för din partner också?</label>
                 <div class="button-group" id="partner-group">
                     <button type="button" class="toggle-btn" data-value="ja">Ja</button>
@@ -45,7 +45,7 @@
                 <input type="hidden" name="beräkna_partner" id="beräkna-partner" value="">
             </div>
 
-            <div class="form-section">
+            <div class="form-section wizard-step">
                 <label>Hur många barn har du/ni sedan tidigare?</label>
                 <div class="button-group barnval" id="barn-tidigare-group">
                     <button type="button" class="toggle-btn" data-value="0">0</button>
@@ -59,7 +59,7 @@
                 <input type="hidden" id="barn-tidigare" value="0">
             </div>
               
-            <div class="form-section">
+            <div class="form-section wizard-step">
                 <label>Hur många fler barn planerar du/ni att få?</label>
                 <div class="button-group barnval" id="barn-planerade-group">
                     <button type="button" class="toggle-btn" data-value="1">1</button>
@@ -75,11 +75,11 @@
                 Vänligen välj både antal barn idag och antal barn du planerar att ha.
             </div>
 
-            <div class="form-section">
+            <div class="form-section wizard-step">
                 <label for="inkomst1">Vad är din månadsinkomst före skatt?</label>
                 <input type="number" name="inkomst1" id="inkomst1" placeholder="30000 kr" required>
             </div>
-            <div id="avtal-question-1" class="form-section">
+            <div id="avtal-question-1" class="form-section wizard-step">
                 <label for="har-avtal-1">Har du kollektivavtal?</label>
                 <div class="button-group" id="avtal-group-1">
                     <button type="button" class="toggle-btn" data-value="ja">Ja</button>
@@ -88,12 +88,12 @@
                 <input type="hidden" name="har_avtal_1" id="har-avtal-1" value="">
             </div>
 
-            <div id="inkomst-block-2" style="display:none;" class="form-section">
+            <div id="inkomst-block-2" class="form-section wizard-step">
                 <label for="inkomst2">Månadsinkomst förälder 2 (före skatt):</label>
                 <input type="number" name="inkomst2" id="inkomst2" placeholder="30000 kr">
             </div>
 
-            <div id="avtal-question-2" class="form-section" style="display: none;">
+            <div id="avtal-question-2" class="form-section wizard-step">
                 <label for="har-avtal-2">Har din partner kollektivavtal?</label>
                 <div class="button-group" id="avtal-group-2">
                     <button type="button" class="toggle-btn" data-value="ja">Ja</button>
@@ -101,8 +101,8 @@
                 </div>
                 <input type="hidden" name="har_avtal_2" id="har-avtal-2" value="">
             </div>
-            
-            <button type="submit" id="calculate-btn">Visa resultat</button>
+
+            <button type="submit" id="calculate-btn" class="hidden">Visa resultat</button>
         </form>
 
         <div id="result-block"></div>
@@ -208,6 +208,7 @@
     <script type="module" src="{{ url_for('static', filename='ui.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='chart.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='wizard.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
