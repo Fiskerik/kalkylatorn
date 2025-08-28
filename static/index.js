@@ -293,21 +293,25 @@ function setupLeaveSlider() {
     const container = document.getElementById('leave-slider-container');
     if (!totalInput || !slider || !container) return;
 
-    container.style.display = 'none';
-
-    totalInput.addEventListener('input', () => {
+    // Sync slider state with total leave and toggle visibility
+    const syncSlider = () => {
         const total = parseInt(totalInput.value) || 0;
         slider.max = total;
         const half = Math.floor(total / 2);
         slider.value = half;
         updateLeaveDisplay(slider, total);
         container.style.display = total > 0 ? 'block' : 'none';
-    });
+    };
+
+    totalInput.addEventListener('input', syncSlider);
+    totalInput.addEventListener('change', syncSlider);
 
     slider.addEventListener('input', () => {
         const total = parseInt(totalInput.value) || 0;
         updateLeaveDisplay(slider, total);
     });
+
+    syncSlider();
 }
 
 function updateLeaveDisplay(slider, total) {
