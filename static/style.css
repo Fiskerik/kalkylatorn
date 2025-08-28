@@ -37,8 +37,8 @@ h3 {
     transition: background-color 0.3s;
 }
 
-/* Undvik att alla .toggle-btn påverkas */
-.toggle-btn:not(.barnval .toggle-btn) {
+.button-group .toggle-btn {
+    width: auto;
     padding: 10px 20px;
 }
 
@@ -48,6 +48,7 @@ form {
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
+    position: relative;
 }
 
 label {
@@ -143,19 +144,6 @@ canvas {
     justify-content: center;
 }
 
-.button-group .toggle-btn {
-    width: 50px;
-    height: 50px;
-    padding: 0;
-    font-size: 18px;
-    text-align: center;
-    border-radius: 8px;
-    background-color: #e3e3e3;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
 
 .button-group .toggle-btn:hover {
     background-color: #d0d0d0;
@@ -178,8 +166,11 @@ canvas {
     color: #3bc9b2;
     font-weight: bold;
     cursor: pointer;
-    margin-bottom: 1rem;
-    align-self: flex-start;
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    width: auto;
+    margin: 0;
 }
 
 input[type="number"] {
@@ -370,6 +361,12 @@ input[type="number"] {
 
 .info-box.open .info-content {
     display: block;
+    text-align: left;
+}
+
+.combined-income {
+    color: #2e7d32;
+    font-weight: bold;
 }
 .days-split {
     margin-top: 1rem;
