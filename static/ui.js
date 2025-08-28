@@ -97,15 +97,16 @@ export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, till
  * @param {number} parentNum - Parent number (1 or 2)
  * @param {number} dag - Daily benefit rate
  * @param {number} extra - Parental supplement
- * @param {number} månadsinkomst - Monthly income
+ * @param {number} månadsinkomst - Monthly parental benefit
  * @param {number} dagar - Available days
  * @param {boolean} avtal - Has collective agreement
  * @param {number} barnbidrag - Child allowance
  * @param {number} tillägg - Additional child allowance
  * @param {boolean} ärEnsam - True if sole custody
+ * @param {number} inkomst - Reported salary
  * @returns {string} HTML section string
- */
-export function generateParentSection(parentNum, dag, extra, månadsinkomst, dagar, avtal, barnbidrag, tillägg, ärEnsam) {
+*/
+export function generateParentSection(parentNum, dag, extra, månadsinkomst, dagar, avtal, barnbidrag, tillägg, ärEnsam, inkomst) {
     const lagstanivådagar = Math.round(dagar * 0.23076923);
     const gemensamDetails = `
         <div class="benefit-details">
@@ -137,6 +138,10 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst, dag
                     </div>
                 </div>
                 <div class="benefit-card">
+                    <div class="benefit-title">Månadsinkomst</div>
+                    <div class="benefit-value-large">
+                        <span>${inkomst.toLocaleString()}</span><span class="unit">kr/månad</span>
+                    </div>
                     <div class="benefit-title">Preliminär föräldralön</div>
                     <div class="benefit-value-large">
                         <span>${extra.toLocaleString()}</span><span class="unit">kr/månad</span>

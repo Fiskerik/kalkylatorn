@@ -11,10 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
         partner: document.getElementById('partner-question'),
         barnIdag: document.querySelector('#barn-tidigare-group').closest('.wizard-step'),
         barnPlan: document.querySelector('#barn-planerade-group').closest('.wizard-step'),
-        inkomst1: document.getElementById('inkomst1').closest('.wizard-step'),
-        avtal1: document.getElementById('avtal-question-1'),
-        inkomst2: document.getElementById('inkomst-block-2'),
-        avtal2: document.getElementById('avtal-question-2')
+        inkomst1: document.getElementById('inkomst-avtal-1'),
+        inkomst2: document.getElementById('inkomst-block-2')
     };
 
     const stepSections = [
@@ -23,9 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sections.barnIdag,
         sections.barnPlan,
         sections.inkomst1,
-        sections.avtal1,
-        sections.inkomst2,
-        sections.avtal2
+        sections.inkomst2
     ];
 
     const idx = {
@@ -34,10 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
         barnIdag: 2,
         barnPlan: 3,
         inkomst1: 4,
-        avtal1: 5,
-        inkomst2: 6,
-        avtal2: 7,
-        calc: 8
+        inkomst2: 5,
+        calc: 6
     };
 
     const calculateBtn = document.getElementById('calculate-btn');
@@ -51,8 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function progressStepForIndex(i) {
         if (i === idx.calc) return 7;
         if (i <= idx.barnPlan) return i + 1;
-        if (i === idx.inkomst1 || i === idx.avtal1) return 5;
-        if (i === idx.inkomst2 || i === idx.avtal2) return 6;
+        if (i === idx.inkomst1) return 5;
+        if (i === idx.inkomst2) return 6;
         return 1;
     }
 
@@ -67,11 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateProgress(progressStepForIndex(currentIndex));
         backBtn.classList.toggle('hidden', history.length === 0);
 
-        const finalStep = (!partnerSelected && currentIndex === idx.avtal1) ||
-            (partnerSelected && currentIndex === idx.avtal2) ||
-            currentIndex === idx.calc;
-
-        if (finalStep) calculateBtn.classList.remove('hidden');
+        if (currentIndex === idx.calc) calculateBtn.classList.remove('hidden');
     }
 
     function goTo(nextIndex) {
@@ -136,27 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
         goTo(idx.inkomst1);
     });
 
-    const inkomst1Input = document.getElementById('inkomst1');
-    inkomst1Input.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && inkomst1Input.value !== '') {
-            e.preventDefault();
-            goTo(idx.avtal1);
-        }
-    });
-
     setupToggleButtons('avtal-group-1', 'har-avtal-1', () => {
         if (partnerSelected) {
             goTo(idx.inkomst2);
         } else {
             goTo(idx.calc);
-        }
-    });
-
-    const inkomst2Input = document.getElementById('inkomst2');
-    inkomst2Input.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && inkomst2Input.value !== '') {
-            e.preventDefault();
-            goTo(idx.avtal2);
         }
     });
 

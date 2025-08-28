@@ -92,19 +92,19 @@ function handleFormSubmit(e) {
 
     // Parent 1 results
     const månadsinkomst1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
-    resultHtml += generateParentSection(
-        1, dag1, extra1, månadsinkomst1, förälder1InkomstDagar, 
-        avtal1 === 'ja', barnbidragResult.barnbidrag, barnbidragResult.tillägg, 
-        vårdnad === 'ensam'
-    );
+        resultHtml += generateParentSection(
+            1, dag1, extra1, månadsinkomst1, förälder1InkomstDagar,
+            avtal1 === 'ja', barnbidragResult.barnbidrag, barnbidragResult.tillägg,
+            vårdnad === 'ensam', inkomst1
+        );
 
     // Parent 2 results (if applicable)
     if (vårdnad === 'gemensam' && beräknaPartner === 'ja') {
         const månadsinkomst2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
         resultHtml += generateParentSection(
-            2, dag2, extra2, månadsinkomst2, förälder2InkomstDagar, 
-            avtal2 === 'ja', barnbidragResult.barnbidrag, barnbidragResult.tillägg, 
-            false
+            2, dag2, extra2, månadsinkomst2, förälder2InkomstDagar,
+            avtal2 === 'ja', barnbidragResult.barnbidrag, barnbidragResult.tillägg,
+            false, inkomst2
         );
     }
 

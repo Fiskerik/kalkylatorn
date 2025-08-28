@@ -449,7 +449,7 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
         const weekLabel = weekLabels[index] || 'Okänd vecka';
         let html = `<strong>${weekLabel}</strong><br>`;
         html += `Period: ${data.periodLabel || 'Okänd period'}<br>`;
-        html += `Kombinerad: ${data.y.toLocaleString()} kr/månad<br>`;
+        html += `Kombinerad: <span class="combined-income">${data.y.toLocaleString()} kr/månad</span><br>`;
         html += `<strong>Förälder 1</strong>: ${data.förälder1Inkomst.toLocaleString()} kr/månad<br>`;
         html += `  Föräldrapenning: ${data.förälder1Components.fp.toLocaleString()} kr/månad<br>`;
         html += `  Föräldralön: ${data.förälder1Components.extra.toLocaleString()} kr/månad<br>`;
