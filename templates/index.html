@@ -7,7 +7,8 @@
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9u3+6MBX1Dz3+sqe1b9XQ1fYE2GbZl+FwXH7Br3yg6lZp6Y2U3g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 </head>
 <body>
@@ -26,7 +27,10 @@
         <h1>Föräldrapenningkalkylator</h1>
         
         <form id="calc-form">
+            <button type="button" id="back-btn" class="hidden back-btn">&larr; Tillbaka</button>
+
             <div class="form-section wizard-step">
+                <div class="question-icon"><i class="fa-solid fa-users"></i></div>
                 <label for="vårdnad">Har du Gemensam eller Ensam vårdnad?</label>
                 <div class="button-group" id="vårdnad-group">
                     <button type="button" class="vårdnad-btn toggle-btn" data-value="gemensam">Gemensam vårdnad</button>
@@ -37,6 +41,7 @@
             </div>
 
             <div id="partner-question" class="form-section wizard-step">
+                <div class="question-icon"><i class="fa-solid fa-user-plus"></i></div>
                 <label for="beräkna-partner">Vill du beräkna föräldrapenning för din partner också?</label>
                 <div class="button-group" id="partner-group">
                     <button type="button" class="toggle-btn" data-value="ja">Ja</button>
@@ -46,6 +51,7 @@
             </div>
 
             <div class="form-section wizard-step">
+                <div class="question-icon"><i class="fa-solid fa-child"></i></div>
                 <label>Hur många barn har du/ni sedan tidigare?</label>
                 <div class="button-group barnval" id="barn-tidigare-group">
                     <button type="button" class="toggle-btn" data-value="0">0</button>
@@ -58,8 +64,9 @@
                 </div>
                 <input type="hidden" id="barn-tidigare" value="0">
             </div>
-              
+
             <div class="form-section wizard-step">
+                <div class="question-icon"><i class="fa-solid fa-baby-carriage"></i></div>
                 <label>Hur många fler barn planerar du/ni att få?</label>
                 <div class="button-group barnval" id="barn-planerade-group">
                     <button type="button" class="toggle-btn" data-value="1">1</button>
@@ -76,10 +83,12 @@
             </div>
 
             <div class="form-section wizard-step">
+                <div class="question-icon"><i class="fa-solid fa-money-bill"></i></div>
                 <label for="inkomst1">Vad är din månadsinkomst före skatt?</label>
                 <input type="number" name="inkomst1" id="inkomst1" placeholder="30000 kr" required>
             </div>
             <div id="avtal-question-1" class="form-section wizard-step">
+                <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
                 <label for="har-avtal-1">Har du kollektivavtal?</label>
                 <div class="button-group" id="avtal-group-1">
                     <button type="button" class="toggle-btn" data-value="ja">Ja</button>
@@ -89,11 +98,13 @@
             </div>
 
             <div id="inkomst-block-2" class="form-section wizard-step">
+                <div class="question-icon"><i class="fa-solid fa-money-bill"></i></div>
                 <label for="inkomst2">Månadsinkomst förälder 2 (före skatt):</label>
                 <input type="number" name="inkomst2" id="inkomst2" placeholder="30000 kr">
             </div>
 
             <div id="avtal-question-2" class="form-section wizard-step">
+                <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
                 <label for="har-avtal-2">Har din partner kollektivavtal?</label>
                 <div class="button-group" id="avtal-group-2">
                     <button type="button" class="toggle-btn" data-value="ja">Ja</button>

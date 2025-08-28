@@ -2,7 +2,7 @@ import { updateProgress, setupToggleButtons } from './ui.js';
 
 /**
  * wizard.js - Sequential question wizard for the Föräldrapenningkalkylator
- * Presents one question at a time and updates the progress bar accordingly.
+ * Handles navigation between questions, progress bar updates and back navigation.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,84 +16,152 @@ document.addEventListener('DOMContentLoaded', () => {
         inkomst2: document.getElementById('inkomst-block-2'),
         avtal2: document.getElementById('avtal-question-2')
     };
+
+    const stepSections = [
+        sections.vardnad,
+        sections.partner,
+        sections.barnIdag,
+        sections.barnPlan,
+        sections.inkomst1,
+        sections.avtal1,
+        sections.inkomst2,
+        sections.avtal2
+    ];
+
+    const idx = {
+        vardnad: 0,
+        partner: 1,
+        barnIdag: 2,
+        barnPlan: 3,
+        inkomst1: 4,
+        avtal1: 5,
+        inkomst2: 6,
+        avtal2: 7,
+        calc: 8
+    };
+
     const calculateBtn = document.getElementById('calculate-btn');
+    const backBtn = document.getElementById('back-btn');
     const step6 = document.querySelector('.step-6');
     let partnerSelected = false;
 
-    // Hide all wizard steps initially
-    Object.values(sections).forEach(sec => sec?.classList.remove('visible'));
-    calculateBtn.classList.add('hidden');
+    let currentIndex = idx.vardnad;
+    let history = [];
 
-    // Show first question
-    sections.vardnad?.classList.add('visible');
-    updateProgress(1);
+    function progressStepForIndex(i) {
+        if (i === idx.calc) return 7;
+        if (i <= idx.barnPlan) return i + 1;
+        if (i === idx.inkomst1 || i === idx.avtal1) return 5;
+        if (i === idx.inkomst2 || i === idx.avtal2) return 6;
+        return 1;
+    }
+
+    function showCurrent() {
+        stepSections.forEach(sec => sec.classList.remove('visible'));
+        calculateBtn.classList.add('hidden');
+
+        if (currentIndex !== idx.calc) {
+            stepSections[currentIndex]?.classList.add('visible');
+        }
+
+        updateProgress(progressStepForIndex(currentIndex));
+        backBtn.classList.toggle('hidden', history.length === 0);
+
+        const finalStep = (!partnerSelected && currentIndex === idx.avtal1) ||
+            (partnerSelected && currentIndex === idx.avtal2) ||
+            currentIndex === idx.calc;
+
+        if (finalStep) calculateBtn.classList.remove('hidden');
+    }
+
+    function goTo(nextIndex) {
+        history.push(currentIndex);
+        currentIndex = nextIndex;
+        showCurrent();
+    }
+
+    backBtn.addEventListener('click', () => {
+        if (history.length === 0) return;
+        currentIndex = history.pop();
+        showCurrent();
+    });
+
+    const progressSteps = document.querySelectorAll('#progress-bar .step');
+    progressSteps.forEach((stepEl, i) => {
+        stepEl.addEventListener('click', () => {
+            if (!stepEl.classList.contains('completed') && !stepEl.classList.contains('active')) return;
+            const stepNum = i + 1;
+            const combined = history.concat(currentIndex);
+            let targetPos = -1;
+            for (let j = combined.length - 1; j >= 0; j--) {
+                if (progressStepForIndex(combined[j]) === stepNum) {
+                    targetPos = j;
+                    break;
+                }
+            }
+            if (targetPos !== -1) {
+                history = combined.slice(0, targetPos);
+                currentIndex = combined[targetPos];
+                showCurrent();
+            }
+        });
+    });
+
+    showCurrent();
 
     setupToggleButtons('vårdnad-group', 'vårdnad', value => {
-        sections.vardnad.classList.remove('visible');
         if (value === 'ensam') {
             partnerSelected = false;
             document.getElementById('beräkna-partner').value = 'nej';
             step6?.style.setProperty('display', 'none');
-            updateProgress(3);
-            sections.barnIdag.classList.add('visible');
+            goTo(idx.barnIdag);
         } else {
+            partnerSelected = true;
             step6?.style.setProperty('display', 'block');
-            updateProgress(2);
-            sections.partner.classList.add('visible');
+            goTo(idx.partner);
         }
     });
 
     setupToggleButtons('partner-group', 'beräkna-partner', value => {
         partnerSelected = value === 'ja';
         if (!partnerSelected) step6?.style.setProperty('display', 'none');
-        sections.partner.classList.remove('visible');
-        updateProgress(3);
-        sections.barnIdag.classList.add('visible');
+        goTo(idx.barnIdag);
     });
 
     setupToggleButtons('barn-tidigare-group', 'barn-tidigare', () => {
-        sections.barnIdag.classList.remove('visible');
-        updateProgress(4);
-        sections.barnPlan.classList.add('visible');
+        goTo(idx.barnPlan);
     });
 
     setupToggleButtons('barn-planerade-group', 'barn-planerade', () => {
-        sections.barnPlan.classList.remove('visible');
-        updateProgress(5);
-        sections.inkomst1.classList.add('visible');
+        goTo(idx.inkomst1);
     });
 
     const inkomst1Input = document.getElementById('inkomst1');
-    inkomst1Input.addEventListener('input', () => {
-        if (inkomst1Input.value !== '') {
-            sections.inkomst1.classList.remove('visible');
-            sections.avtal1.classList.add('visible');
+    inkomst1Input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && inkomst1Input.value !== '') {
+            e.preventDefault();
+            goTo(idx.avtal1);
         }
     });
 
     setupToggleButtons('avtal-group-1', 'har-avtal-1', () => {
-        sections.avtal1.classList.remove('visible');
         if (partnerSelected) {
-            updateProgress(6);
-            sections.inkomst2.classList.add('visible');
+            goTo(idx.inkomst2);
         } else {
-            updateProgress(7);
-            calculateBtn.classList.remove('hidden');
+            goTo(idx.calc);
         }
     });
 
     const inkomst2Input = document.getElementById('inkomst2');
-    inkomst2Input.addEventListener('input', () => {
-        if (inkomst2Input.value !== '') {
-            sections.inkomst2.classList.remove('visible');
-            sections.avtal2.classList.add('visible');
+    inkomst2Input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && inkomst2Input.value !== '') {
+            e.preventDefault();
+            goTo(idx.avtal2);
         }
     });
 
     setupToggleButtons('avtal-group-2', 'har-avtal-2', () => {
-        sections.avtal2.classList.remove('visible');
-        updateProgress(7);
-        calculateBtn.classList.remove('hidden');
+        goTo(idx.calc);
     });
 });
 
