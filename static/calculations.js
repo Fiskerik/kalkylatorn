@@ -126,6 +126,10 @@ export function optimizeParentalLeave(preferences, inputs) {
             dagarPerVecka1 = maxDagarPerVecka;
             inkomst1Result = beräknaMånadsinkomst(dag1, dagarPerVecka1, extra1, barnbidrag, tillägg);
             kombineradInkomst = inkomst1Result + inkomst2Result;
+            if (kombineradInkomst < minInkomst) {
+                genomförbarhet.ärGenomförbar = false;
+                genomförbarhet.meddelande = `Kombinerad inkomst ${kombineradInkomst.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad.`;
+            }
         }
 
         let totalDagarBehövda1 = weeks1 * dagarPerVecka1;
@@ -173,6 +177,10 @@ export function optimizeParentalLeave(preferences, inputs) {
             dagarPerVecka2 = maxDagarPerVecka;
             inkomst2Result = beräknaMånadsinkomst(dag2, dagarPerVecka2, extra2, barnbidrag, tillägg);
             kombineradInkomst = inkomst1Result + inkomst2Result;
+            if (kombineradInkomst < minInkomst) {
+                genomförbarhet.ärGenomförbar = false;
+                genomförbarhet.meddelande = `Kombinerad inkomst ${kombineradInkomst.toLocaleString()} kr/månad i fas 2 är under kravet ${minInkomst.toLocaleString()} kr/månad.`;
+            }
         }
 
         let totalDagarBehövda2 = weeks2 * dagarPerVecka2;

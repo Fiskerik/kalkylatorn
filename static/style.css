@@ -173,6 +173,13 @@ canvas {
     margin: 0;
 }
 
+#calculate-btn {
+    width: auto;
+    max-width: 300px;
+    margin: 1.5rem auto 3rem;
+    display: block;
+}
+
 input[type="number"] {
     max-width: 300px;
     margin: 0 auto;

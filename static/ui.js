@@ -142,7 +142,7 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst, dag
                     <div class="benefit-value-large">
                         <span>${inkomst.toLocaleString()}</span><span class="unit">kr/månad</span>
                     </div>
-                    <div class="benefit-title">Preliminär föräldralön</div>
+                    <div class="benefit-title" style="margin-top: 0.5rem;">Preliminär föräldralön</div>
                     <div class="benefit-value-large">
                         <span>${extra.toLocaleString()}</span><span class="unit">kr/månad</span>
                     </div>
