@@ -8,9 +8,9 @@ import {
     förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar
 } from './config.js';
 import { beräknaDaglig, beräknaBarnbidrag, optimizeParentalLeave } from './calculations.js';
-import { 
-    updateProgress, setupToggleButtons, setupInfoBoxToggle, 
-    generateParentSection, setupStrategyToggle, updateMonthlyBox 
+import {
+    updateProgress, setupInfoBoxToggle,
+    generateParentSection, setupStrategyToggle, updateMonthlyBox
 } from './ui.js';
 import { renderGanttChart } from './chart.js';
 
@@ -25,28 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
  * Initialize form elements and UI
  */
 function initializeForm() {
-    // Set default active buttons
-    const vårdnadGroup = document.querySelectorAll('#vårdnad-group .toggle-btn');
-    vårdnadGroup.forEach(btn => {
-        if (btn.dataset.value === 'gemensam') {
-            btn.classList.add('active');
-            document.getElementById('vårdnad').value = 'gemensam';
-        }
-    });
-
     // Initialize progress bar
     updateProgress(1);
 
-    // Setup toggle buttons for all groups
-    setupToggleButtons('vårdnad-group', 'vårdnad', handleVårdnadChange);
-    setupToggleButtons('partner-group', 'beräkna-partner', handlePartnerChange);
-    setupToggleButtons('barn-tidigare-group', 'barn-tidigare', () => updateProgress(4));
-    setupToggleButtons('barn-planerade-group', 'barn-planerade', () => updateProgress(5));
-    setupToggleButtons('avtal-group-1', 'har-avtal-1');
-    setupToggleButtons('avtal-group-2', 'har-avtal-2');
+    // Setup strategy and info boxes
     setupStrategyToggle();
-
-    // Setup info box toggles
     setupInfoBoxToggle();
 }
 
@@ -56,8 +39,6 @@ function initializeForm() {
 function setupEventListeners() {
     const form = document.getElementById('calc-form');
     const optimizeBtn = document.getElementById('optimize-btn');
-    const inkomst1Input = document.getElementById('inkomst1');
-    const inkomst2Input = document.getElementById('inkomst2');
 
     // Form submission
     form.addEventListener('submit', handleFormSubmit);
@@ -65,88 +46,10 @@ function setupEventListeners() {
     // Optimization button
     optimizeBtn.addEventListener('click', handleOptimize);
 
-    // Income input listeners
-    inkomst1Input.addEventListener('input', handleInkomst1Change);
-    inkomst2Input.addEventListener('input', handleInkomst2Change);
-
     // Dropdown listeners for uttag
     setupDropdownListeners();
 }
 
-/**
- * Handle vårdnad change
- * @param {string} value - Selected vårdnad value
- */
-function handleVårdnadChange(value) {
-    const partnerQuestion = document.getElementById('partner-question');
-    const inkomstBlock2 = document.getElementById('inkomst-block-2');
-    const avtalQuestion2 = document.getElementById('avtal-question-2');
-    const partnerLedigTid = document.getElementById('partner-ledig-tid');
-    const step6 = document.querySelector('.step-6');
-
-    if (value === 'ensam') {
-        partnerQuestion.style.display = 'none';
-        inkomstBlock2.style.display = 'none';
-        avtalQuestion2.style.display = 'none';
-        partnerLedigTid.style.display = 'none';
-        document.getElementById('beräkna-partner').value = 'nej';
-        if (step6) step6.style.display = 'none';
-        updateProgress(3); // Skip partner question
-    } else {
-        partnerQuestion.style.display = 'block';
-        if (step6) step6.style.display = 'block';
-        updateProgress(2);
-    }
-}
-
-
-/**
- * Handle partner calculation change
- * @param {string} value - Selected partner calculation value
- */
-function handlePartnerChange(value) {
-    const inkomstBlock2 = document.getElementById('inkomst-block-2');
-    const avtalQuestion2 = document.getElementById('avtal-question-2');
-    const parentLedigTid = document.getElementById('parent-ledig-tid'); // Fixed ID
-
-    if (value === 'ja') {
-        inkomstBlock2.style.display = 'block';
-        avtalQuestion2.style.display = 'block';
-        parentLedigTid.style.display = 'block';
-    } else {
-        inkomstBlock2.style.display = 'none';
-        avtalQuestion2.style.display = 'none';
-        parentLedigTid.style.display = 'none';
-    }
-
-    updateProgress(3);
-}
-
-/**
- * Handle first income field change
- */
-function handleInkomst1Change() {
-    const inkomst1 = document.getElementById('inkomst1').value;
-    if (inkomst1 !== '') {
-        const vårdnadValue = document.getElementById('vårdnad').value;
-        const partnerValue = document.getElementById('beräkna-partner').value;
-        if (vårdnadValue === 'gemensam' && partnerValue === 'ja') {
-            updateProgress(6);
-        } else {
-            updateProgress(7);
-        }
-    }
-}
-
-/**
- * Handle second income field change
- */
-function handleInkomst2Change() {
-    const inkomst2 = document.getElementById('inkomst2').value;
-    if (inkomst2 !== '') {
-        updateProgress(7);
-    }
-}
 
 /**
  * Handle form submission
