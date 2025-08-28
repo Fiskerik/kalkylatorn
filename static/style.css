@@ -1059,6 +1059,24 @@ canvas#gantt-canvas {
     margin-top: 8px;
 }
 
+.slider-value {
+    display: block;
+    margin: 2px 0;
+    font-weight: 500;
+}
+
+.p1-value {
+    color: #28a745;
+}
+
+.p2-value {
+    color: #007bff;
+}
+
+.summary-section {
+    margin-bottom: 10px;
+}
+
 .slider-labels {
     display: flex;
     justify-content: space-between;
