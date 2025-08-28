@@ -129,6 +129,11 @@ function handleFormSubmit(e) {
         avtal1: avtal1 === 'ja', avtal2: avtal2 === 'ja'
     };
 
+    const leaveContainer = document.getElementById('leave-slider-container');
+    if (leaveContainer && (vårdnad === 'ensam' || beräknaPartner === 'nej')) {
+        leaveContainer.style.display = 'none';
+    }
+
     // Update dropdown listeners for monthly boxes
     setupDropdownListeners();
 }
@@ -275,7 +280,9 @@ function handleOptimize() {
             result.förälder2MinDagar,
             barnDatum,
             result.arbetsInkomst1,
-            result.arbetsInkomst2
+            result.arbetsInkomst2,
+            window.appState.barnbidragPerPerson,
+            window.appState.tilläggPerPerson
         );
 
 
@@ -291,23 +298,37 @@ function setupLeaveSlider() {
     const totalInput = document.getElementById('ledig-tid-5823');
     const slider = document.getElementById('leave-slider');
     const container = document.getElementById('leave-slider-container');
+    const tickList = document.getElementById('leave-ticks');
+    const startLabel = document.getElementById('slider-start');
+    const endLabel = document.getElementById('slider-end');
     if (!totalInput || !slider || !container) return;
 
     // Sync slider state with total leave and toggle visibility
     const syncSlider = () => {
-        const total = parseInt(totalInput.value) || 0;
+        const total = parseFloat(totalInput.value) || 0;
         slider.max = total;
-        const half = Math.floor(total / 2);
+        const step = total > 2 ? 1 : 0.5;
+        slider.step = step;
+        const half = Math.round(total / 2);
         slider.value = half;
         updateLeaveDisplay(slider, total);
-        container.style.display = total > 0 ? 'block' : 'none';
+        if (tickList) {
+            tickList.innerHTML = '';
+            for (let i = 0; i <= total; i += step) {
+                tickList.innerHTML += `<option value="${i}"></option>`;
+            }
+        }
+        if (startLabel) startLabel.textContent = '0';
+        if (endLabel) endLabel.textContent = total;
+        const isSingleParent = window.appState?.vårdnad === 'ensam' || window.appState?.beräknaPartner !== 'ja';
+        container.style.display = !isSingleParent && total > 0 ? 'block' : 'none';
     };
 
     totalInput.addEventListener('input', syncSlider);
     totalInput.addEventListener('change', syncSlider);
 
     slider.addEventListener('input', () => {
-        const total = parseInt(totalInput.value) || 0;
+        const total = parseFloat(totalInput.value) || 0;
         updateLeaveDisplay(slider, total);
     });
 
@@ -315,12 +336,13 @@ function setupLeaveSlider() {
 }
 
 function updateLeaveDisplay(slider, total) {
-    const p1 = parseInt(slider.value) || 0;
+    const p1 = parseFloat(slider.value) || 0;
     const p2 = Math.max(total - p1, 0);
     const p1Elem = document.getElementById('p1-months');
     const p2Elem = document.getElementById('p2-months');
-    if (p1Elem) p1Elem.textContent = p1;
-    if (p2Elem) p2Elem.textContent = p2;
+    const format = v => Number.isInteger(v) ? v : v.toFixed(1);
+    if (p1Elem) p1Elem.textContent = format(p1);
+    if (p2Elem) p2Elem.textContent = format(p2);
     const percent = total > 0 ? (p1 / total) * 100 : 0;
-    slider.style.background = `linear-gradient(to right, green 0%, green ${percent}%, blue ${percent}%, blue 100%)`;
+    slider.style.background = `linear-gradient(to right, #28a745 0%, #28a745 ${percent}%, #007bff ${percent}%, #007bff 100%)`;
 }
