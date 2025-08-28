@@ -1345,7 +1345,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                             ${inputs.avtal1 ? `<div class="monthly-row extra-row"><span>Föräldralön</span><span class="extra-value">${extra1.toLocaleString()} kr/månad</span></div>` : ''}
                             <div class="monthly-row barnbidrag-row"><span>Barnbidrag</span><span class="barnbidrag-value">${barnbidragPerPerson.toLocaleString()} kr/månad</span></div>
-                            <div class="monthly-row tillagg-row"><span>Flerbarnstillägg</span><span class="tillagg-value">${tilläggPerPerson.toLocaleString()} kr/månad</span></div>
+                            <div class="monthly-row tillagg-row"><span>Flerbarnstillägg</span><span class="tillagg-value">${tillägg.toLocaleString()} kr/månad</span></div>
                         </div>
                         ${inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && inputs.inkomst2 > 0 ? `
                         <div class="total-section parent-2">
@@ -1356,7 +1356,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                             ${inputs.avtal2 ? `<div class="monthly-row extra-row"><span>Föräldralön</span><span class="extra-value">${extra2.toLocaleString()} kr/månad</span></div>` : ''}
                             <div class="monthly-row barnbidrag-row"><span>Barnbidrag</span><span class="barnbidrag-value">${barnbidragPerPerson.toLocaleString()} kr/månad</span></div>
-                            <div class="monthly-row tillagg-row"><span>Flerbarnstillägg</span><span class="tillagg-value">${tilläggPerPerson.toLocaleString()} kr/månad</span></div>
+                            <div class="monthly-row tillagg-row"><span>Flerbarnstillägg</span><span class="tillagg-value">${tillägg.toLocaleString()} kr/månad</span></div>
                         </div>` : ''}
                     </div>
                     <div class="montly-footer">

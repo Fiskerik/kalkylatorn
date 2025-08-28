@@ -219,15 +219,32 @@ function handleOptimize() {
         const result = optimizeParentalLeave(preferences, inputs);
 
         // Validate leave duration
-        const totalDays1 = result.plan1.användaInkomstDagar + result.plan1.användaMinDagar;
-        const totalDays2 = result.plan2.användaInkomstDagar + result.plan2.användaMinDagar;
-        if (totalDays1 > förälder1InkomstDagar + förälder1MinDagar || 
-            totalDays2 > förälder2InkomstDagar + förälder2MinDagar) {
-            document.getElementById('leave-duration-error').style.display = 'block';
+        if (!result.genomförbarhet.ärGenomförbar) {
+            const err = document.getElementById('leave-duration-error');
+            err.textContent = result.genomförbarhet.meddelande;
+            err.style.display = 'block';
             return;
-        } else {
-            document.getElementById('leave-duration-error').style.display = 'none';
         }
+
+        const totalDays1 =
+            result.plan1.användaInkomstDagar +
+            result.plan1.användaMinDagar +
+            result.plan1NoExtra.weeks * result.plan1NoExtra.dagarPerVecka;
+        const totalDays2 =
+            result.plan2.användaInkomstDagar +
+            result.plan2.användaMinDagar +
+            result.plan2NoExtra.weeks * result.plan2NoExtra.dagarPerVecka;
+        const transferred = result.genomförbarhet.transferredDays || 0;
+        const maxDays1 = förälder1InkomstDagar + förälder1MinDagar + transferred;
+        const maxDays2 = förälder2InkomstDagar + förälder2MinDagar - transferred;
+
+        const errorElement = document.getElementById('leave-duration-error');
+        if (totalDays1 > maxDays1 || totalDays2 > maxDays2) {
+            errorElement.style.display = 'block';
+            return;
+        }
+
+        errorElement.style.display = 'none';
 
         // Render Gantt chart
         document.getElementById('optimization-result').style.display = 'block';
