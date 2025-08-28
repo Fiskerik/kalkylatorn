@@ -3,7 +3,6 @@
  * Renders an interactive Gantt chart showing parental leave schedules and income.
  */
 import { beräknaMånadsinkomst } from './calculations.js';
-import { barnbidragPerPerson, tilläggPerPerson } from './config.js';
 
 /**
  * Render the Gantt chart
@@ -30,8 +29,36 @@ import { barnbidragPerPerson, tilläggPerPerson } from './config.js';
  * @param {string} barnDatum - Child's birth date
  * @param {number} arbetsInkomst1 - Work income for Parent 1
  * @param {number} arbetsInkomst2 - Work income for Parent 2
+ * @param {number} barnbidragPerPerson - Child allowance per parent
+ * @param {number} tilläggPerPerson - Additional allowance per parent
  */
-export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1MinDagar, plan2MinDagar, plan1Overlap, inkomst1, inkomst2, vårdnad, beräknaPartner, genomförbarhet, dag1, extra1, dag2, extra2, förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar, barnDatum, arbetsInkomst1, arbetsInkomst2) {
+export function renderGanttChart(
+    plan1,
+    plan2,
+    plan1NoExtra,
+    plan2NoExtra,
+    plan1MinDagar,
+    plan2MinDagar,
+    plan1Overlap,
+    inkomst1,
+    inkomst2,
+    vårdnad,
+    beräknaPartner,
+    genomförbarhet,
+    dag1,
+    extra1,
+    dag2,
+    extra2,
+    förälder1InkomstDagar,
+    förälder2InkomstDagar,
+    förälder1MinDagar,
+    förälder2MinDagar,
+    barnDatum,
+    arbetsInkomst1,
+    arbetsInkomst2,
+    barnbidragPerPerson,
+    tilläggPerPerson
+) {
     const ganttChart = document.getElementById('gantt-chart');
     if (!ganttChart) {
         console.error("renderGanttChart - gantt-chart element hittades inte");
@@ -455,14 +482,15 @@ export function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1
         html += `  Föräldralön: ${data.förälder1Components.extra.toLocaleString()} kr/månad<br>`;
         html += `  Barnbidrag: ${data.förälder1Components.barnbidrag.toLocaleString()} kr/månad<br>`;
         html += `  Flerbarnstillägg: ${data.förälder1Components.tillägg.toLocaleString()} kr/månad<br>`;
-        if (vårdnad !== 'ensam') {
+        const showParent2 = vårdnad !== 'ensam' && beräknaPartner === 'ja';
+        if (showParent2) {
             html += `<strong>Förälder 2</strong>: ${data.förälder2Inkomst.toLocaleString()} kr/månad<br>`;
             html += `  Föräldrapenning: ${data.förälder2Components.fp.toLocaleString()} kr/månad<br>`;
             html += `  Föräldralön: ${data.förälder2Components.extra.toLocaleString()} kr/månad<br>`;
             html += `  Barnbidrag: ${data.förälder2Components.barnbidrag.toLocaleString()} kr/månad<br>`;
-            html += `  Flerbarnstillägg: ${data.förälder2Components.tillägg.toLocaleString()} kr/månad`;
+            html += `  Flerbarnstillägg: ${data.förälder2Components.tillägg.toLocaleString()} kr/månad<br>`;
         }
-        return html;
+        return html + '<br>';
     }
 
     // Custom plugin for summary box updates

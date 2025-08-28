@@ -1031,7 +1031,7 @@ canvas#gantt-canvas {
     width: 100%;
     height: 8px;
     border-radius: 5px;
-    background: linear-gradient(to right, green 50%, blue 50%);
+    background: linear-gradient(to right, #28a745 50%, #007bff 50%);
     outline: none;
 }
 #leave-slider::-webkit-slider-thumb {
@@ -1057,4 +1057,11 @@ canvas#gantt-canvas {
 .slider-values {
     text-align: center;
     margin-top: 8px;
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    margin-top: 4px;
 }

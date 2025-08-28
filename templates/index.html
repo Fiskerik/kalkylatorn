@@ -132,7 +132,12 @@
                 <input type="number" id="ledig-tid-5823" name="ledig-tid-1" min="0" placeholder="Ange antal månader">
             </div>
             <div class="preference-group" id="leave-slider-container" style="display: none;">
-                <input type="range" id="leave-slider" min="0" max="0" value="0" step="1">
+                <input type="range" id="leave-slider" min="0" max="0" value="0" step="1" list="leave-ticks">
+                <datalist id="leave-ticks"></datalist>
+                <div class="slider-labels">
+                    <span id="slider-start">0</span>
+                    <span id="slider-end">0</span>
+                </div>
                 <div class="slider-values">
                     <span id="p1-months">0</span> månader för förälder 1 –
                     <span id="p2-months">0</span> månader för förälder 2
