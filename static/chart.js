@@ -540,6 +540,7 @@ export function renderGanttChart(
             `;
         }
 
+
         newMeddelandeHtml += `
             <strong>10 dagar efter barns födsel (<i>${formatDate(dadLeaveStart)} till ${formatDate(dadLeaveEnd)}</i>)</strong><br>
             Överlappande ledighet: 10 arbetsdagar (${dadLeaveDurationWeeks} veckor)<br>
@@ -560,6 +561,25 @@ export function renderGanttChart(
             <strong>Kombinerad inkomst: ${period2KombExtra.toLocaleString()} kr/månad</strong><br>
             ${period2NoExtraWeeks > 0 ? `Förälder 2: ${(period2NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period2NoExtraFörälder2Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period2KombNoExtra.toLocaleString()} kr/månad</strong><br>` : ''}
             ${period2MinWeeks > 0 ? `Förälder 2: ${(period2MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2MinWeeks)} veckor) på lägstanivå, inkomst ${period2MinFörälder2Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period2KombMin.toLocaleString()} kr/månad</strong><br>` : ''}<br>
+
+
+        newMeddelandeHtml += `
+            <strong>10 dagar efter barns födsel (<i>${formatDate(dadLeaveStart)} till ${formatDate(dadLeaveEnd)}</i>)</strong><br>
+            Överlappande ledighet: 10 arbetsdagar (${dadLeaveDurationWeeks} veckor)<br>
+            Förälder 1: Inkomst ${dadLeaveFörälder1Inkomst.toLocaleString()} kr/månad.<br>
+            Förälder 2: Inkomst ${dadLeaveFörälder2Inkomst.toLocaleString()} kr/månad.<br>
+            <strong>Kombinerad inkomst: ${(dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+
+            <strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1EndDate)}</i>)</strong><br>
+            Förälder 1: ${(period1TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1TotalWeeks)} veckor), ${safeDagarPerVecka(plan1.dagarPerVecka)} dagar/vecka, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.<br>
+            Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.<br>
+            <strong>Kombinerad inkomst: ${(period1Förälder1Inkomst + period1Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+            
+            <strong>Period 2 (Förälder 1 jobbar, Förälder 2 ledig) (<i>${formatDate(period2StartDate)} till ${formatDate(period2EndDate)}</i>)</strong><br>
+            Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.<br>
+            Förälder 2: ${(period2Weeks / 4.3).toFixed(1)} månader (~${Math.round(period2Weeks)} veckor), ${safeDagarPerVecka(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.<br>
+            <strong>Kombinerad inkomst: ${(period2Förälder1Inkomst + period2Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+
 
             <strong>Återstående dagar:</strong><br>
             Förälder 1: ${förälder1InkomstDagar.toLocaleString()} dagar (sjukpenningnivå), ${förälder1MinDagar.toLocaleString()} dagar (lägstanivå)<br>
