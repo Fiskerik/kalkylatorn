@@ -7,7 +7,12 @@ import {
     barnIdag, barnPlanerat, hasCalculated, defaultPreferences,
     förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar
 } from './config.js';
-import { beräknaDaglig, beräknaBarnbidrag, optimizeParentalLeave } from './calculations.js';
+import {
+    beräknaDaglig,
+    beräknaBarnbidrag,
+    optimizeParentalLeave,
+    beräknaFöräldralön
+} from './calculations.js';
 import {
     updateProgress, setupInfoBoxToggle,
     generateParentSection, setupStrategyToggle, updateMonthlyBox
@@ -85,9 +90,9 @@ function handleFormSubmit(e) {
 
     // Calculate daily rates and parental supplement
     const dag1 = beräknaDaglig(inkomst1);
-    const extra1 = avtal1 === 'ja' ? Math.round(inkomst1 * 0.10) : 0;
+    const extra1 = avtal1 === 'ja' ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = beräknaPartner === 'ja' && vårdnad === 'gemensam' ? beräknaDaglig(inkomst2) : 0;
-    const extra2 = avtal2 === 'ja' && beräknaPartner === 'ja' ? Math.round(inkomst2 * 0.10) : 0;
+    const extra2 = avtal2 === 'ja' && beräknaPartner === 'ja' ? beräknaFöräldralön(inkomst2) : 0;
 
     // Generate results
     const resultBlock = document.getElementById('result-block');
