@@ -31,6 +31,10 @@ import { beräknaMånadsinkomst } from './calculations.js';
  * @param {number} arbetsInkomst2 - Work income for Parent 2
  * @param {number} barnbidragPerPerson - Child allowance per parent
  * @param {number} tilläggPerPerson - Additional allowance per parent
+ * @param {number} maxFöräldralönWeeks1 - Allowed weeks with parental salary for Parent 1
+ * @param {number} maxFöräldralönWeeks2 - Allowed weeks with parental salary for Parent 2
+ * @param {number} unusedFöräldralönWeeks1 - Unused parental salary weeks for Parent 1
+ * @param {number} unusedFöräldralönWeeks2 - Unused parental salary weeks for Parent 2
  */
 export function renderGanttChart(
     plan1,
@@ -57,7 +61,11 @@ export function renderGanttChart(
     arbetsInkomst1,
     arbetsInkomst2,
     barnbidragPerPerson,
-    tilläggPerPerson
+    tilläggPerPerson,
+    maxFöräldralönWeeks1,
+    maxFöräldralönWeeks2,
+    unusedFöräldralönWeeks1,
+    unusedFöräldralönWeeks2
 ) {
     const ganttChart = document.getElementById('gantt-chart');
     if (!ganttChart) {
@@ -87,17 +95,18 @@ export function renderGanttChart(
     summaryBox.style.overflowY = 'auto'; // Scroll if content overflows
     summaryBox.innerHTML = '<p>Hovra över en punkt för att se detaljer.</p>';
 
-    const period1Weeks = plan1.weeks || 0;
+    const period1ExtraWeeks = Math.max((plan1.weeks || 0) - (plan1NoExtra.weeks || 0), 0);
     const period1NoExtraWeeks = plan1NoExtra.weeks || 0;
     const period1MinWeeks = plan1MinDagar.weeks || 0;
-    const period2Weeks = plan2.weeks || 0;
+    const period2ExtraWeeks = Math.max((plan2.weeks || 0) - (plan2NoExtra.weeks || 0), 0);
     const period2NoExtraWeeks = plan2NoExtra.weeks || 0;
     const period2MinWeeks = plan2MinDagar.weeks || 0;
     const period1OverlapWeeks = plan1Overlap.weeks || 0;
 
+    const baseWeeks1 = period1ExtraWeeks + period1NoExtraWeeks;
     const transferredDays = genomförbarhet.transferredDays || 0;
     const transferredWeeks = transferredDays > 0 && plan1.dagarPerVecka > 0 ? Math.ceil(transferredDays / plan1.dagarPerVecka) : 0;
-    const transferredStartWeek = transferredWeeks > 0 ? Math.max(0, period1Weeks - transferredWeeks) : period1Weeks;
+    const transferredStartWeek = transferredWeeks > 0 ? Math.max(0, baseWeeks1 - transferredWeeks) : baseWeeks1;
 
     let startDate = barnDatum ? new Date(barnDatum) : new Date();
     if (isNaN(startDate.getTime())) {
@@ -107,7 +116,7 @@ export function renderGanttChart(
     startDate.setHours(0, 0, 0, 0);
 
     const period1Start = new Date(startDate);
-    let period1TotalWeeks = period1Weeks;
+    let period1TotalWeeks = baseWeeks1 + period1MinWeeks;
     const period1End = new Date(period1Start);
     period1End.setDate(period1End.getDate() + (period1TotalWeeks * 7) - 1);
 
@@ -119,10 +128,11 @@ export function renderGanttChart(
 
     const period2Start = new Date(period1End);
     period2Start.setDate(period2Start.getDate() + 1);
+    const period2TotalWeeks = period2ExtraWeeks + period2NoExtraWeeks + period2MinWeeks;
     const period2End = new Date(period2Start);
-    period2End.setDate(period2End.getDate() + (period2Weeks * 7) - 1);
+    period2End.setDate(period2End.getDate() + (period2TotalWeeks * 7) - 1);
 
-    const totalaWeeks = Math.max(period1TotalWeeks + period2Weeks, 60);
+    const totalaWeeks = Math.max(period1TotalWeeks + period2TotalWeeks, 60);
 
     const weekLabels = [];
     const monthLabels = new Array(totalaWeeks).fill('');
@@ -196,6 +206,13 @@ export function renderGanttChart(
     const period2NoExtraFörälder2Inkomst = plan2NoExtra.inkomst || 0;
     const period2MinFörälder2Inkomst = beräknaMånadsinkomst(180, safeDagarPerVecka(plan2.dagarPerVecka), 0, barnbidragPerPerson, tilläggPerPerson);
 
+    const period1KombExtra = period1Förälder1Inkomst + period1Förälder2Inkomst;
+    const period1KombNoExtra = period1NoExtraFörälder1Inkomst + period1Förälder2Inkomst;
+    const period1KombMin = period1MinFörälder1Inkomst + period1Förälder2Inkomst;
+    const period2KombExtra = period2Förälder1Inkomst + period2Förälder2Inkomst;
+    const period2KombNoExtra = period2Förälder1Inkomst + period2NoExtraFörälder2Inkomst;
+    const period2KombMin = period2Förälder1Inkomst + period2MinFörälder2Inkomst;
+
     const dadLeaveFörälder2Inkomst = dag2 > 0 ? beräknaMånadsinkomst(dag2, 5, extra2, barnbidragPerPerson, tilläggPerPerson) : 0;
     const dadLeaveFörälder1Inkomst = period1Förälder1Inkomst;
 
@@ -230,7 +247,7 @@ export function renderGanttChart(
                     barnbidrag: barnbidragPerPerson,
                     tillägg: tilläggPerPerson
                 };
-            } else if (week < period1TotalWeeks) {
+            } else if (week < period1ExtraWeeks) {
                 förälder1Inkomst = period1Förälder1Inkomst;
                 förälder2Inkomst = vårdnad === "ensam" ? 0 : (arbetsInkomst2 || 0);
                 periodLabel = week >= transferredStartWeek && transferredWeeks > 0 ? 'Förälder 1 Ledig (Överförda dagar)' : 'Förälder 1 Ledig';
@@ -246,7 +263,43 @@ export function renderGanttChart(
                     barnbidrag: barnbidragPerPerson,
                     tillägg: tilläggPerPerson
                 };
-            } else if (week < period1TotalWeeks + period2Weeks && vårdnad === "gemensam" && beräknaPartner === "ja") {
+            } else if (week < period1ExtraWeeks + period1NoExtraWeeks) {
+                förälder1Inkomst = period1NoExtraFörälder1Inkomst;
+                förälder2Inkomst = vårdnad === "ensam" ? 0 : (arbetsInkomst2 || 0);
+                periodLabel = 'Förälder 1 Ledig (utan föräldralön)';
+                förälder1Components = {
+                    fp: Math.round((dag1 * safeDagarPerVecka(plan1.dagarPerVecka) * 4.3) / 100) * 100,
+                    extra: 0,
+                    barnbidrag: barnbidragPerPerson,
+                    tillägg: tilläggPerPerson
+                };
+                förälder2Components = {
+                    fp: 0,
+                    extra: 0,
+                    barnbidrag: barnbidragPerPerson,
+                    tillägg: tilläggPerPerson
+                };
+            } else if (week < period1TotalWeeks) {
+                förälder1Inkomst = period1MinFörälder1Inkomst;
+                förälder2Inkomst = vårdnad === "ensam" ? 0 : (arbetsInkomst2 || 0);
+                periodLabel = 'Förälder 1 Ledig (lägstanivå)';
+                förälder1Components = {
+                    fp: Math.round((180 * safeDagarPerVecka(plan1.dagarPerVecka) * 4.3) / 100) * 100,
+                    extra: 0,
+                    barnbidrag: barnbidragPerPerson,
+                    tillägg: tilläggPerPerson
+                };
+                förälder2Components = {
+                    fp: 0,
+                    extra: 0,
+                    barnbidrag: barnbidragPerPerson,
+                    tillägg: tilläggPerPerson
+                };
+            } else if (
+                week < period1TotalWeeks + period2ExtraWeeks &&
+                vårdnad === "gemensam" &&
+                beräknaPartner === "ja"
+            ) {
                 förälder1Inkomst = arbetsInkomst1 || 0;
                 förälder2Inkomst = period2Förälder2Inkomst;
                 periodLabel = 'Förälder 2 Ledig';
@@ -259,6 +312,48 @@ export function renderGanttChart(
                 förälder2Components = {
                     fp: Math.round((dag2 * safeDagarPerVecka(plan2.dagarPerVecka) * 4.3) / 100) * 100,
                     extra: extra2,
+                    barnbidrag: barnbidragPerPerson,
+                    tillägg: tilläggPerPerson
+                };
+                förälder2DaysUsed += safeDagarPerVecka(plan2.dagarPerVecka);
+            } else if (
+                week < period1TotalWeeks + period2ExtraWeeks + period2NoExtraWeeks &&
+                vårdnad === "gemensam" &&
+                beräknaPartner === "ja"
+            ) {
+                förälder1Inkomst = arbetsInkomst1 || 0;
+                förälder2Inkomst = period2NoExtraFörälder2Inkomst;
+                periodLabel = 'Förälder 2 Ledig (utan föräldralön)';
+                förälder1Components = {
+                    fp: 0,
+                    extra: 0,
+                    barnbidrag: barnbidragPerPerson,
+                    tillägg: tilläggPerPerson
+                };
+                förälder2Components = {
+                    fp: Math.round((dag2 * safeDagarPerVecka(plan2.dagarPerVecka) * 4.3) / 100) * 100,
+                    extra: 0,
+                    barnbidrag: barnbidragPerPerson,
+                    tillägg: tilläggPerPerson
+                };
+                förälder2DaysUsed += safeDagarPerVecka(plan2.dagarPerVecka);
+            } else if (
+                week < period1TotalWeeks + period2TotalWeeks &&
+                vårdnad === "gemensam" &&
+                beräknaPartner === "ja"
+            ) {
+                förälder1Inkomst = arbetsInkomst1 || 0;
+                förälder2Inkomst = period2MinFörälder2Inkomst;
+                periodLabel = 'Förälder 2 Ledig (lägstanivå)';
+                förälder1Components = {
+                    fp: 0,
+                    extra: 0,
+                    barnbidrag: barnbidragPerPerson,
+                    tillägg: tilläggPerPerson
+                };
+                förälder2Components = {
+                    fp: Math.round((180 * safeDagarPerVecka(plan2.dagarPerVecka) * 4.3) / 100) * 100,
+                    extra: 0,
                     barnbidrag: barnbidragPerPerson,
                     tillägg: tilläggPerPerson
                 };
@@ -330,14 +425,18 @@ export function renderGanttChart(
         <strong>Kombinerad inkomst: ${(dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
 
         <strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1End)}</i>)</strong><br>
-        Förälder 1: ${(period1TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1TotalWeeks)} veckor), ${safeDagarPerVecka(plan1.dagarPerVecka)} dagar/vecka, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.<br>
+        Förälder 1: ${(period1ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1ExtraWeeks)} veckor) med föräldralön, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.<br>
         Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.<br>
-        <strong>Kombinerad inkomst: ${(period1Förälder1Inkomst + period1Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
-        
+        <strong>Kombinerad inkomst: ${period1KombExtra.toLocaleString()} kr/månad</strong><br>
+        ${period1NoExtraWeeks > 0 ? `Förälder 1: ${(period1NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period1NoExtraFörälder1Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period1KombNoExtra.toLocaleString()} kr/månad</strong><br>` : ''}
+        ${period1MinWeeks > 0 ? `Förälder 1: ${(period1MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1MinWeeks)} veckor) på lägstanivå, inkomst ${period1MinFörälder1Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period1KombMin.toLocaleString()} kr/månad</strong><br>` : ''}<br>
+
         <strong>Period 2 (Förälder 1 jobbar, Förälder 2 ledig) (<i>${formatDate(period2Start)} till ${formatDate(period2End)}</i>)</strong><br>
+        Förälder 2: ${(period2ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2ExtraWeeks)} veckor) med föräldralön, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.<br>
         Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.<br>
-        Förälder 2: ${(period2Weeks / 4.3).toFixed(1)} månader (~${Math.round(period2Weeks)} veckor), ${safeDagarPerVecka(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.<br>
-        <strong>Kombinerad inkomst: ${(period2Förälder1Inkomst + period2Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+        <strong>Kombinerad inkomst: ${period2KombExtra.toLocaleString()} kr/månad</strong><br>
+        ${period2NoExtraWeeks > 0 ? `Förälder 2: ${(period2NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period2NoExtraFörälder2Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period2KombNoExtra.toLocaleString()} kr/månad</strong><br>` : ''}
+        ${period2MinWeeks > 0 ? `Förälder 2: ${(period2MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2MinWeeks)} veckor) på lägstanivå, inkomst ${period2MinFörälder2Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period2KombMin.toLocaleString()} kr/månad</strong><br>` : ''}<br>
 
         <strong>Återstående dagar:</strong><br>
         Förälder 1: ${förälder1InkomstDagar.toLocaleString()} dagar (sjukpenningnivå), ${förälder1MinDagar.toLocaleString()} dagar (lägstanivå)<br>
@@ -371,7 +470,7 @@ export function renderGanttChart(
                     const deltaX = (e.clientX - chart.dragStartX) / chart.scales.x.width * (chart.scales.x.max - chart.scales.x.min);
                     const newX = Math.round(inkomstData[chart.dragging.index].x + deltaX);
                     const minX = dadLeaveDurationWeeks;
-                    const maxX = totalaWeeks - period2Weeks - 1;
+                    const maxX = totalaWeeks - period2TotalWeeks - 1;
 
                     if (chart.dragging.point.type === 'period1End') {
                         const newPeriod1Weeks = Math.max(minX, Math.min(newX + 1, maxX));
@@ -381,7 +480,7 @@ export function renderGanttChart(
                         const period2StartDate = new Date(period1EndDate);
                         period2StartDate.setDate(period2StartDate.getDate() + 1);
                         const period2EndDate = new Date(period2StartDate);
-                        period2EndDate.setDate(period2EndDate.getDate() + (period2Weeks * 7) - 1);
+                        period2EndDate.setDate(period2EndDate.getDate() + (period2TotalWeeks * 7) - 1);
 
                         const period1TotalDays = period1TotalWeeks * safeDagarPerVecka(plan1.dagarPerVecka);
                         const daysAvailable = förälder1InkomstDagar + förälder1MinDagar;
@@ -393,7 +492,7 @@ export function renderGanttChart(
                         const period1NoExtraAdjustedWeeks = 0;
                         const period1MinAdjustedWeeks = period1TotalDays > period1IncomeDaysUsed ? Math.round((period1TotalDays - period1IncomeDaysUsed) / safeDagarPerVecka(plan1.dagarPerVecka)) : 0;
 
-                        const period2TotalDays = period2Weeks * safeDagarPerVecka(plan2.dagarPerVecka);
+                        const period2TotalDays = period2TotalWeeks * safeDagarPerVecka(plan2.dagarPerVecka);
                         const period2IncomeDaysUsed = Math.min(period2TotalDays, förälder2InkomstDagar);
                         const period2NoExtraAdjustedWeeks = 0;
                         const period2MinAdjustedWeeks = period2TotalDays > period2IncomeDaysUsed ? Math.round((period2TotalDays - period2IncomeDaysUsed) / safeDagarPerVecka(plan2.dagarPerVecka)) : 0;
@@ -428,7 +527,7 @@ export function renderGanttChart(
         const period2StartDate = new Date(period1EndDate);
         period2StartDate.setDate(period2StartDate.getDate() + 1);
         const period2EndDate = new Date(period2StartDate);
-        period2EndDate.setDate(period2EndDate.getDate() + (period2Weeks * 7) - 1);
+        period2EndDate.setDate(period2EndDate.getDate() + (period2TotalWeeks * 7) - 1);
 
         let newMeddelandeHtml = `
             <div class="feasibility-message" style="background-color: #e6ffe6; border: 1px solid #00cc00; padding: 15px; margin-bottom: 15px; font-family: Inter, sans-serif;">
@@ -449,20 +548,31 @@ export function renderGanttChart(
             <strong>Kombinerad inkomst: ${(dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
 
             <strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1EndDate)}</i>)</strong><br>
-            Förälder 1: ${(period1TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1TotalWeeks)} veckor), ${safeDagarPerVecka(plan1.dagarPerVecka)} dagar/vecka, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.<br>
+            Förälder 1: ${(period1ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1ExtraWeeks)} veckor) med föräldralön, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.<br>
             Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.<br>
-            <strong>Kombinerad inkomst: ${(period1Förälder1Inkomst + period1Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
-            
+            <strong>Kombinerad inkomst: ${period1KombExtra.toLocaleString()} kr/månad</strong><br>
+            ${period1NoExtraWeeks > 0 ? `Förälder 1: ${(period1NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period1NoExtraFörälder1Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period1KombNoExtra.toLocaleString()} kr/månad</strong><br>` : ''}
+            ${period1MinWeeks > 0 ? `Förälder 1: ${(period1MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1MinWeeks)} veckor) på lägstanivå, inkomst ${period1MinFörälder1Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period1KombMin.toLocaleString()} kr/månad</strong><br>` : ''}<br>
+
             <strong>Period 2 (Förälder 1 jobbar, Förälder 2 ledig) (<i>${formatDate(period2StartDate)} till ${formatDate(period2EndDate)}</i>)</strong><br>
+            Förälder 2: ${(period2ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2ExtraWeeks)} veckor) med föräldralön, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.<br>
             Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.<br>
-            Förälder 2: ${(period2Weeks / 4.3).toFixed(1)} månader (~${Math.round(period2Weeks)} veckor), ${safeDagarPerVecka(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.<br>
-            <strong>Kombinerad inkomst: ${(period2Förälder1Inkomst + period2Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+            <strong>Kombinerad inkomst: ${period2KombExtra.toLocaleString()} kr/månad</strong><br>
+            ${period2NoExtraWeeks > 0 ? `Förälder 2: ${(period2NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period2NoExtraFörälder2Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period2KombNoExtra.toLocaleString()} kr/månad</strong><br>` : ''}
+            ${period2MinWeeks > 0 ? `Förälder 2: ${(period2MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2MinWeeks)} veckor) på lägstanivå, inkomst ${period2MinFörälder2Inkomst.toLocaleString()} kr/månad. <strong>Kombinerad inkomst: ${period2KombMin.toLocaleString()} kr/månad</strong><br>` : ''}<br>
 
             <strong>Återstående dagar:</strong><br>
             Förälder 1: ${förälder1InkomstDagar.toLocaleString()} dagar (sjukpenningnivå), ${förälder1MinDagar.toLocaleString()} dagar (lägstanivå)<br>
-            Förälder 2: ${förälder2InkomstDagar.toLocaleString()} dagar (sjukpenningnivå), ${förälder2MinDagar.toLocaleString()} dagar (lägstanivå)
-            </div>
-        `;
+            Förälder 2: ${förälder2InkomstDagar.toLocaleString()} dagar (sjukpenningnivå), ${förälder2MinDagar.toLocaleString()} dagar (lägstanivå)`;
+        if (unusedFöräldralönWeeks1 > 0 && maxFöräldralönWeeks1 > 0) {
+            const allowedMonths1 = (maxFöräldralönWeeks1 / 4.3).toFixed(0);
+            newMeddelandeHtml += `<br><span style="color: #f28c38;">Förälder 1: Du har möjlighet att ta ut föräldralön i upp till ${allowedMonths1} månader men utnyttjar just nu inte allt.</span>`;
+        }
+        if (unusedFöräldralönWeeks2 > 0 && maxFöräldralönWeeks2 > 0) {
+            const allowedMonths2 = (maxFöräldralönWeeks2 / 4.3).toFixed(0);
+            newMeddelandeHtml += `<br><span style="color: #f28c38;">Förälder 2: Du har möjlighet att ta ut föräldralön i upp till ${allowedMonths2} månader men utnyttjar just nu inte allt.</span>`;
+        }
+        newMeddelandeHtml += `</div>`;
 
         messageDiv.innerHTML = newMeddelandeHtml;
     }
@@ -543,7 +653,7 @@ export function renderGanttChart(
                             if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
                             return '#28a745';
                         }
-                        if (x < period1TotalWeeks + period2Weeks) return '#007bff';
+                        if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
                         return 'red';
                     },
                     backgroundColor: ctx => {
@@ -553,7 +663,7 @@ export function renderGanttChart(
                             if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
                             return '#28a745';
                         }
-                        if (x < period1TotalWeeks + period2Weeks) return '#007bff';
+                        if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
                         return 'red';
                     }
                 },
@@ -564,7 +674,7 @@ export function renderGanttChart(
                         if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
                         return '#28a745';
                     }
-                    if (x < period1TotalWeeks + period2Weeks) return '#007bff';
+                    if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
                     return 'red';
                 }),
                 pointBorderColor: inkomstData.map(data => {
@@ -574,7 +684,7 @@ export function renderGanttChart(
                         if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
                         return '#28a745';
                     }
-                    if (x < period1TotalWeeks + period2Weeks) return '#007bff';
+                    if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
                     return 'red';
                 })
             }]

@@ -343,7 +343,13 @@ function setupDropdownListeners() {
             result.förälder2MinDagar,
             inputs.barnDatum,
             result.arbetsInkomst1,
-            result.arbetsInkomst2
+            result.arbetsInkomst2,
+            barnbidragPerPerson,
+            tilläggPerPerson,
+            result.maxFöräldralönWeeks1,
+            result.maxFöräldralönWeeks2,
+            result.unusedFöräldralönWeeks1,
+            result.unusedFöräldralönWeeks2
         );
     }
 
@@ -660,7 +666,7 @@ function optimizeParentalLeave(preferences, inputs) {
     };
 }
 
-function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1MinDagar, plan2MinDagar, plan1Overlap, inkomst1, inkomst2, vårdnad, beräknaPartner, genomförbarhet, dag1, extra1, dag2, extra2, förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar, barnDatum, arbetsInkomst1, arbetsInkomst2) {
+function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1MinDagar, plan2MinDagar, plan1Overlap, inkomst1, inkomst2, vårdnad, beräknaPartner, genomförbarhet, dag1, extra1, dag2, extra2, förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar, barnDatum, arbetsInkomst1, arbetsInkomst2, barnbidragPerPerson, tilläggPerPerson, maxFöräldralönWeeks1, maxFöräldralönWeeks2, unusedFöräldralönWeeks1, unusedFöräldralönWeeks2) {
     const ganttChart = document.getElementById('gantt-chart');
     if (!ganttChart) {
         console.error("renderGanttChart - gantt-chart element hittades inte");
