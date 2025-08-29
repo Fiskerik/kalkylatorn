@@ -92,9 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const stepNum = i + 1;
             const nextIndex = stepToIndex[stepNum];
             if (nextIndex === undefined || nextIndex === currentIndex) return;
-            history.push(currentIndex);
-            currentIndex = nextIndex;
-            showCurrent();
+            goTo(nextIndex);
         });
     });
 
