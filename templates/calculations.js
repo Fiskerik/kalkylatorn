@@ -2,7 +2,13 @@
  * calculations.js - Calculation logic for the Föräldrapenningkalkylator
  * Handles parental benefit calculations, child allowances, and leave optimization.
  */
-import { INCOME_CAP, SGI_CAP, MINIMUM_RATE, FÖRÄLDRALÖN_CAP, DEFAULT_BARNBIDRAG } from './config.js';
+import {
+    INCOME_CAP,
+    SGI_CAP,
+    MINIMUM_RATE,
+    FÖRÄLDRALÖN_THRESHOLD,
+    DEFAULT_BARNBIDRAG
+} from './config.js';
 
 /**
  * Calculate monthly income based on daily rate, days per week, and additional benefits
@@ -58,6 +64,21 @@ export function beräknaDaglig(inkomst) {
 }
 
 /**
+ * Calculate employer-provided parental salary supplement
+ * @param {number} inkomst - Monthly income
+ * @returns {number} Monthly parental supplement
+ */
+export function beräknaFöräldralön(inkomst) {
+    if (!inkomst || inkomst <= 0) return 0;
+    if (inkomst <= FÖRÄLDRALÖN_THRESHOLD) {
+        return Math.round(inkomst * 0.10);
+    }
+    const basal = FÖRÄLDRALÖN_THRESHOLD * 0.10;
+    const över = (inkomst - FÖRÄLDRALÖN_THRESHOLD) * 0.90;
+    return Math.round(basal + över);
+}
+
+/**
  * Calculate child allowance and additional benefits
  * @param {number} totalBarn - Total number of children
  * @param {boolean} ensamVårdnad - True if sole custody
@@ -106,9 +127,9 @@ export function optimizeParentalLeave(preferences, inputs) {
     }
 
     const dag1 = beräknaDaglig(inkomst1);
-    const extra1 = inputs.avtal1 === "ja" ? (inkomst1 <= SGI_CAP ? Math.round(inkomst1 * 0.10) : FÖRÄLDRALÖN_CAP) : 0;
+    const extra1 = inputs.avtal1 === "ja" ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = inkomst2 > 0 ? beräknaDaglig(inkomst2) : 0;
-    const extra2 = inputs.avtal2 === "ja" ? (inkomst2 <= SGI_CAP ? Math.round(inkomst2 * 0.10) : FÖRÄLDRALÖN_CAP) : 0;
+    const extra2 = inputs.avtal2 === "ja" ? beräknaFöräldralön(inkomst2) : 0;
 
     let förälder1InkomstDagar = inputs.vårdnad === "ensam" ? 390 : 195;
     let förälder2InkomstDagar = inputs.vårdnad === "ensam" ? 0 : 195;
