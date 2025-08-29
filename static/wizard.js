@@ -129,15 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupToggleButtons('avtal-group-1', 'har-avtal-1', value => {
         const container = document.getElementById('anstallningstid-container-1');
         if (value === 'ja') {
-
             container?.classList.remove('hidden');
         } else {
             container?.classList.add('hidden');
-
-            container.classList.remove('hidden');
-        } else {
-            container.classList.add('hidden');
-
             document.getElementById('anstallningstid-1').value = '';
             if (partnerSelected) {
                 goTo(idx.inkomst2);
@@ -158,15 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupToggleButtons('avtal-group-2', 'har-avtal-2', value => {
         const container = document.getElementById('anstallningstid-container-2');
         if (value === 'ja') {
-
             container?.classList.remove('hidden');
         } else {
             container?.classList.add('hidden');
-
-            container.classList.remove('hidden');
-        } else {
-            container.classList.add('hidden');
-
             document.getElementById('anstallningstid-2').value = '';
             goTo(idx.calc);
         }
