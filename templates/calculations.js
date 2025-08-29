@@ -105,15 +105,23 @@ export function optimizeParentalLeave(preferences, inputs) {
     let kombineradInkomst = 0;
 
     const maxDagarPerVecka = deltid === "ja" ? 5 : 7;
-    dagarPerVecka1 = strategy === "maximize" ? maxDagarPerVecka : 1;
-    dagarPerVecka2 = inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" ? (strategy === "maximize" ? maxDagarPerVecka : 1) : 0;
+    if (strategy === "maximize") {
+        dagarPerVecka1 = weeks1 > 0 ? Math.min(maxDagarPerVecka, Math.max(1, Math.floor(förälder1InkomstDagar / weeks1))) : 0;
+        dagarPerVecka2 =
+            inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && weeks2 > 0
+                ? Math.min(maxDagarPerVecka, Math.max(1, Math.floor(förälder2InkomstDagar / weeks2)))
+                : 0;
+    } else {
+        dagarPerVecka1 = weeks1 > 0 ? 1 : 0;
+        dagarPerVecka2 =
+            inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && weeks2 > 0 ? 1 : 0;
+    }
 
     let totalDagarBehövda1 = weeks1 * dagarPerVecka1;
     let totalDagarBehövda2 = weeks2 * dagarPerVecka2;
 
     if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && totalDagarBehövda1 > förälder1InkomstDagar) {
-        const förväntadeDagar2 = strategy === "maximize" ? maxDagarPerVecka : 1;
-        const minDagarBehövda2 = weeks2 * förväntadeDagar2;
+        const minDagarBehövda2 = weeks2 * dagarPerVecka2;
         const överförbaraDagar2 = Math.max(0, förälder2InkomstDagar - 90 - minDagarBehövda2 - 10);
         const överförDagar = Math.min(överförbaraDagar2, totalDagarBehövda1 - förälder1InkomstDagar);
         förälder2InkomstDagar -= överförDagar;
@@ -123,13 +131,21 @@ export function optimizeParentalLeave(preferences, inputs) {
     }
 
     if (totalDagarBehövda1 > förälder1InkomstDagar) {
-        totalDagarBehövda1 = förälder1InkomstDagar;
-        weeks1 = Math.floor(totalDagarBehövda1 / dagarPerVecka1) || 1;
+        dagarPerVecka1 = Math.max(1, Math.floor(förälder1InkomstDagar / weeks1));
+        totalDagarBehövda1 = weeks1 * dagarPerVecka1;
+        if (totalDagarBehövda1 > förälder1InkomstDagar) {
+            totalDagarBehövda1 = förälder1InkomstDagar;
+            weeks1 = Math.floor(totalDagarBehövda1 / dagarPerVecka1) || 1;
+        }
     }
 
     if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && totalDagarBehövda2 > förälder2InkomstDagar) {
-        totalDagarBehövda2 = förälder2InkomstDagar;
-        weeks2 = Math.floor(totalDagarBehövda2 / dagarPerVecka2) || 1;
+        dagarPerVecka2 = Math.max(1, Math.floor(förälder2InkomstDagar / weeks2));
+        totalDagarBehövda2 = weeks2 * dagarPerVecka2;
+        if (totalDagarBehövda2 > förälder2InkomstDagar) {
+            totalDagarBehövda2 = förälder2InkomstDagar;
+            weeks2 = Math.floor(totalDagarBehövda2 / dagarPerVecka2) || 1;
+        }
     }
 
     // Step 1: Allocate for Parent 1
