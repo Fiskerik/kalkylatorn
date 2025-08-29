@@ -76,6 +76,10 @@ function handleFormSubmit(e) {
     const avtal1 = document.getElementById('har-avtal-1').value || 'nej';
     const avtal2 = document.getElementById('har-avtal-2').value || 'nej';
 
+    const anst1 = document.getElementById('anstallningstid-1').value || '';
+    const anst2 = document.getElementById('anstallningstid-2').value || '';
+
+
     // Validate inputs
     if (barnTidigare === 0 && barnPlanerade === 0) {
         document.getElementById('barn-selection-error').style.display = 'block';
@@ -90,9 +94,16 @@ function handleFormSubmit(e) {
 
     // Calculate daily rates and parental supplement
     const dag1 = beräknaDaglig(inkomst1);
+
     const extra1 = avtal1 === 'ja' ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = beräknaPartner === 'ja' && vårdnad === 'gemensam' ? beräknaDaglig(inkomst2) : 0;
     const extra2 = avtal2 === 'ja' && beräknaPartner === 'ja' ? beräknaFöräldralön(inkomst2) : 0;
+
+    const extra1 = avtal1 === 'ja' && anst1 !== '0-5' ? beräknaFöräldralön(inkomst1) : 0;
+    const dag2 = beräknaPartner === 'ja' && vårdnad === 'gemensam' ? beräknaDaglig(inkomst2) : 0;
+    const extra2 =
+        avtal2 === 'ja' && anst2 !== '0-5' && beräknaPartner === 'ja' ? beräknaFöräldralön(inkomst2) : 0;
+
 
     // Generate results
     const resultBlock = document.getElementById('result-block');
@@ -131,7 +142,8 @@ function handleFormSubmit(e) {
         barnbidragPerPerson: barnbidragResult.barnbidrag,
         tilläggPerPerson: barnbidragResult.tillägg,
         dag1, extra1, dag2, extra2,
-        avtal1: avtal1 === 'ja', avtal2: avtal2 === 'ja'
+        avtal1: avtal1 === 'ja', avtal2: avtal2 === 'ja',
+        anst1, anst2
     };
 
     const leaveContainer = document.getElementById('leave-slider-container');
@@ -215,6 +227,10 @@ function handleOptimize() {
         inkomst2: window.appState.inkomst2,
         avtal1: window.appState.avtal1,
         avtal2: window.appState.avtal2,
+
+        anst1: window.appState.anst1,
+        anst2: window.appState.anst2,
+
         vårdnad: window.appState.vårdnad,
         beräknaPartner: window.appState.beräknaPartner,
         barnbidragPerPerson: window.appState.barnbidragPerPerson,
@@ -288,7 +304,11 @@ function handleOptimize() {
             result.arbetsInkomst1,
             result.arbetsInkomst2,
             window.appState.barnbidragPerPerson,
-            window.appState.tilläggPerPerson
+            window.appState.tilläggPerPerson,
+            result.unusedExtra1,
+            result.unusedExtra2,
+            result.maxMonthsExtra1,
+            result.maxMonthsExtra2
         );
 
 

@@ -616,6 +616,8 @@ input[type="number"] {
     text-align: center;
     flex: 1;
     color: #ccc; /* Unreached steps remain gray */
+    cursor: pointer;
+    pointer-events: auto;
 }
 
 #progress-bar .step::before {
@@ -659,7 +661,6 @@ input[type="number"] {
 /* Skipped state */
 #progress-bar .step.skipped {
     color: #ddd;
-    pointer-events: none;
 }
 
 #progress-bar .step.skipped::before {
