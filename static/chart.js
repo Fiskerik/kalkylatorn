@@ -31,6 +31,10 @@ import { beräknaMånadsinkomst } from './calculations.js';
  * @param {number} arbetsInkomst2 - Work income for Parent 2
  * @param {number} barnbidragPerPerson - Child allowance per parent
  * @param {number} tilläggPerPerson - Additional allowance per parent
+ * @param {number} maxFöräldralönWeeks1 - Allowed weeks with parental salary for Parent 1
+ * @param {number} maxFöräldralönWeeks2 - Allowed weeks with parental salary for Parent 2
+ * @param {number} unusedFöräldralönWeeks1 - Unused parental salary weeks for Parent 1
+ * @param {number} unusedFöräldralönWeeks2 - Unused parental salary weeks for Parent 2
  */
 export function renderGanttChart(
     plan1,
@@ -57,7 +61,11 @@ export function renderGanttChart(
     arbetsInkomst1,
     arbetsInkomst2,
     barnbidragPerPerson,
-    tilläggPerPerson
+    tilläggPerPerson,
+    maxFöräldralönWeeks1,
+    maxFöräldralönWeeks2,
+    unusedFöräldralönWeeks1,
+    unusedFöräldralönWeeks2
 ) {
     const ganttChart = document.getElementById('gantt-chart');
     if (!ganttChart) {
@@ -460,9 +468,16 @@ export function renderGanttChart(
 
             <strong>Återstående dagar:</strong><br>
             Förälder 1: ${förälder1InkomstDagar.toLocaleString()} dagar (sjukpenningnivå), ${förälder1MinDagar.toLocaleString()} dagar (lägstanivå)<br>
-            Förälder 2: ${förälder2InkomstDagar.toLocaleString()} dagar (sjukpenningnivå), ${förälder2MinDagar.toLocaleString()} dagar (lägstanivå)
-            </div>
-        `;
+            Förälder 2: ${förälder2InkomstDagar.toLocaleString()} dagar (sjukpenningnivå), ${förälder2MinDagar.toLocaleString()} dagar (lägstanivå)`;
+        if (unusedFöräldralönWeeks1 > 0 && maxFöräldralönWeeks1 > 0) {
+            const allowedMonths1 = (maxFöräldralönWeeks1 / 4.3).toFixed(0);
+            newMeddelandeHtml += `<br><span style="color: #f28c38;">Förälder 1: Du har möjlighet att ta ut föräldralön i upp till ${allowedMonths1} månader men utnyttjar just nu inte allt.</span>`;
+        }
+        if (unusedFöräldralönWeeks2 > 0 && maxFöräldralönWeeks2 > 0) {
+            const allowedMonths2 = (maxFöräldralönWeeks2 / 4.3).toFixed(0);
+            newMeddelandeHtml += `<br><span style="color: #f28c38;">Förälder 2: Du har möjlighet att ta ut föräldralön i upp till ${allowedMonths2} månader men utnyttjar just nu inte allt.</span>`;
+        }
+        newMeddelandeHtml += `</div>`;
 
         messageDiv.innerHTML = newMeddelandeHtml;
     }
