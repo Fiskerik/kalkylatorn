@@ -305,8 +305,8 @@ function setupDropdownListeners() {
         const inputs = {
             inkomst1: Number(inkomst1),
             inkomst2: Number(inkomst2),
-            avtal1: avtal1 === "ja",
-            avtal2: avtal2 === "ja",
+            avtal1: avtal1,
+            avtal2: avtal2,
             vårdnad: vårdnad,
             beräknaPartner: beräknaPartner,
             barnbidragPerPerson: barnbidragPerPerson || 1250,
@@ -408,9 +408,9 @@ function optimizeParentalLeave(preferences, inputs) {
     }
 
     const dag1 = beräknaDaglig(inkomst1);
-    const extra1 = inputs.avtal1 ? (inkomst1 <= 49000 ? Math.round(inkomst1 * 0.10) : 4900) : 0;
+    const extra1 = inputs.avtal1 === "ja" ? (inkomst1 <= 49000 ? Math.round(inkomst1 * 0.10) : 4900) : 0;
     const dag2 = inkomst2 > 0 ? beräknaDaglig(inkomst2) : 0;
-    const extra2 = inputs.avtal2 ? (inkomst2 <= 49000 ? Math.round(inkomst2 * 0.10) : 4900) : 0;
+    const extra2 = inputs.avtal2 === "ja" ? (inkomst2 <= 49000 ? Math.round(inkomst2 * 0.10) : 4900) : 0;
 
     let förälder1InkomstDagar = inputs.vårdnad === "ensam" ? 390 : 195;
     let förälder2InkomstDagar = inputs.vårdnad === "ensam" ? 0 : 195;
@@ -1317,18 +1317,18 @@ document.addEventListener("DOMContentLoaded", function () {
         output += `<div class="result-block"><h2>Sammanlagt barnbidrag</h2><p>${details}</p></div>`;
     
         const dag1 = beräknaDaglig(inputs.inkomst1);
-        const extra1 = inputs.avtal1 ? (inputs.inkomst1 <= 49000 ? Math.round(inputs.inkomst1 * 0.10) : 4900) : 0;
+        const extra1 = inputs.avtal1 === "ja" ? (inputs.inkomst1 <= 49000 ? Math.round(inputs.inkomst1 * 0.10) : 4900) : 0;
         const månadsinkomst1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
         console.log("Form submission - dag1:", dag1, "extra1:", extra1, "månadsinkomst1:", månadsinkomst1);
-        output += generateParentSection(1, dag1, extra1, månadsinkomst1, dagar, inputs.avtal1, barnbidragPerPerson, tilläggPerPerson, inputs.vårdnad === "ensam");
+        output += generateParentSection(1, dag1, extra1, månadsinkomst1, dagar, inputs.avtal1 === "ja", barnbidragPerPerson, tilläggPerPerson, inputs.vårdnad === "ensam");
     
         let dag2 = 0, extra2 = 0, månadsinkomst2 = 0;
         if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && inputs.inkomst2 > 0) {
             dag2 = beräknaDaglig(inputs.inkomst2);
-            extra2 = inputs.avtal2 ? (inputs.inkomst2 <= 49000 ? Math.round(inputs.inkomst2 * 0.10) : 4900) : 0;
+            extra2 = inputs.avtal2 === "ja" ? (inputs.inkomst2 <= 49000 ? Math.round(inputs.inkomst2 * 0.10) : 4900) : 0;
             månadsinkomst2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
             console.log("Form submission - dag2:", dag2, "extra2:", extra2, "månadsinkomst2:", månadsinkomst2);
-            output += generateParentSection(2, dag2, extra2, månadsinkomst2, dagar, inputs.avtal2, barnbidragPerPerson, tilläggPerPerson, false);
+            output += generateParentSection(2, dag2, extra2, månadsinkomst2, dagar, inputs.avtal2 === "ja", barnbidragPerPerson, tilläggPerPerson, false);
         }
     
         if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja") {
@@ -1343,7 +1343,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span>Föräldrapenning (<span class="days-selected-1">${initialDays}</span> dagar/vecka)</span>
                                 <span class="fp-value">${månadsinkomst1.toLocaleString()} kr/månad</span>
                             </div>
-                            ${inputs.avtal1 ? `<div class="monthly-row extra-row"><span>Föräldralön</span><span class="extra-value">${extra1.toLocaleString()} kr/månad</span></div>` : ''}
+                            ${inputs.avtal1 === "ja" ? `<div class="monthly-row extra-row"><span>Föräldralön</span><span class="extra-value">${extra1.toLocaleString()} kr/månad</span></div>` : ''}
                             <div class="monthly-row barnbidrag-row"><span>Barnbidrag</span><span class="barnbidrag-value">${barnbidragPerPerson.toLocaleString()} kr/månad</span></div>
                             <div class="monthly-row tillagg-row"><span>Flerbarnstillägg</span><span class="tillagg-value">${tillägg.toLocaleString()} kr/månad</span></div>
                         </div>
@@ -1354,7 +1354,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span>Föräldrapenning (<span class="days-selected-2">${initialDays}</span> dagar/vecka)</span>
                                 <span class="fp-value">${månadsinkomst2.toLocaleString()} kr/månad</span>
                             </div>
-                            ${inputs.avtal2 ? `<div class="monthly-row extra-row"><span>Föräldralön</span><span class="extra-value">${extra2.toLocaleString()} kr/månad</span></div>` : ''}
+                            ${inputs.avtal2 === "ja" ? `<div class="monthly-row extra-row"><span>Föräldralön</span><span class="extra-value">${extra2.toLocaleString()} kr/månad</span></div>` : ''}
                             <div class="monthly-row barnbidrag-row"><span>Barnbidrag</span><span class="barnbidrag-value">${barnbidragPerPerson.toLocaleString()} kr/månad</span></div>
                             <div class="monthly-row tillagg-row"><span>Flerbarnstillägg</span><span class="tillagg-value">${tillägg.toLocaleString()} kr/månad</span></div>
                         </div>` : ''}
