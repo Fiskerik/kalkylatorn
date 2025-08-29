@@ -106,14 +106,9 @@ export function optimizeParentalLeave(preferences, inputs) {
     }
 
     const dag1 = beräknaDaglig(inkomst1);
-    const extra1 = inputs.avtal1 === "ja" && inputs.anst1 !== "0-5" ? beräknaFöräldralön(inkomst1) : 0;
+    const extra1 = inputs.avtal1 === "ja" ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = inkomst2 > 0 ? beräknaDaglig(inkomst2) : 0;
-    const extra2 = inputs.avtal2 === "ja" && inputs.anst2 !== "0-5" ? beräknaFöräldralön(inkomst2) : 0;
-
-    const maxMonthsExtra1 = inputs.avtal1 === "ja" ? (inputs.anst1 === "6-12" ? 2 : inputs.anst1 === "gt12" ? 6 : 0) : 0;
-    const maxMonthsExtra2 = inputs.avtal2 === "ja" ? (inputs.anst2 === "6-12" ? 2 : inputs.anst2 === "gt12" ? 6 : 0) : 0;
-    const unusedExtra1 = inputs.avtal1 === "ja" && inputs.anst1 === "gt12" && ledigTid1 < 6;
-    const unusedExtra2 = inputs.avtal2 === "ja" && inputs.anst2 === "gt12" && ledigTid2 < 6;
+    const extra2 = inputs.avtal2 === "ja" ? beräknaFöräldralön(inkomst2) : 0;
 
     let förälder1InkomstDagar = inputs.vårdnad === "ensam" ? 390 : 195;
     let förälder2InkomstDagar = inputs.vårdnad === "ensam" ? 0 : 195;
@@ -183,25 +178,6 @@ export function optimizeParentalLeave(preferences, inputs) {
     if (weeks1 > 0) {
         inkomst1Result = beräknaMånadsinkomst(dag1, dagarPerVecka1, extra1, barnbidrag, tillägg);
         inkomst2Result = arbetsInkomst2;
-
-        let inkomst1ResultNoExtra = beräknaMånadsinkomst(dag1, dagarPerVecka1, 0, barnbidrag, tillägg);
-        kombineradInkomst = inkomst1Result + inkomst2Result;
-
-        if (strategy === "longer") {
-            while (
-                (kombineradInkomst < minInkomst || inkomst1ResultNoExtra + inkomst2Result < minInkomst) &&
-                dagarPerVecka1 < maxDagarPerVecka
-            ) {
-                dagarPerVecka1++;
-                inkomst1Result = beräknaMånadsinkomst(dag1, dagarPerVecka1, extra1, barnbidrag, tillägg);
-                inkomst1ResultNoExtra = beräknaMånadsinkomst(dag1, dagarPerVecka1, 0, barnbidrag, tillägg);
-                kombineradInkomst = inkomst1Result + inkomst2Result;
-            }
-            if (kombineradInkomst < minInkomst || inkomst1ResultNoExtra + inkomst2Result < minInkomst) {
-                const minKombinerad = Math.min(kombineradInkomst, inkomst1ResultNoExtra + inkomst2Result);
-                genomförbarhet.ärGenomförbar = false;
-                genomförbarhet.meddelande = `Kombinerad inkomst ${minKombinerad.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad.`;
-
         kombineradInkomst = inkomst1Result + inkomst2Result;
 
         if (strategy === "longer") {
@@ -213,7 +189,6 @@ export function optimizeParentalLeave(preferences, inputs) {
             if (kombineradInkomst < minInkomst) {
                 genomförbarhet.ärGenomförbar = false;
                 genomförbarhet.meddelande = `Kombinerad inkomst ${kombineradInkomst.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad.`;
-
             }
         } else if (kombineradInkomst < minInkomst) {
             genomförbarhet.ärGenomförbar = false;
@@ -221,51 +196,10 @@ export function optimizeParentalLeave(preferences, inputs) {
         }
     }
 
-    // Rebalance days for Parent 1 after income adjustments
-    totalDagarBehövda1 = weeks1 * dagarPerVecka1;
-    if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && totalDagarBehövda1 > förälder1InkomstDagar) {
-        const minDagarBehövda2 = weeks2 * dagarPerVecka2;
-        const överförbaraDagar2 = Math.max(0, förälder2InkomstDagar - 90 - minDagarBehövda2 - 10);
-        const överförDagar = Math.min(överförbaraDagar2, totalDagarBehövda1 - förälder1InkomstDagar);
-        förälder2InkomstDagar -= överförDagar;
-        förälder1InkomstDagar += överförDagar;
-        totalDagarBehövda1 = weeks1 * dagarPerVecka1;
-        genomförbarhet.transferredDays += överförDagar;
-    }
-
-    if (totalDagarBehövda1 > förälder1InkomstDagar) {
-        dagarPerVecka1 = Math.max(1, Math.floor(förälder1InkomstDagar / weeks1));
-        totalDagarBehövda1 = weeks1 * dagarPerVecka1;
-        if (totalDagarBehövda1 > förälder1InkomstDagar) {
-            totalDagarBehövda1 = förälder1InkomstDagar;
-            weeks1 = Math.floor(totalDagarBehövda1 / dagarPerVecka1) || 1;
-        }
-    }
-
-
     // Step 2: Allocate for Parent 2
     if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && weeks2 > 0) {
         inkomst1Result = arbetsInkomst1;
         inkomst2Result = beräknaMånadsinkomst(dag2, dagarPerVecka2, extra2, barnbidrag, tillägg);
-
-        let inkomst2ResultNoExtra = beräknaMånadsinkomst(dag2, dagarPerVecka2, 0, barnbidrag, tillägg);
-        kombineradInkomst = inkomst1Result + inkomst2Result;
-
-        if (strategy === "longer") {
-            while (
-                (kombineradInkomst < minInkomst || inkomst1Result + inkomst2ResultNoExtra < minInkomst) &&
-                dagarPerVecka2 < maxDagarPerVecka
-            ) {
-                dagarPerVecka2++;
-                inkomst2Result = beräknaMånadsinkomst(dag2, dagarPerVecka2, extra2, barnbidrag, tillägg);
-                inkomst2ResultNoExtra = beräknaMånadsinkomst(dag2, dagarPerVecka2, 0, barnbidrag, tillägg);
-                kombineradInkomst = inkomst1Result + inkomst2Result;
-            }
-            if (kombineradInkomst < minInkomst || inkomst1Result + inkomst2ResultNoExtra < minInkomst) {
-                const minKombinerad = Math.min(kombineradInkomst, inkomst1Result + inkomst2ResultNoExtra);
-                genomförbarhet.ärGenomförbar = false;
-                genomförbarhet.meddelande = `Kombinerad inkomst ${minKombinerad.toLocaleString()} kr/månad i fas 2 är under kravet ${minInkomst.toLocaleString()} kr/månad.`;
-
         kombineradInkomst = inkomst1Result + inkomst2Result;
 
         if (strategy === "longer") {
@@ -277,7 +211,6 @@ export function optimizeParentalLeave(preferences, inputs) {
             if (kombineradInkomst < minInkomst) {
                 genomförbarhet.ärGenomförbar = false;
                 genomförbarhet.meddelande = `Kombinerad inkomst ${kombineradInkomst.toLocaleString()} kr/månad i fas 2 är under kravet ${minInkomst.toLocaleString()} kr/månad.`;
-
             }
         } else if (kombineradInkomst < minInkomst) {
             genomförbarhet.ärGenomförbar = false;
@@ -285,34 +218,19 @@ export function optimizeParentalLeave(preferences, inputs) {
         }
     }
 
-
-    // Rebalance days for Parent 2 after income adjustments
-    totalDagarBehövda2 = weeks2 * dagarPerVecka2;
-    if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && totalDagarBehövda2 > förälder2InkomstDagar) {
-        dagarPerVecka2 = Math.max(1, Math.floor(förälder2InkomstDagar / weeks2));
-        totalDagarBehövda2 = weeks2 * dagarPerVecka2;
-        if (totalDagarBehövda2 > förälder2InkomstDagar) {
-            totalDagarBehövda2 = förälder2InkomstDagar;
-            weeks2 = Math.floor(totalDagarBehövda2 / dagarPerVecka2) || 1;
-        }
-    }
-
-
     // Step 3: Allocate days for Period 1 (Förälder 1)
     let minDagarWeeks1 = 0;
     let weeks1NoExtra = 0;
     if (dagarPerVecka1 > 0) {
-        let maxFöräldralönWeeks = maxMonthsExtra1 * 4.3;
-        if (weeks1 > maxFöräldralönWeeks && maxFöräldralönWeeks > 0) {
+        const dagarBehövda1 = weeks1 * dagarPerVecka1;
+        const maxFöräldralönWeeks = 6 * 4.3;
+
+        if (weeks1 > maxFöräldralönWeeks) {
             weeks1NoExtra = Math.round(weeks1 - maxFöräldralönWeeks);
             weeks1 = Math.round(maxFöräldralönWeeks);
-        } else if (maxFöräldralönWeeks === 0) {
-            weeks1NoExtra = weeks1;
-            weeks1 = 0;
         }
 
-        let dagarBehövda1 = weeks1 * dagarPerVecka1;
-        användaInkomstDagar1 = Math.min(dagarBehövda1, förälder1InkomstDagar);
+        användaInkomstDagar1 = dagarBehövda1;
         förälder1InkomstDagar -= användaInkomstDagar1;
         användaMinDagar1 = 0;
         minDagarWeeks1 = 0;
@@ -355,17 +273,15 @@ export function optimizeParentalLeave(preferences, inputs) {
     let minDagarWeeks2 = 0;
     let weeks2NoExtra = 0;
     if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && weeks2 > 0) {
-        let maxFöräldralönWeeks = maxMonthsExtra2 * 4.3;
-        if (weeks2 > maxFöräldralönWeeks && maxFöräldralönWeeks > 0) {
+        const dagarBehövda2 = weeks2 * dagarPerVecka2;
+        const maxFöräldralönWeeks = 6 * 4.3;
+
+        if (weeks2 > maxFöräldralönWeeks) {
             weeks2NoExtra = Math.round(weeks2 - maxFöräldralönWeeks);
             weeks2 = Math.round(maxFöräldralönWeeks);
-        } else if (maxFöräldralönWeeks === 0) {
-            weeks2NoExtra = weeks2;
-            weeks2 = 0;
         }
 
-        let dagarBehövda2 = weeks2 * dagarPerVecka2;
-        användaInkomstDagar2 = Math.min(dagarBehövda2, förälder2InkomstDagar);
+        användaInkomstDagar2 = dagarBehövda2;
         förälder2InkomstDagar -= användaInkomstDagar2;
         användaMinDagar2 = 0;
         minDagarWeeks2 = 0;
@@ -448,10 +364,6 @@ export function optimizeParentalLeave(preferences, inputs) {
         förälder1MinDagar,
         förälder2MinDagar,
         arbetsInkomst1,
-        arbetsInkomst2,
-        unusedExtra1,
-        unusedExtra2,
-        maxMonthsExtra1,
-        maxMonthsExtra2
+        arbetsInkomst2
     };
 }
