@@ -31,6 +31,10 @@ import { beräknaMånadsinkomst } from './calculations.js';
  * @param {number} arbetsInkomst2 - Work income for Parent 2
  * @param {number} barnbidragPerPerson - Child allowance per parent
  * @param {number} tilläggPerPerson - Additional allowance per parent
+ * @param {boolean} unusedExtra1 - Flag indicating unused parental salary for Parent 1
+ * @param {boolean} unusedExtra2 - Flag indicating unused parental salary for Parent 2
+ * @param {number} maxMonthsExtra1 - Maximum months of parental salary for Parent 1
+ * @param {number} maxMonthsExtra2 - Maximum months of parental salary for Parent 2
  */
 export function renderGanttChart(
     plan1,
@@ -57,7 +61,11 @@ export function renderGanttChart(
     arbetsInkomst1,
     arbetsInkomst2,
     barnbidragPerPerson,
-    tilläggPerPerson
+    tilläggPerPerson,
+    unusedExtra1,
+    unusedExtra2,
+    maxMonthsExtra1,
+    maxMonthsExtra2
 ) {
     const ganttChart = document.getElementById('gantt-chart');
     if (!ganttChart) {
@@ -67,6 +75,15 @@ export function renderGanttChart(
 
     ganttChart.innerHTML = '';
     const messageDiv = document.createElement('div');
+    if (unusedExtra1) {
+        messageDiv.innerHTML += `<p>ℹ️ Förälder 1: Du har möjlighet att ta ut föräldralön i upp till ${maxMonthsExtra1} månader men utnyttjar just nu inte allt.</p>`;
+    }
+    if (unusedExtra2) {
+        messageDiv.innerHTML += `<p>ℹ️ Förälder 2: Du har möjlighet att ta ut föräldralön i upp till ${maxMonthsExtra2} månader men utnyttjar just nu inte allt.</p>`;
+    }
+    if (messageDiv.innerHTML) {
+        ganttChart.appendChild(messageDiv);
+    }
     const canvas = document.createElement('canvas');
     canvas.id = 'gantt-canvas';
     canvas.style.width = '100%';

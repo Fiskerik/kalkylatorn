@@ -7,10 +7,10 @@ import { updateProgress, setupToggleButtons } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const sections = {
-        vardnad: document.querySelector('#vårdnad-group').closest('.wizard-step'),
+        vardnad: document.getElementById('vårdnad-group')?.closest('.wizard-step'),
         partner: document.getElementById('partner-question'),
-        barnIdag: document.querySelector('#barn-tidigare-group').closest('.wizard-step'),
-        barnPlan: document.querySelector('#barn-planerade-group').closest('.wizard-step'),
+        barnIdag: document.getElementById('barn-tidigare-group')?.closest('.wizard-step'),
+        barnPlan: document.getElementById('barn-planerade-group')?.closest('.wizard-step'),
         inkomst1: document.getElementById('inkomst-avtal-1'),
         inkomst2: document.getElementById('inkomst-block-2')
     };
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showCurrent() {
-        stepSections.forEach(sec => sec.classList.remove('visible'));
+        stepSections.forEach(sec => sec?.classList.remove('visible'));
         calculateBtn.classList.add('hidden');
 
         if (currentIndex !== idx.calc) {
@@ -126,7 +126,22 @@ document.addEventListener('DOMContentLoaded', () => {
         goTo(idx.inkomst1);
     });
 
-    setupToggleButtons('avtal-group-1', 'har-avtal-1', () => {
+    setupToggleButtons('avtal-group-1', 'har-avtal-1', value => {
+        const container = document.getElementById('anstallningstid-container-1');
+        if (value === 'ja') {
+            container?.classList.remove('hidden');
+        } else {
+            container?.classList.add('hidden');
+            document.getElementById('anstallningstid-1').value = '';
+            if (partnerSelected) {
+                goTo(idx.inkomst2);
+            } else {
+                goTo(idx.calc);
+            }
+        }
+    });
+
+    setupToggleButtons('anstallningstid-group-1', 'anstallningstid-1', () => {
         if (partnerSelected) {
             goTo(idx.inkomst2);
         } else {
@@ -134,7 +149,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    setupToggleButtons('avtal-group-2', 'har-avtal-2', () => {
+    setupToggleButtons('avtal-group-2', 'har-avtal-2', value => {
+        const container = document.getElementById('anstallningstid-container-2');
+        if (value === 'ja') {
+            container?.classList.remove('hidden');
+        } else {
+            container?.classList.add('hidden');
+            document.getElementById('anstallningstid-2').value = '';
+            goTo(idx.calc);
+        }
+    });
+
+    setupToggleButtons('anstallningstid-group-2', 'anstallningstid-2', () => {
         goTo(idx.calc);
     });
 });
