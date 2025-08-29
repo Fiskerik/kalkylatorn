@@ -6,8 +6,8 @@ import {
     INCOME_CAP,
     SGI_CAP,
     MINIMUM_RATE,
-    FÖRÄLDRALÖN_THRESHOLD,
-    DEFAULT_BARNBIDRAG
+    DEFAULT_BARNBIDRAG,
+    PRISBASBELOPP
 } from './config.js';
 
 /**
@@ -45,13 +45,16 @@ export function beräknaDaglig(inkomst) {
 export function beräknaFöräldralön(inkomst) {
     if (!inkomst || inkomst <= 0) return 0;
 
-    if (inkomst <= FÖRÄLDRALÖN_THRESHOLD) {
-        return Math.round(inkomst * 0.10);
+    const årsinkomst = inkomst * 12;
+    const gräns = PRISBASBELOPP * 10;
+
+    if (årsinkomst <= gräns) {
+        return Math.round((årsinkomst * 0.10) / 12);
     }
 
-    const basal = FÖRÄLDRALÖN_THRESHOLD * 0.10;
-    const över = (inkomst - FÖRÄLDRALÖN_THRESHOLD) * 0.90;
-    return Math.round(basal + över);
+    const basal = gräns * 0.10;
+    const över = (årsinkomst - gräns) * 0.90;
+    return Math.round((basal + över) / 12);
 }
 
 /**
