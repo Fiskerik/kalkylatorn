@@ -27,7 +27,8 @@ export const INCOME_CAP = 1250; // SEK/day max parental benefit
 export const MINIMUM_RATE = 180; // SEK/day minimum parental benefit
 export const SGI_CAP = 49000; // Max monthly SGI
 export const DEFAULT_BARNBIDRAG = 625; // Default child allowance per person
-export const FÖRÄLDRALÖN_CAP = 4900; // Max parental supplement
+export const PRISBASBELOPP = 58800; // Prisbasbelopp 2025 (SEK)
+export const FÖRÄLDRALÖN_THRESHOLD = 49000; // 10 prisbasbelopp/12 per month
 
 // Default preferences
 export const defaultPreferences = {
