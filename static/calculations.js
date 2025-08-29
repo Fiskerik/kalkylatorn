@@ -105,10 +105,21 @@ export function optimizeParentalLeave(preferences, inputs) {
         throw new Error("Invalid input values: incomes and leave durations must be numbers.");
     }
 
+    const anst1 = inputs.anställningstid1 || "";
+    const anst2 = inputs.anställningstid2 || "";
     const dag1 = beräknaDaglig(inkomst1);
-    const extra1 = inputs.avtal1 === "ja" ? beräknaFöräldralön(inkomst1) : 0;
+    const extra1 = inputs.avtal1 === "ja" && anst1 !== "0-5" ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = inkomst2 > 0 ? beräknaDaglig(inkomst2) : 0;
-    const extra2 = inputs.avtal2 === "ja" ? beräknaFöräldralön(inkomst2) : 0;
+    const extra2 = inputs.avtal2 === "ja" && anst2 !== "0-5" ? beräknaFöräldralön(inkomst2) : 0;
+
+    const maxFöräldralönWeeks1 = inputs.avtal1 === "ja"
+        ? anst1 === "6-12" ? 2 * 4.3 : anst1 === ">1" ? 6 * 4.3 : 0
+        : 0;
+    const maxFöräldralönWeeks2 = inputs.avtal2 === "ja"
+        ? anst2 === "6-12" ? 2 * 4.3 : anst2 === ">1" ? 6 * 4.3 : 0
+        : 0;
+    let unusedFöräldralönWeeks1 = 0;
+    let unusedFöräldralönWeeks2 = 0;
 
     let förälder1InkomstDagar = inputs.vårdnad === "ensam" ? 390 : 195;
     let förälder2InkomstDagar = inputs.vårdnad === "ensam" ? 0 : 195;
@@ -194,6 +205,24 @@ export function optimizeParentalLeave(preferences, inputs) {
             genomförbarhet.ärGenomförbar = false;
             genomförbarhet.meddelande = `Kombinerad inkomst ${kombineradInkomst.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad.`;
         }
+        totalDagarBehövda1 = weeks1 * dagarPerVecka1;
+        if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && totalDagarBehövda1 > förälder1InkomstDagar) {
+            const minDagarBehövda2 = weeks2 * dagarPerVecka2;
+            const överförbaraDagar2 = Math.max(0, förälder2InkomstDagar - 90 - minDagarBehövda2 - 10);
+            const överförDagar = Math.min(överförbaraDagar2, totalDagarBehövda1 - förälder1InkomstDagar);
+            förälder2InkomstDagar -= överförDagar;
+            förälder1InkomstDagar += överförDagar;
+            genomförbarhet.transferredDays += överförDagar;
+            totalDagarBehövda1 = weeks1 * dagarPerVecka1;
+        }
+        if (totalDagarBehövda1 > förälder1InkomstDagar) {
+            dagarPerVecka1 = Math.max(1, Math.floor(förälder1InkomstDagar / weeks1));
+            totalDagarBehövda1 = weeks1 * dagarPerVecka1;
+            if (totalDagarBehövda1 > förälder1InkomstDagar) {
+                totalDagarBehövda1 = förälder1InkomstDagar;
+                weeks1 = Math.floor(totalDagarBehövda1 / dagarPerVecka1) || 1;
+            }
+        }
     }
 
     // Step 2: Allocate for Parent 2
@@ -216,6 +245,15 @@ export function optimizeParentalLeave(preferences, inputs) {
             genomförbarhet.ärGenomförbar = false;
             genomförbarhet.meddelande = `Kombinerad inkomst ${kombineradInkomst.toLocaleString()} kr/månad i fas 2 är under kravet ${minInkomst.toLocaleString()} kr/månad.`;
         }
+        totalDagarBehövda2 = weeks2 * dagarPerVecka2;
+        if (totalDagarBehövda2 > förälder2InkomstDagar) {
+            dagarPerVecka2 = Math.max(1, Math.floor(förälder2InkomstDagar / weeks2));
+            totalDagarBehövda2 = weeks2 * dagarPerVecka2;
+            if (totalDagarBehövda2 > förälder2InkomstDagar) {
+                totalDagarBehövda2 = förälder2InkomstDagar;
+                weeks2 = Math.floor(totalDagarBehövda2 / dagarPerVecka2) || 1;
+            }
+        }
     }
 
     // Step 3: Allocate days for Period 1 (Förälder 1)
@@ -223,7 +261,7 @@ export function optimizeParentalLeave(preferences, inputs) {
     let weeks1NoExtra = 0;
     if (dagarPerVecka1 > 0) {
         const dagarBehövda1 = weeks1 * dagarPerVecka1;
-        const maxFöräldralönWeeks = 6 * 4.3;
+        const maxFöräldralönWeeks = maxFöräldralönWeeks1;
 
         if (weeks1 > maxFöräldralönWeeks) {
             weeks1NoExtra = Math.round(weeks1 - maxFöräldralönWeeks);
@@ -235,6 +273,7 @@ export function optimizeParentalLeave(preferences, inputs) {
         användaMinDagar1 = 0;
         minDagarWeeks1 = 0;
 
+        const plan1ExtraWeeks = weeks1;
         plan1 = {
             startWeek: 0,
             weeks: weeks1 + weeks1NoExtra,
@@ -267,6 +306,7 @@ export function optimizeParentalLeave(preferences, inputs) {
                 inkomst: Math.round(beräknaMånadsinkomst(dag1, dagarPerVecka1, extra1, barnbidrag, tillägg))
             };
         }
+        unusedFöräldralönWeeks1 = Math.max(0, maxFöräldralönWeeks1 - plan1ExtraWeeks);
     }
 
     // Step 4: Allocate days for Period 2 (Förälder 2)
@@ -274,7 +314,7 @@ export function optimizeParentalLeave(preferences, inputs) {
     let weeks2NoExtra = 0;
     if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && weeks2 > 0) {
         const dagarBehövda2 = weeks2 * dagarPerVecka2;
-        const maxFöräldralönWeeks = 6 * 4.3;
+        const maxFöräldralönWeeks = maxFöräldralönWeeks2;
 
         if (weeks2 > maxFöräldralönWeeks) {
             weeks2NoExtra = Math.round(weeks2 - maxFöräldralönWeeks);
@@ -286,6 +326,7 @@ export function optimizeParentalLeave(preferences, inputs) {
         användaMinDagar2 = 0;
         minDagarWeeks2 = 0;
 
+        const plan2ExtraWeeks = weeks2;
         plan2 = {
             startWeek: weeks1 + weeks1NoExtra,
             weeks: weeks2 + weeks2NoExtra,
@@ -309,6 +350,7 @@ export function optimizeParentalLeave(preferences, inputs) {
             dagarPerVecka: dagarPerVecka2,
             inkomst: Math.round(beräknaMånadsinkomst(MINIMUM_RATE, dagarPerVecka2, 0, barnbidrag, tillägg))
         };
+        unusedFöräldralönWeeks2 = Math.max(0, maxFöräldralönWeeks2 - plan2ExtraWeeks);
     }
 
     // Step 5: Handle overlap days (10 days for Förälder 2)
@@ -364,6 +406,10 @@ export function optimizeParentalLeave(preferences, inputs) {
         förälder1MinDagar,
         förälder2MinDagar,
         arbetsInkomst1,
-        arbetsInkomst2
+        arbetsInkomst2,
+        maxFöräldralönWeeks1,
+        maxFöräldralönWeeks2,
+        unusedFöräldralönWeeks1,
+        unusedFöräldralönWeeks2
     };
 }
