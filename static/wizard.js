@@ -77,23 +77,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const progressSteps = document.querySelectorAll('#progress-bar .step');
+    const stepToIndex = {
+        1: idx.vardnad,
+        2: idx.partner,
+        3: idx.barnIdag,
+        4: idx.barnPlan,
+        5: idx.inkomst1,
+        6: idx.inkomst2,
+        7: idx.calc
+    };
+    // Allow navigation to any wizard step by clicking the progress bar
     progressSteps.forEach((stepEl, i) => {
         stepEl.addEventListener('click', () => {
-            if (!stepEl.classList.contains('completed') && !stepEl.classList.contains('active')) return;
             const stepNum = i + 1;
-            const combined = history.concat(currentIndex);
-            let targetPos = -1;
-            for (let j = combined.length - 1; j >= 0; j--) {
-                if (progressStepForIndex(combined[j]) === stepNum) {
-                    targetPos = j;
-                    break;
-                }
-            }
-            if (targetPos !== -1) {
-                history = combined.slice(0, targetPos);
-                currentIndex = combined[targetPos];
-                showCurrent();
-            }
+            const nextIndex = stepToIndex[stepNum];
+            if (nextIndex === undefined || nextIndex === currentIndex) return;
+            history.push(currentIndex);
+            currentIndex = nextIndex;
+            showCurrent();
         });
     });
 
@@ -129,15 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupToggleButtons('avtal-group-1', 'har-avtal-1', value => {
         const container = document.getElementById('anstallningstid-container-1');
         if (value === 'ja') {
-
             container?.classList.remove('hidden');
         } else {
             container?.classList.add('hidden');
-
-            container.classList.remove('hidden');
-        } else {
-            container.classList.add('hidden');
-
             document.getElementById('anstallningstid-1').value = '';
             if (partnerSelected) {
                 goTo(idx.inkomst2);
@@ -158,15 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupToggleButtons('avtal-group-2', 'har-avtal-2', value => {
         const container = document.getElementById('anstallningstid-container-2');
         if (value === 'ja') {
-
             container?.classList.remove('hidden');
         } else {
             container?.classList.add('hidden');
-
-            container.classList.remove('hidden');
-        } else {
-            container.classList.add('hidden');
-
             document.getElementById('anstallningstid-2').value = '';
             goTo(idx.calc);
         }
