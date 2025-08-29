@@ -548,7 +548,7 @@ function optimizeParentalLeave(preferences, inputs) {
 
         plan1 = {
             startWeek: 0,
-            weeks: weeks1 + weeks1NoExtra,
+            weeks: weeks1,
             dagarPerVecka: dagarPerVecka1,
             inkomst: Math.round(beräknaMånadsinkomst(dag1, dagarPerVecka1, extra1, barnbidrag, tillägg)),
             inkomstUtanExtra: Math.round(beräknaMånadsinkomst(dag1, dagarPerVecka1, 0, barnbidrag, tillägg)),
@@ -602,7 +602,7 @@ function optimizeParentalLeave(preferences, inputs) {
 
         plan2 = {
             startWeek: weeks1 + weeks1NoExtra,
-            weeks: weeks2 + weeks2NoExtra,
+            weeks: weeks2,
             dagarPerVecka: dagarPerVecka2,
             inkomst: Math.round(beräknaMånadsinkomst(dag2, dagarPerVecka2, extra2, barnbidrag, tillägg)),
             inkomstUtanExtra: Math.round(beräknaMånadsinkomst(dag2, dagarPerVecka2, 0, barnbidrag, tillägg)),

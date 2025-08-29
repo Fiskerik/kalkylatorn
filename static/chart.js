@@ -95,10 +95,10 @@ export function renderGanttChart(
     summaryBox.style.overflowY = 'auto'; // Scroll if content overflows
     summaryBox.innerHTML = '<p>Hovra över en punkt för att se detaljer.</p>';
 
-    const period1ExtraWeeks = Math.max((plan1.weeks || 0) - (plan1NoExtra.weeks || 0), 0);
+    const period1ExtraWeeks = plan1.weeks || 0;
     const period1NoExtraWeeks = plan1NoExtra.weeks || 0;
     const period1MinWeeks = plan1MinDagar.weeks || 0;
-    const period2ExtraWeeks = Math.max((plan2.weeks || 0) - (plan2NoExtra.weeks || 0), 0);
+    const period2ExtraWeeks = plan2.weeks || 0;
     const period2NoExtraWeeks = plan2NoExtra.weeks || 0;
     const period2MinWeeks = plan2MinDagar.weeks || 0;
     const period1OverlapWeeks = plan1Overlap.weeks || 0;
