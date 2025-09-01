@@ -237,13 +237,13 @@ export function renderGanttChart(
                 periodLabel = '10-dagar vid barns födelse';
                 förälder1Components = {
                     fp: Math.round((dag1 * safeDagarPerVecka(plan1.dagarPerVecka) * 4.3) / 100) * 100,
-                    extra: extra1,
+                    extra: Math.round(extra1 * safeDagarPerVecka(plan1.dagarPerVecka) / 7),
                     barnbidrag: barnbidragPerPerson,
                     tillägg: tilläggPerPerson
                 };
                 förälder2Components = {
                     fp: Math.round((dag2 * 5 * 4.3) / 100) * 100,
-                    extra: extra2,
+                    extra: Math.round(extra2 * 5 / 7),
                     barnbidrag: barnbidragPerPerson,
                     tillägg: tilläggPerPerson
                 };
@@ -253,7 +253,7 @@ export function renderGanttChart(
                 periodLabel = week >= transferredStartWeek && transferredWeeks > 0 ? 'Förälder 1 Ledig (Överförda dagar)' : 'Förälder 1 Ledig';
                 förälder1Components = {
                     fp: Math.round((dag1 * safeDagarPerVecka(plan1.dagarPerVecka) * 4.3) / 100) * 100,
-                    extra: extra1,
+                    extra: Math.round(extra1 * safeDagarPerVecka(plan1.dagarPerVecka) / 7),
                     barnbidrag: barnbidragPerPerson,
                     tillägg: tilläggPerPerson
                 };
@@ -311,7 +311,7 @@ export function renderGanttChart(
                 };
                 förälder2Components = {
                     fp: Math.round((dag2 * safeDagarPerVecka(plan2.dagarPerVecka) * 4.3) / 100) * 100,
-                    extra: extra2,
+                    extra: Math.round(extra2 * safeDagarPerVecka(plan2.dagarPerVecka) / 7),
                     barnbidrag: barnbidragPerPerson,
                     tillägg: tilläggPerPerson
                 };
