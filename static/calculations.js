@@ -107,15 +107,17 @@ export function optimizeParentalLeave(preferences, inputs) {
 
     const anst1 = inputs.anställningstid1 || "";
     const anst2 = inputs.anställningstid2 || "";
+    const avtal1Ja = inputs.avtal1 === "ja" || inputs.avtal1 === true;
+    const avtal2Ja = inputs.avtal2 === "ja" || inputs.avtal2 === true;
     const dag1 = beräknaDaglig(inkomst1);
-    const extra1 = inputs.avtal1 === "ja" && anst1 !== "0-5" ? beräknaFöräldralön(inkomst1) : 0;
+    const extra1 = avtal1Ja && anst1 !== "0-5" ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = inkomst2 > 0 ? beräknaDaglig(inkomst2) : 0;
-    const extra2 = inputs.avtal2 === "ja" && anst2 !== "0-5" ? beräknaFöräldralön(inkomst2) : 0;
+    const extra2 = avtal2Ja && anst2 !== "0-5" ? beräknaFöräldralön(inkomst2) : 0;
 
-    const maxFöräldralönWeeks1 = inputs.avtal1 === "ja"
+    const maxFöräldralönWeeks1 = avtal1Ja
         ? anst1 === "6-12" ? 2 * 4.3 : anst1 === ">1" ? 6 * 4.3 : 0
         : 0;
-    const maxFöräldralönWeeks2 = inputs.avtal2 === "ja"
+    const maxFöräldralönWeeks2 = avtal2Ja
         ? anst2 === "6-12" ? 2 * 4.3 : anst2 === ">1" ? 6 * 4.3 : 0
         : 0;
     let unusedFöräldralönWeeks1 = 0;

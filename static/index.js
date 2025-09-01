@@ -216,8 +216,8 @@ function handleOptimize() {
     const inputs = {
         inkomst1: window.appState.inkomst1,
         inkomst2: window.appState.inkomst2,
-        avtal1: window.appState.avtal1,
-        avtal2: window.appState.avtal2,
+        avtal1: window.appState.avtal1 ? 'ja' : 'nej',
+        avtal2: window.appState.avtal2 ? 'ja' : 'nej',
         anställningstid1: window.appState.anställningstid1,
         anställningstid2: window.appState.anställningstid2,
         vårdnad: window.appState.vårdnad,
