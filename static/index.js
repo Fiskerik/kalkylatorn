@@ -237,12 +237,13 @@ function handleOptimize() {
     try {
         const result = optimizeParentalLeave(preferences, inputs);
 
-        // Validate leave duration
+        // Validate leave duration and show message but continue rendering chart
+        const err = document.getElementById('leave-duration-error');
         if (!result.genomförbarhet.ärGenomförbar) {
-            const err = document.getElementById('leave-duration-error');
             err.textContent = result.genomförbarhet.meddelande;
             err.style.display = 'block';
-            return;
+        } else {
+            err.style.display = 'none';
         }
 
         // `användaInkomstDagar` already accounts for both periods with and without
@@ -258,13 +259,10 @@ function handleOptimize() {
         const maxDays1 = förälder1InkomstDagar + förälder1MinDagar + transferred;
         const maxDays2 = förälder2InkomstDagar + förälder2MinDagar - transferred;
 
-        const errorElement = document.getElementById('leave-duration-error');
         if (totalDays1 > maxDays1 || totalDays2 > maxDays2) {
-            errorElement.style.display = 'block';
+            err.style.display = 'block';
             return;
         }
-
-        errorElement.style.display = 'none';
 
         // Render Gantt chart
         document.getElementById('optimization-result').style.display = 'block';
