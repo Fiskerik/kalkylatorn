@@ -21,7 +21,7 @@ import {
  */
 export function beräknaMånadsinkomst(dag, dagarPerVecka, extra, barnbidrag = DEFAULT_BARNBIDRAG, tillägg = 0) {
     const fp = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
-    const extraBelopp = dagarPerVecka === 7 ? extra || 0 : 0;
+    const extraBelopp = extra ? Math.round(extra * (dagarPerVecka / 7)) : 0;
     const resultat = fp + extraBelopp + barnbidrag + tillägg;
     return resultat || 0;
 }
@@ -290,7 +290,7 @@ export function optimizeParentalLeave(preferences, inputs) {
         användaMinDagar1 = 0;
         minDagarWeeks1 = 0;
 
-        plan1ExtraWeeks = extra1 > 0 && dagarPerVecka1 === 7 ? weeks1 : 0;
+        plan1ExtraWeeks = extra1 > 0 ? weeks1 : 0;
         plan1NoExtraWeeksTotal = plan1ExtraWeeks > 0 ? weeks1NoExtra : totalWeeks1;
 
         plan1 = {
@@ -345,7 +345,7 @@ export function optimizeParentalLeave(preferences, inputs) {
         användaMinDagar2 = 0;
         minDagarWeeks2 = 0;
 
-        plan2ExtraWeeks = extra2 > 0 && dagarPerVecka2 === 7 ? weeks2 : 0;
+        plan2ExtraWeeks = extra2 > 0 ? weeks2 : 0;
         plan2NoExtraWeeksTotal = plan2ExtraWeeks > 0 ? weeks2NoExtra : totalWeeks2;
 
         plan2 = {
