@@ -1083,3 +1083,8 @@ canvas#gantt-canvas {
     font-size: 0.9em;
     margin-top: 4px;
 }
+
+.working-parent {
+    border-left: 4px solid #007bff;
+    padding-left: 4px;
+}
