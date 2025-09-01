@@ -867,12 +867,26 @@ function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1MinDaga
         return date.toISOString().split('T')[0];
     };
 
+    const statusFärger = {
+        ok: { bakgrund: '#e6ffe6', kant: '#00cc00', titel: 'Planen är genomförbar' },
+        warning: {
+            bakgrund: '#fffbe6',
+            kant: '#ffcc00',
+            titel: 'Varning: Planen är inte fullt genomförbar'
+        },
+        error: {
+            bakgrund: '#ffcccc',
+            kant: '#ff0000',
+            titel: 'Planen är inte genomförbar'
+        }
+    };
+    const status = statusFärger[genomförbarhet.status || 'ok'];
     let meddelandeHtml = `
-        <div class="feasibility-message" style="background-color: ${genomförbarhet.ärGenomförbar ? '#e6ffe6' : '#ffcccc'}; border: 1px solid ${genomförbarhet.ärGenomförbar ? '#00cc00' : '#ff0000'}; padding: 15px; margin-bottom: 15px; font-family: Inter, sans-serif;">
-            <strong style="font-size: 1.2em;">${genomförbarhet.ärGenomförbar ? 'Planen är genomförbar' : 'Varning: Planen är inte fullt genomförbar'}</strong><br><br>
+        <div class="feasibility-message" style="background-color: ${status.bakgrund}; border: 1px solid ${status.kant}; padding: 15px; margin-bottom: 15px; font-family: Inter, sans-serif;">
+            <strong style="font-size: 1.2em;">${status.titel}</strong><br><br>
     `;
 
-    if (transferredDays > 0 && genomförbarhet.ärGenomförbar) {
+    if (transferredDays > 0 && genomförbarhet.status === 'ok') {
         meddelandeHtml += `
             <span style="color: #f28c38;">Överförde ${transferredDays} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>
         `;
@@ -887,11 +901,11 @@ function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1MinDaga
 
         <strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1End)}</i>)</strong><br>
         Förälder 1: ${(period1TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1TotalWeeks)} veckor), ${safeDagarPerVecka(plan1.dagarPerVecka)} dagar/vecka, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.<br>
-        Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.<br>
+        <span class="working-parent">Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.</span><br>
         <strong>Kombinerad inkomst: ${(period1Förälder1Inkomst + period1Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
         
         <strong>Period 2 (Förälder 1 jobbar, Förälder 2 ledig) (<i>${formatDate(period2Start)} till ${formatDate(period2End)}</i>)</strong><br>
-        Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.<br>
+        <span class="working-parent">Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.</span><br>
         Förälder 2: ${(period2Weeks / 4.3).toFixed(1)} månader (~${Math.round(period2Weeks)} veckor), ${safeDagarPerVecka(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.<br>
         <strong>Kombinerad inkomst: ${(period2Förälder1Inkomst + period2Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
 
@@ -982,9 +996,10 @@ function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1MinDaga
         const period2EndDate = new Date(period2StartDate);
         period2EndDate.setDate(period2EndDate.getDate() + (period2Weeks * 7) - 1);
 
+        const status = statusFärger[genomförbarhet.status || 'ok'];
         let newMeddelandeHtml = `
-            <div class="feasibility-message" style="background-color: #e6ffe6; border: 1px solid #00cc00; padding: 15px; margin-bottom: 15px; font-family: Inter, sans-serif;">
-                <strong style="font-size: 1.2em;">Planen är genomförbar</strong><br><br>
+            <div class="feasibility-message" style="background-color: ${status.bakgrund}; border: 1px solid ${status.kant}; padding: 15px; margin-bottom: 15px; font-family: Inter, sans-serif;">
+                <strong style="font-size: 1.2em;">${status.titel}</strong><br><br>
         `;
 
         if (transferredDays > 0) {
@@ -1002,11 +1017,11 @@ function renderGanttChart(plan1, plan2, plan1NoExtra, plan2NoExtra, plan1MinDaga
 
             <strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1EndDate)}</i>)</strong><br>
             Förälder 1: ${(period1TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1TotalWeeks)} veckor), ${safeDagarPerVecka(plan1.dagarPerVecka)} dagar/vecka, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.<br>
-            Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.<br>
+            <span class="working-parent">Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.</span><br>
             <strong>Kombinerad inkomst: ${(period1Förälder1Inkomst + period1Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
             
             <strong>Period 2 (Förälder 1 jobbar, Förälder 2 ledig) (<i>${formatDate(period2StartDate)} till ${formatDate(period2EndDate)}</i>)</strong><br>
-            Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.<br>
+            <span class="working-parent">Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.</span><br>
             Förälder 2: ${(period2Weeks / 4.3).toFixed(1)} månader (~${Math.round(period2Weeks)} veckor), ${safeDagarPerVecka(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.<br>
             <strong>Kombinerad inkomst: ${(period2Förälder1Inkomst + period2Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
 
