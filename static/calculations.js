@@ -59,6 +59,18 @@ export function beräknaFöräldralön(inkomst) {
 }
 
 /**
+ * Calculate net monthly income from gross and tax rate
+ * @param {number} inkomst - Gross monthly income
+ * @param {number} skattesats - Tax rate percentage
+ * @returns {number} Net monthly income
+ */
+export function beräknaNetto(inkomst, skattesats) {
+    if (!inkomst || inkomst <= 0) return 0;
+    const rate = skattesats > 0 ? skattesats / 100 : 0;
+    return Math.round(inkomst * (1 - rate));
+}
+
+/**
  * Calculate child allowance and additional benefits
  * @param {number} totalBarn - Total number of children
  * @param {boolean} ensamVårdnad - True if sole custody
