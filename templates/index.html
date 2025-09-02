@@ -168,6 +168,9 @@
         </form>
 
         <div id="result-block"></div>
+        <div id="share-container" style="display: none;">
+            <a id="share-link" href="#" target="_blank">Dela scenario</a>
+        </div>
         <div class="toggle-group" id="strategy-group" style="display: none;">
             <label>Välj strategi:</label>
             <button class="toggle-btn active" data-value="longer">Längre ledighet</button>
@@ -234,7 +237,7 @@
         <div id="optimization-result" style="display: none;">
             <h3>Optimerat schema för föräldraledighet</h3>
             <div id="gantt-chart"></div>
-        <div id="calendar-container"  style="display: none;"> 
+        <div id="calendar-container"  style="display: none;">
 
                 <div class="blocks-container">
                     <h3>Disponibla Veckoblock</h3>
@@ -271,7 +274,18 @@
                     <button class="reset-button">Återställ Kalender</button>
                 </div>
                 <div id="total-income">Total inkomst: <span id="income-value">0</span> kr</div>
-                
+
+            </div>
+        </div>
+        <div id="comparison-view" style="display: none;">
+            <h3>Jämför sparade scenarier</h3>
+            <div class="comparison-controls">
+                <select id="scenario-select-a"></select>
+                <select id="scenario-select-b"></select>
+            </div>
+            <div class="comparison-results">
+                <div id="scenario-result-a" class="scenario-column"></div>
+                <div id="scenario-result-b" class="scenario-column"></div>
             </div>
         </div>
     </div>
