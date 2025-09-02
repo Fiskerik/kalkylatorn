@@ -84,17 +84,36 @@
 
             <div class="form-section wizard-step" id="inkomst-avtal-1">
                 <div class="question-icon"><i class="fa-solid fa-money-bill"></i></div>
-                <label for="inkomst1">Vad är din månadsinkomst före skatt?</label>
-                <input type="number" name="inkomst1" id="inkomst1" placeholder="30000 kr" required>
+                <label for="inkomst1">
+                    Vad är din månadsinkomst före skatt?
+                    <span class="help-tooltip"
+                          title="Ange din bruttolön innan skatt"
+                          aria-label="Ange din bruttolön innan skatt"
+                          tabindex="0">?</span>
+                </label>
+                <input type="number" name="inkomst1" id="inkomst1"
+                       placeholder="30000 kr" required>
                 <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
-                <label for="har-avtal-1">Har du kollektivavtal?</label>
+                <label for="har-avtal-1">
+                    Har du kollektivavtal?
+                    <span class="help-tooltip"
+                          title="Kollektivavtal kan ge extra föräldralön"
+                          aria-label="Kollektivavtal kan ge extra föräldralön"
+                          tabindex="0">?</span>
+                </label>
                 <div class="button-group" id="avtal-group-1">
                     <button type="button" class="toggle-btn" data-value="ja">Ja</button>
                     <button type="button" class="toggle-btn" data-value="nej">Nej</button>
                 </div>
                 <input type="hidden" name="har_avtal_1" id="har-avtal-1" value="">
                 <div id="anstallningstid-container-1" style="display: none;">
-                    <label for="anstallningstid-1">Hur länge har du varit anställd på din nuvarande arbetsplats?</label>
+                    <label for="anstallningstid-1">
+                        Hur länge har du varit anställd på din nuvarande arbetsplats?
+                        <span class="help-tooltip"
+                              title="Påverkar rätten till föräldralön"
+                              aria-label="Påverkar rätten till föräldralön"
+                              tabindex="0">?</span>
+                    </label>
                     <div class="button-group" id="anstallningstid-group-1">
                         <button type="button" class="toggle-btn" data-value="0-5">0-5 månader</button>
                         <button type="button" class="toggle-btn" data-value="6-12">6 månader - 1 år</button>
@@ -106,17 +125,36 @@
 
             <div id="inkomst-block-2" class="form-section wizard-step">
                 <div class="question-icon"><i class="fa-solid fa-money-bill"></i></div>
-                <label for="inkomst2">Månadsinkomst förälder 2 (före skatt):</label>
-                <input type="number" name="inkomst2" id="inkomst2" placeholder="30000 kr">
+                <label for="inkomst2">
+                    Månadsinkomst förälder 2 (före skatt):
+                    <span class="help-tooltip"
+                          title="Ange din partners bruttolön innan skatt"
+                          aria-label="Ange din partners bruttolön innan skatt"
+                          tabindex="0">?</span>
+                </label>
+                <input type="number" name="inkomst2" id="inkomst2"
+                       placeholder="30000 kr">
                 <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
-                <label for="har-avtal-2">Har din partner kollektivavtal?</label>
+                <label for="har-avtal-2">
+                    Har din partner kollektivavtal?
+                    <span class="help-tooltip"
+                          title="Kollektivavtal kan ge extra föräldralön"
+                          aria-label="Kollektivavtal kan ge extra föräldralön"
+                          tabindex="0">?</span>
+                </label>
                 <div class="button-group" id="avtal-group-2">
                     <button type="button" class="toggle-btn" data-value="ja">Ja</button>
                     <button type="button" class="toggle-btn" data-value="nej">Nej</button>
                 </div>
                 <input type="hidden" name="har_avtal_2" id="har-avtal-2" value="">
                 <div id="anstallningstid-container-2" style="display: none;">
-                    <label for="anstallningstid-2">Hur länge har du varit anställd på din nuvarande arbetsplats?</label>
+                    <label for="anstallningstid-2">
+                        Hur länge har du varit anställd på din nuvarande arbetsplats?
+                        <span class="help-tooltip"
+                              title="Påverkar rätten till föräldralön"
+                              aria-label="Påverkar rätten till föräldralön"
+                              tabindex="0">?</span>
+                    </label>
                     <div class="button-group" id="anstallningstid-group-2">
                         <button type="button" class="toggle-btn" data-value="0-5">0-5 månader</button>
                         <button type="button" class="toggle-btn" data-value="6-12">6 månader - 1 år</button>

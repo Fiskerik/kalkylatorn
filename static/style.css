@@ -31,6 +31,7 @@ h3 {
     text-align: center;
     border-radius: 8px;
     background-color: #e3e3e3;
+    color: #333;
     font-weight: bold;
     border: none;
     cursor: pointer;
@@ -71,7 +72,7 @@ button {
 }
 
 button, .toggle-btn {
-    background-color: #3bc9b2;
+    background-color: #00796b;
     color: white;
     font-weight: bold;
     border: none;
@@ -145,25 +146,30 @@ canvas {
 }
 
 
-.button-group .toggle-btn:hover {
+.button-group:not(.barnval) .toggle-btn:hover,
+button:hover {
+    background-color: #005f56;
+}
+
+.button-group.barnval .toggle-btn:hover {
     background-color: #d0d0d0;
 }
 
 .button-group .toggle-btn.active {
-    background-color: #3bc9b2;
+    background-color: #00796b;
     color: white;
 }
 
 .question-icon {
     font-size: 2rem;
-    color: #3bc9b2;
+    color: #00796b;
     margin-bottom: 0.5rem;
 }
 
 #back-btn {
     background: none;
     border: none;
-    color: #3bc9b2;
+    color: #00796b;
     font-weight: bold;
     cursor: pointer;
     position: absolute;
@@ -182,6 +188,19 @@ canvas {
 
 #calculate-btn.hidden {
     display: none;
+}
+
+.help-tooltip {
+    display: inline-block;
+    margin-left: 0.25rem;
+    color: #00796b;
+    cursor: help;
+    border-bottom: 1px dotted #00796b;
+}
+
+.help-tooltip:focus {
+    outline: 2px solid #005f56;
+    border-radius: 50%;
 }
 
 input[type="number"] {
@@ -208,7 +227,7 @@ input[type="number"] {
 
 
 .vårdnad-btn.active {
-    background-color: #3bc9b2;
+    background-color: #00796b;
     color: white;
 }
 .result-block {
@@ -296,7 +315,7 @@ input[type="number"] {
 
 .benefit-bar-fill {
     height: 100%;
-    background: #3bc9b2;
+    background: #00796b;
     border-radius: 5px;
     transition: width 0.3s ease-in-out;
 }
@@ -350,7 +369,7 @@ input[type="number"] {
 }
 
 .info-icon {
-    color: #3bc9b2;
+    color: #00796b;
     font-size: 1.2rem;
 }
 
@@ -473,7 +492,7 @@ input[type="number"] {
 }
 
 .total-header {
-    border-bottom: 1px solid #3bc9b2; /* Soft blue accent */
+    border-bottom: 1px solid #00796b; /* Teal accent */
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
@@ -500,7 +519,7 @@ input[type="number"] {
 .total-section h4 {
     margin: 0 0 10px 0;
     font-size: 1.1em;
-    color: #3bc9b2; /* Soft blue */
+    color: #00796b; /* Teal */
     font-weight: 500;
 }
 
@@ -537,7 +556,7 @@ input[type="number"] {
 
 .days-selected-1,
 .days-selected-2 {
-    color: #3bc9b2; /* Blue for emphasis */
+    color: #00796b; /* Teal for emphasis */
     font-weight: 600;
 }
 
@@ -564,7 +583,7 @@ input[type="number"] {
 }
 
 .monthly-total .total-value {
-    color: #3bc9b2; /* Blue for the total */
+    color: #00796b; /* Teal for the total */
     font-size: 1.3em;
 }
 
@@ -615,7 +634,7 @@ input[type="number"] {
     position: relative;
     text-align: center;
     flex: 1;
-    color: #ccc; /* Unreached steps remain gray */
+    color: #666; /* Unreached steps remain gray */
 }
 
 #progress-bar .step::before {
@@ -646,26 +665,26 @@ input[type="number"] {
 
 /* Current step (lighter color) */
 #progress-bar .step.active:not(.completed) {
-    color: #3da8a5; /* Lighter shade */
+    color: #00796b; /* Primary color */
     font-weight: bold;
 }
 
 #progress-bar .step.active:not(.completed)::before {
-    border-color: #3da8a5;
-    background-color: #3da8a5;
+    border-color: #00796b;
+    background-color: #00796b;
     color: white;
 }
 
 /* Skipped state */
 #progress-bar .step.skipped {
-    color: #ddd;
+    color: #757575;
     pointer-events: none;
 }
 
 #progress-bar .step.skipped::before {
-    border-color: #ddd;
-    background-color: #f5f5f5;
-    color: #999;
+    border-color: #757575;
+    background-color: #757575;
+    color: white;
 }
 
 /* Connecting line */
@@ -687,12 +706,12 @@ input[type="number"] {
 
 /* Line for current step */
 #progress-bar .step.active:not(:last-child):not(.completed)::after {
-    background-color: #3da8a5; /* Lighter shade */
+    background-color: #00796b; /* Primary color */
 }
 
 /* Line for skipped steps */
 #progress-bar .step.skipped:not(:last-child)::after {
-    background-color: #ddd;
+    background-color: #757575;
 }
 
 /* Adjust container padding */
@@ -711,7 +730,7 @@ input[type="number"] {
 
 .duration-info .duration-value {
     font-weight: bold;
-    color: #3bc9b2; /* Match your color scheme */
+    color: #00796b; /* Match your color scheme */
     font-size: 24px;
     text-align: left;
 }
@@ -733,7 +752,7 @@ input[type="number"] {
 
 p.duration-text {
     font-weight: bold;
-    color: #3bc9b2; /* Match your color scheme */
+    color: #00796b; /* Match your color scheme */
     font-size: 24px;
     text-align: left;
 }
@@ -1089,6 +1108,23 @@ canvas#gantt-canvas {
     padding-left: 4px;
 }
 
+
+@media (max-width: 600px) {
+    .button-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    button,
+    .toggle-btn {
+        width: 100%;
+    }
+
+    form,
+    .result {
+        padding: 1rem;
+    }
+
 #comparison-view {
     margin-top: 20px;
 }
@@ -1109,4 +1145,5 @@ canvas#gantt-canvas {
     background: #fff;
     border: 1px solid #ccc;
     padding: 10px;
+
 }
