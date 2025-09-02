@@ -11,7 +11,8 @@ import {
     beräknaDaglig,
     beräknaBarnbidrag,
     optimizeParentalLeave,
-    beräknaFöräldralön
+    beräknaFöräldralön,
+    beräknaNetto
 } from './calculations.js';
 import {
     updateProgress, setupInfoBoxToggle,
@@ -165,6 +166,7 @@ function handleFormSubmit(e) {
     // Collect form inputs
     const inkomst1 = parseFloat(document.getElementById('inkomst1').value) || 0;
     const inkomst2 = parseFloat(document.getElementById('inkomst2').value) || 0;
+    const skattesats = parseFloat(document.getElementById('skattesats').value) || 0;
     const vårdnad = document.getElementById('vårdnad').value || 'gemensam';
     const beräknaPartner = document.getElementById('beräkna-partner').value || 'ja';
     const barnTidigare = parseInt(document.getElementById('barn-tidigare').value) || 0;
@@ -191,6 +193,8 @@ function handleFormSubmit(e) {
     const extra1 = avtal1 === 'ja' && anst1 !== '0-5' ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = beräknaPartner === 'ja' && vårdnad === 'gemensam' ? beräknaDaglig(inkomst2) : 0;
     const extra2 = avtal2 === 'ja' && anst2 !== '0-5' && beräknaPartner === 'ja' ? beräknaFöräldralön(inkomst2) : 0;
+    const netto1 = beräknaNetto(inkomst1, skattesats);
+    const netto2 = beräknaNetto(inkomst2, skattesats);
 
     // Generate results
     const resultBlock = document.getElementById('result-block');
@@ -200,8 +204,9 @@ function handleFormSubmit(e) {
     const månadsinkomst1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
         resultHtml += generateParentSection(
             1, dag1, extra1, månadsinkomst1, förälder1InkomstDagar,
-            avtal1 === 'ja', barnbidragResult.barnbidrag, barnbidragResult.tillägg,
-            vårdnad === 'ensam', inkomst1
+            avtal1 === 'ja', barnbidragResult.barnbidrag,
+            barnbidragResult.tillägg, vårdnad === 'ensam',
+            inkomst1, netto1
         );
 
     // Parent 2 results (if applicable)
@@ -209,8 +214,8 @@ function handleFormSubmit(e) {
         const månadsinkomst2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
         resultHtml += generateParentSection(
             2, dag2, extra2, månadsinkomst2, förälder2InkomstDagar,
-            avtal2 === 'ja', barnbidragResult.barnbidrag, barnbidragResult.tillägg,
-            false, inkomst2
+            avtal2 === 'ja', barnbidragResult.barnbidrag,
+            barnbidragResult.tillägg, false, inkomst2, netto2
         );
     }
 
@@ -225,12 +230,23 @@ function handleFormSubmit(e) {
 
     // Store global state for optimization
     window.appState = {
-        inkomst1, inkomst2, vårdnad, beräknaPartner,
+        inkomst1,
+        inkomst2,
+        skattesats,
+        netto1,
+        netto2,
+        vårdnad,
+        beräknaPartner,
         barnbidragPerPerson: barnbidragResult.barnbidrag,
         tilläggPerPerson: barnbidragResult.tillägg,
-        dag1, extra1, dag2, extra2,
-        avtal1: avtal1 === 'ja', avtal2: avtal2 === 'ja',
-        anställningstid1: anst1, anställningstid2: anst2
+        dag1,
+        extra1,
+        dag2,
+        extra2,
+        avtal1: avtal1 === 'ja',
+        avtal2: avtal2 === 'ja',
+        anställningstid1: anst1,
+        anställningstid2: anst2
     };
 
     const leaveContainer = document.getElementById('leave-slider-container');
