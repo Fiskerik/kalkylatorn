@@ -19,11 +19,107 @@ import {
 } from './ui.js';
 import { renderGanttChart } from './chart.js';
 
+/**
+ * Retrieve saved scenarios from localStorage.
+ * @returns {Array} stored scenarios
+ */
+function getScenarios() {
+    const raw = localStorage.getItem('scenarios');
+    return raw ? JSON.parse(raw) : [];
+}
+
+/**
+ * Save a scenario to localStorage.
+ * @param {Object} inputs - Input values for the calculation
+ * @param {string} resultHtml - Generated result HTML
+ */
+function saveScenario(inputs, resultHtml) {
+    const scenarios = getScenarios();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(resultHtml, 'text/html');
+    doc.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    scenarios.push({
+        id: Date.now().toString(),
+        name: `Scenario ${scenarios.length + 1}`,
+        inputs,
+        result: doc.body.innerHTML
+    });
+    localStorage.setItem('scenarios', JSON.stringify(scenarios));
+    populateComparison();
+}
+
+/**
+ * Populate scenario selectors for comparison view.
+ */
+function populateComparison() {
+    const scenarios = getScenarios();
+    const selectA = document.getElementById('scenario-select-a');
+    const selectB = document.getElementById('scenario-select-b');
+    if (!selectA || !selectB) return;
+    const fill = select => {
+        select.innerHTML = '<option value="">Välj scenario</option>';
+        scenarios.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name;
+            select.appendChild(opt);
+        });
+    };
+    fill(selectA);
+    fill(selectB);
+    const view = document.getElementById('comparison-view');
+    if (view) view.style.display = scenarios.length ? 'block' : 'none';
+}
+
+/**
+ * Attach change listeners for scenario comparison selectors.
+ */
+function setupComparisonHandlers() {
+    const attach = (selectId, targetId) => {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        select.addEventListener('change', () => {
+            const scenarios = getScenarios();
+            const sc = scenarios.find(s => s.id === select.value);
+            const target = document.getElementById(targetId);
+            if (target) target.innerHTML = sc ? sc.result : '';
+        });
+    };
+    attach('scenario-select-a', 'scenario-result-a');
+    attach('scenario-select-b', 'scenario-result-b');
+}
+
+/**
+ * Build a shareable URL with query parameters for a scenario.
+ * @param {Object} inputs - Input values
+ * @returns {string} shareable URL
+ */
+function createShareLink(inputs) {
+    const params = new URLSearchParams(inputs);
+    return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+}
+
+/**
+ * Load scenario from URL query parameters on page load.
+ */
+function loadScenarioFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.toString()) return;
+    params.forEach((value, key) => {
+        const el = document.getElementById(key);
+        if (el) el.value = value;
+    });
+    handleFormSubmit({ preventDefault: () => {} });
+}
+
 
 // Initialize on DOM content loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
     setupEventListeners();
+    populateComparison();
+    setupComparisonHandlers();
+    loadScenarioFromQuery();
 });
 
 /**
@@ -144,6 +240,28 @@ function handleFormSubmit(e) {
 
     // Update dropdown listeners for monthly boxes
     setupDropdownListeners();
+
+    const inputs = {
+        inkomst1,
+        inkomst2,
+        vårdnad,
+        'beräkna-partner': beräknaPartner,
+        'barn-tidigare': barnTidigare,
+        'barn-planerade': barnPlanerade,
+        'har-avtal-1': avtal1,
+        'har-avtal-2': avtal2,
+        'anstallningstid-1': anst1,
+        'anstallningstid-2': anst2
+    };
+    const shareLink = document.getElementById('share-link');
+    if (shareLink) {
+        shareLink.href = createShareLink(inputs);
+        shareLink.style.display = 'inline';
+        const container = document.getElementById('share-container');
+        if (container) container.style.display = 'block';
+    }
+
+    saveScenario(inputs, resultHtml);
 }
 
 /**
