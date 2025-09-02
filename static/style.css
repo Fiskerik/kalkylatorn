@@ -1088,3 +1088,25 @@ canvas#gantt-canvas {
     border-left: 4px solid #007bff;
     padding-left: 4px;
 }
+
+#comparison-view {
+    margin-top: 20px;
+}
+
+.comparison-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.comparison-results {
+    display: flex;
+    gap: 10px;
+}
+
+.scenario-column {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
