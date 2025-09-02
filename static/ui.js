@@ -25,16 +25,44 @@ export function updateProgress(stepNumber) {
  * @param {Function} callback - Optional callback function
  */
 export function setupToggleButtons(groupId, inputId, callback = null) {
-    const group = document.querySelectorAll(`#${groupId} .toggle-btn`);
+    const groupEl = document.getElementById(groupId);
+    if (!groupEl) return;
+    groupEl.setAttribute('role', 'group');
+    const group = groupEl.querySelectorAll('.toggle-btn');
     const input = document.getElementById(inputId);
-    group.forEach(button => {
+    group.forEach((button, index) => {
+        button.setAttribute('aria-pressed', 'false');
+        button.setAttribute('tabindex', '0');
+        if (!button.getAttribute('aria-label')) {
+            button.setAttribute('aria-label', button.textContent.trim());
+        }
         button.addEventListener('click', () => {
-            group.forEach(b => b.classList.remove('active'));
+            group.forEach(b => {
+                b.classList.remove('active');
+                b.setAttribute('aria-pressed', 'false');
+            });
             button.classList.add('active');
+            button.setAttribute('aria-pressed', 'true');
             input.value = button.dataset.value;
-            if (groupId === 'barn-tidigare-group') window.barnIdag = parseInt(button.dataset.value);
-            if (groupId === 'barn-planerade-group') window.barnPlanerat = parseInt(button.dataset.value);
+            if (groupId === 'barn-tidigare-group') {
+                window.barnIdag = parseInt(button.dataset.value);
+            }
+            if (groupId === 'barn-planerade-group') {
+                window.barnPlanerat = parseInt(button.dataset.value);
+            }
             if (callback) callback(button.dataset.value);
+        });
+        button.addEventListener('keydown', e => {
+            if (['ArrowRight', 'ArrowDown'].includes(e.key)) {
+                e.preventDefault();
+                group[(index + 1) % group.length].focus();
+            } else if (['ArrowLeft', 'ArrowUp'].includes(e.key)) {
+                e.preventDefault();
+                group[(index - 1 + group.length) % group.length].focus();
+            } else if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                button.click();
+            }
         });
     });
 }
