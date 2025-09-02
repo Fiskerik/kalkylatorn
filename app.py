@@ -33,11 +33,13 @@ def index():
 
         try:
             inkomst1 = int(inkomst1)
-        except:
+        except ValueError:
+            app.logger.warning("Ogiltig inkomst1: %s", inkomst1)
             inkomst1 = 0
         try:
             inkomst2 = int(inkomst2)
-        except:
+        except ValueError:
+            app.logger.warning("Ogiltig inkomst2: %s", inkomst2)
             inkomst2 = 0
 
         daily_rate_1 = berakna_daglig_ersattning(inkomst1)
