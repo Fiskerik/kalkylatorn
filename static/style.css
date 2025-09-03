@@ -541,6 +541,11 @@ input[type="number"] {
     font-weight: 600;
 }
 
+.fp-brutto {
+    color: #999;
+    font-weight: 400;
+}
+
 .fp-row {
     background-color: #f5f2eb; /* Subtle beige for Föräldrapenning */
     border-radius: 4px;
