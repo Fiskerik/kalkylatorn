@@ -2,8 +2,8 @@
  * index.js - Main initialization and form handling for the Föräldrapenningkalkylator
  * Sets up event listeners and orchestrates calculations, UI, and chart rendering.
  */
-import { 
-    vårdnad, beräknaPartner, barnbidragPerPerson, tilläggPerPerson, 
+import {
+    vårdnad, beräknaPartner, barnbidragPerPerson, tilläggPerPerson,
     barnIdag, barnPlanerat, hasCalculated, defaultPreferences,
     förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar
 } from './config.js';
@@ -20,107 +20,10 @@ import {
 } from './ui.js';
 import { renderGanttChart } from './chart.js';
 
-/**
- * Retrieve saved scenarios from localStorage.
- * @returns {Array} stored scenarios
- */
-function getScenarios() {
-    const raw = localStorage.getItem('scenarios');
-    return raw ? JSON.parse(raw) : [];
-}
-
-/**
- * Save a scenario to localStorage.
- * @param {Object} inputs - Input values for the calculation
- * @param {string} resultHtml - Generated result HTML
- */
-function saveScenario(inputs, resultHtml) {
-    const scenarios = getScenarios();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(resultHtml, 'text/html');
-    doc.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-    scenarios.push({
-        id: Date.now().toString(),
-        name: `Scenario ${scenarios.length + 1}`,
-        inputs,
-        result: doc.body.innerHTML
-    });
-    localStorage.setItem('scenarios', JSON.stringify(scenarios));
-    populateComparison();
-}
-
-/**
- * Populate scenario selectors for comparison view.
- */
-function populateComparison() {
-    const scenarios = getScenarios();
-    const selectA = document.getElementById('scenario-select-a');
-    const selectB = document.getElementById('scenario-select-b');
-    if (!selectA || !selectB) return;
-    const fill = select => {
-        select.innerHTML = '<option value="">Välj scenario</option>';
-        scenarios.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s.id;
-            opt.textContent = s.name;
-            select.appendChild(opt);
-        });
-    };
-    fill(selectA);
-    fill(selectB);
-    const view = document.getElementById('comparison-view');
-    if (view) view.style.display = scenarios.length ? 'block' : 'none';
-}
-
-/**
- * Attach change listeners for scenario comparison selectors.
- */
-function setupComparisonHandlers() {
-    const attach = (selectId, targetId) => {
-        const select = document.getElementById(selectId);
-        if (!select) return;
-        select.addEventListener('change', () => {
-            const scenarios = getScenarios();
-            const sc = scenarios.find(s => s.id === select.value);
-            const target = document.getElementById(targetId);
-            if (target) target.innerHTML = sc ? sc.result : '';
-        });
-    };
-    attach('scenario-select-a', 'scenario-result-a');
-    attach('scenario-select-b', 'scenario-result-b');
-}
-
-/**
- * Build a shareable URL with query parameters for a scenario.
- * @param {Object} inputs - Input values
- * @returns {string} shareable URL
- */
-function createShareLink(inputs) {
-    const params = new URLSearchParams(inputs);
-    return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-}
-
-/**
- * Load scenario from URL query parameters on page load.
- */
-function loadScenarioFromQuery() {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.toString()) return;
-    params.forEach((value, key) => {
-        const el = document.getElementById(key);
-        if (el) el.value = value;
-    });
-    handleFormSubmit({ preventDefault: () => {} });
-}
-
-
 // Initialize on DOM content loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
     setupEventListeners();
-    populateComparison();
-    setupComparisonHandlers();
-    loadScenarioFromQuery();
 });
 
 /**
@@ -166,7 +69,6 @@ function handleFormSubmit(e) {
     // Collect form inputs
     const inkomst1 = parseFloat(document.getElementById('inkomst1').value) || 0;
     const inkomst2 = parseFloat(document.getElementById('inkomst2').value) || 0;
-    const skattesats = parseFloat(document.getElementById('skattesats').value) || 0;
     const vårdnad = document.getElementById('vårdnad').value || 'gemensam';
     const beräknaPartner = document.getElementById('beräkna-partner').value || 'ja';
     const barnTidigare = parseInt(document.getElementById('barn-tidigare').value) || 0;
@@ -193,8 +95,8 @@ function handleFormSubmit(e) {
     const extra1 = avtal1 === 'ja' && anst1 !== '0-5' ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = beräknaPartner === 'ja' && vårdnad === 'gemensam' ? beräknaDaglig(inkomst2) : 0;
     const extra2 = avtal2 === 'ja' && anst2 !== '0-5' && beräknaPartner === 'ja' ? beräknaFöräldralön(inkomst2) : 0;
-    const netto1 = beräknaNetto(inkomst1, skattesats);
-    const netto2 = beräknaNetto(inkomst2, skattesats);
+    const netto1 = beräknaNetto(inkomst1);
+    const netto2 = beräknaNetto(inkomst2);
 
     // Generate results
     const resultBlock = document.getElementById('result-block');
@@ -232,7 +134,6 @@ function handleFormSubmit(e) {
     window.appState = {
         inkomst1,
         inkomst2,
-        skattesats,
         netto1,
         netto2,
         vårdnad,
@@ -257,27 +158,6 @@ function handleFormSubmit(e) {
     // Update dropdown listeners for monthly boxes
     setupDropdownListeners();
 
-    const inputs = {
-        inkomst1,
-        inkomst2,
-        vårdnad,
-        'beräkna-partner': beräknaPartner,
-        'barn-tidigare': barnTidigare,
-        'barn-planerade': barnPlanerade,
-        'har-avtal-1': avtal1,
-        'har-avtal-2': avtal2,
-        'anstallningstid-1': anst1,
-        'anstallningstid-2': anst2
-    };
-    const shareLink = document.getElementById('share-link');
-    if (shareLink) {
-        shareLink.href = createShareLink(inputs);
-        shareLink.style.display = 'inline';
-        const container = document.getElementById('share-container');
-        if (container) container.style.display = 'block';
-    }
-
-    saveScenario(inputs, resultHtml);
 }
 
 /**
@@ -331,11 +211,26 @@ function handleOptimize() {
     }
 
     const barnDatum = barnDatumInput.value || '2025-05-01';
-    const totalMonths = parseFloat(ledigTid1Input.value) || 0;
+    const totalMonths = parseFloat(ledigTid1Input.value);
+    const minInkomstValue = minInkomstInput.value;
+    const leaveErr = document.getElementById('leave-duration-error');
+    const minIncomeErr = document.getElementById('min-income-error');
+    if (!totalMonths) {
+        leaveErr.textContent = 'Ange hur länge du vill vara ledig.';
+        leaveErr.style.display = 'block';
+        if (minIncomeErr) minIncomeErr.style.display = 'none';
+        return;
+    }
+    leaveErr.style.display = 'none';
+    if (!minInkomstValue) {
+        if (minIncomeErr) minIncomeErr.style.display = 'block';
+        return;
+    }
+    if (minIncomeErr) minIncomeErr.style.display = 'none';
     const slider = document.getElementById('leave-slider');
     const ledigTid1 = slider ? parseFloat(slider.value) || 0 : 0;
     const ledigTid2 = Math.max(totalMonths - ledigTid1, 0);
-    const minInkomst = parseInt(minInkomstInput.value) || 10000;
+    const minInkomst = parseInt(minInkomstValue, 10);
     const strategy = strategyInput.value || 'longer';
     const deltid = defaultPreferences.deltid; // From config, could be made dynamic
 
