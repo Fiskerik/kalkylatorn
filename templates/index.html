@@ -121,9 +121,6 @@
                     </div>
                     <input type="hidden" name="anstallningstid_1" id="anstallningstid-1" value="">
                 </div>
-                <div class="question-icon"><i class="fa-solid fa-percent"></i></div>
-                <label for="skattesats">Kommunalskatt (%)</label>
-                <input type="number" name="skattesats" id="skattesats" placeholder="30" min="0" max="100">
             </div>
 
             <div id="inkomst-block-2" class="form-section wizard-step">
@@ -171,9 +168,6 @@
         </form>
 
         <div id="result-block"></div>
-        <div id="share-container" style="display: none;">
-            <a id="share-link" href="#" target="_blank">Dela scenario</a>
-        </div>
         <div class="toggle-group" id="strategy-group" style="display: none;">
             <label>Välj strategi:</label>
             <button class="toggle-btn active" data-value="longer">Längre ledighet</button>
@@ -212,6 +206,9 @@
             <div class="preference-group">
                 <label>Vad är minimigränsen för din månadsinkomst? (kr/månad)</label>
                 <input type="number" id="min-inkomst" name="min-inkomst" min="0" placeholder="Ange belopp">
+                <div id="min-income-error" style="color: red; display: none; margin-top: 10px;">
+                    Vänligen ange minimigräns för din månadsinkomst.
+                </div>
                 <div class="info-box">
                     <div class="info-header">
                         <span class="info-icon">ℹ️</span>
@@ -278,17 +275,6 @@
                 </div>
                 <div id="total-income">Total inkomst: <span id="income-value">0</span> kr</div>
 
-            </div>
-        </div>
-        <div id="comparison-view" style="display: none;">
-            <h3>Jämför sparade scenarier</h3>
-            <div class="comparison-controls">
-                <select id="scenario-select-a"></select>
-                <select id="scenario-select-b"></select>
-            </div>
-            <div class="comparison-results">
-                <div id="scenario-result-a" class="scenario-column"></div>
-                <div id="scenario-result-b" class="scenario-column"></div>
             </div>
         </div>
     </div>

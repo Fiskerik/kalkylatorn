@@ -11,18 +11,18 @@ import {
 } from './config.js';
 
 /**
- * Calculate monthly income based on daily rate, days per week, and additional benefits
+ * Calculate monthly net income based on daily rate, days per week, and additional benefits
  * @param {number} dag - Daily parental benefit rate
  * @param {number} dagarPerVecka - Days per week taken
  * @param {number} extra - Parental supplement
  * @param {number} barnbidrag - Child allowance
  * @param {number} tillägg - Additional child allowance
- * @returns {number} Rounded monthly income
+ * @returns {number} Rounded monthly net income
  */
 export function beräknaMånadsinkomst(dag, dagarPerVecka, extra, barnbidrag = DEFAULT_BARNBIDRAG, tillägg = 0) {
     const fp = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
     const extraBelopp = extra ? Math.round(extra * (dagarPerVecka / 7)) : 0;
-    const resultat = fp + extraBelopp + barnbidrag + tillägg;
+    const resultat = beräknaNetto(fp) + beräknaNetto(extraBelopp) + barnbidrag + tillägg;
     return resultat || 0;
 }
 
@@ -61,12 +61,12 @@ export function beräknaFöräldralön(inkomst) {
 /**
  * Calculate net monthly income from gross and tax rate
  * @param {number} inkomst - Gross monthly income
- * @param {number} skattesats - Tax rate percentage
+ * @param {number} skattesats - Tax rate percentage (default 30)
  * @returns {number} Net monthly income
  */
-export function beräknaNetto(inkomst, skattesats) {
+export function beräknaNetto(inkomst, skattesats = 30) {
     if (!inkomst || inkomst <= 0) return 0;
-    const rate = skattesats > 0 ? skattesats / 100 : 0;
+    const rate = skattesats / 100;
     return Math.round(inkomst * (1 - rate));
 }
 
@@ -154,8 +154,8 @@ export function optimizeParentalLeave(preferences, inputs) {
     let användaMinDagar1 = 0;
     let användaMinDagar2 = 0;
 
-    const arbetsInkomst1 = inkomst1 + barnbidrag + tillägg;
-    const arbetsInkomst2 = inkomst2 > 0 ? inkomst2 + barnbidrag + tillägg : 0;
+    const arbetsInkomst1 = beräknaNetto(inkomst1) + barnbidrag + tillägg;
+    const arbetsInkomst2 = inkomst2 > 0 ? beräknaNetto(inkomst2) + barnbidrag + tillägg : 0;
 
     let dagarPerVecka1 = 0;
     let dagarPerVecka2 = 0;

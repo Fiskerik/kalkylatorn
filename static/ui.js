@@ -3,7 +3,7 @@
  * Manages progress bar, toggle buttons, info boxes, and result rendering.
  */
 import { barnIdag, barnPlanerat } from './config.js';
-import { beräknaMånadsinkomst } from './calculations.js';
+import { beräknaMånadsinkomst, beräknaNetto } from './calculations.js';
 
 /**
  * Update the progress bar based on the current step
@@ -297,8 +297,10 @@ export function updateMonthlyBox(wrapperId, dagarPerVecka, dag, extra, barnbidra
     const monthlyBox = wrapper.querySelector('.monthly-box');
     if (!monthlyBox) return console.error(`monthly-box hittades inte i ${wrapperId}`);
     
-    const nyFp = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
-    const justeradExtra = avtal ? extra : 0;
+    const nyFpBrutto = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
+    const nyFp = beräknaNetto(nyFpBrutto);
+    const justeradExtraBrutto = avtal ? extra : 0;
+    const justeradExtra = beräknaNetto(justeradExtraBrutto);
     const nyTotal = nyFp + justeradExtra + (barnbidrag || 0) + (tillägg || 0);
     
     const fpElement = monthlyBox.querySelector('.fp-row .fp-value');
