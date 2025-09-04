@@ -3,7 +3,7 @@
  * Manages progress bar, toggle buttons, info boxes, and result rendering.
  */
 import { barnIdag, barnPlanerat } from './config.js';
-import { beräknaMånadsinkomst, beräknaNetto } from './calculations.js';
+import { beräknaNetto } from './calculations.js';
 
 /**
  * Update the progress bar based on the current step
@@ -125,19 +125,19 @@ export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, till
  * @param {number} parentNum - Parent number (1 or 2)
  * @param {number} dag - Daily benefit rate
  * @param {number} extra - Parental supplement
- * @param {number} månadsinkomst - Monthly parental benefit
+ * @param {number} månadsinkomst - Monthly parental benefit (gross)
  * @param {number} dagar - Available days
  * @param {boolean} avtal - Has collective agreement
  * @param {number} barnbidrag - Child allowance
  * @param {number} tillägg - Additional child allowance
  * @param {boolean} ärEnsam - True if sole custody
  * @param {number} inkomst - Reported salary
- * @param {number} netto - Net salary after tax
  * @returns {string} HTML section string
 */
 export function generateParentSection(parentNum, dag, extra, månadsinkomst,
-    dagar, avtal, barnbidrag, tillägg, ärEnsam, inkomst, netto) {
+    dagar, avtal, barnbidrag, tillägg, ärEnsam, inkomst) {
     const lagstanivådagar = Math.round(dagar * 0.23076923);
+    const fpNet = beräknaNetto(månadsinkomst);
     const gemensamDetails = `
         <div class="benefit-details">
             <div class="benefit-detail-line">
@@ -171,10 +171,6 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                     <div class="benefit-title">Bruttoinkomst</div>
                     <div class="benefit-value-large">
                         <span>${inkomst.toLocaleString()}</span><span class="unit">kr/månad</span>
-                    </div>
-                    <div class="benefit-title" style="margin-top: 0.5rem;">Nettoinkomst</div>
-                    <div class="benefit-value-large">
-                        <span>${netto.toLocaleString()}</span><span class="unit">kr/månad</span>
                     </div>
                     <div class="benefit-title" style="margin-top: 0.5rem;">Preliminär föräldralön</div>
                     <div class="benefit-value-large">
@@ -218,7 +214,11 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                     <h3>Förälder ${parentNum} – Månatlig ersättning</h3>
                     <div class="monthly-row fp-row">
                         <span>Föräldrapenning*</span>
-                        <span class="fp-value">${månadsinkomst.toLocaleString()} kr/månad</span>
+                        <span class="fp-brutto">${månadsinkomst.toLocaleString()} kr/månad</span>
+                    </div>
+                    <div class="monthly-row fp-net-row">
+                        <span>Föräldrapenning efter skatt</span>
+                        <span class="fp-value">${fpNet.toLocaleString()} kr/månad</span>
                     </div>
                     ${avtal ? `
                     <div class="monthly-row extra-row">
@@ -235,7 +235,7 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                     </div>
                     <div class="monthly-total">
                         <span>Totalt:</span>
-                        <span class="total-value">${(månadsinkomst + extra + barnbidrag + tillägg).toLocaleString()} kr/månad</span>
+                        <span class="total-value">${(fpNet + extra + barnbidrag + tillägg).toLocaleString()} kr/månad</span>
                     </div>
                     <div class="monthly-info">
                         * Vid ett uttag på 7 föräldradagar/vecka<br>
@@ -299,19 +299,20 @@ export function updateMonthlyBox(wrapperId, dagarPerVecka, dag, extra, barnbidra
     
     const nyFpBrutto = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
     const nyFp = beräknaNetto(nyFpBrutto);
-    const justeradExtraBrutto = avtal ? extra : 0;
-    const justeradExtra = beräknaNetto(justeradExtraBrutto);
-    const nyTotal = nyFp + justeradExtra + (barnbidrag || 0) + (tillägg || 0);
-    
-    const fpElement = monthlyBox.querySelector('.fp-row .fp-value');
+    const justeradExtraBrutto = avtal ? Math.round(extra * (dagarPerVecka / 7)) : 0;
+    const nyTotal = nyFp + justeradExtraBrutto + (barnbidrag || 0) + (tillägg || 0);
+
+    const fpBruttoElement = monthlyBox.querySelector('.fp-row .fp-brutto');
+    const fpElement = monthlyBox.querySelector('.fp-net-row .fp-value');
     const extraElement = monthlyBox.querySelector('.extra-row .extra-value');
     const totalElement = monthlyBox.querySelector('.monthly-total .total-value');
     const infoElement = monthlyBox.querySelector('.monthly-info');
-    
-    if (fpElement && totalElement) {
+
+    if (fpElement && fpBruttoElement && totalElement) {
+        fpBruttoElement.textContent = `${nyFpBrutto.toLocaleString()} kr/månad`;
         fpElement.textContent = `${nyFp.toLocaleString()} kr/månad`;
         if (extraElement) {
-            extraElement.textContent = `${justeradExtra.toLocaleString()} kr/månad`;
+            extraElement.textContent = `${justeradExtraBrutto.toLocaleString()} kr/månad`;
         }
         totalElement.textContent = `${nyTotal.toLocaleString()} kr/månad`;
         if (infoElement) {

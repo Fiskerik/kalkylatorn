@@ -108,7 +108,7 @@ function handleFormSubmit(e) {
             1, dag1, extra1, månadsinkomst1, förälder1InkomstDagar,
             avtal1 === 'ja', barnbidragResult.barnbidrag,
             barnbidragResult.tillägg, vårdnad === 'ensam',
-            inkomst1, netto1
+            inkomst1
         );
 
     // Parent 2 results (if applicable)
@@ -117,7 +117,7 @@ function handleFormSubmit(e) {
         resultHtml += generateParentSection(
             2, dag2, extra2, månadsinkomst2, förälder2InkomstDagar,
             avtal2 === 'ja', barnbidragResult.barnbidrag,
-            barnbidragResult.tillägg, false, inkomst2, netto2
+            barnbidragResult.tillägg, false, inkomst2
         );
     }
 
