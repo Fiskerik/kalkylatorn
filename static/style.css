@@ -1176,7 +1176,26 @@ canvas#gantt-canvas {
 }
 
 .summary-section {
-    margin-bottom: 10px;
+    margin: 0.75rem 0;
+    line-height: 1.5;
+}
+
+.summary-period-divider {
+    border: 0;
+    border-top: 2px solid #475467;
+    margin: 1.5rem 0 1rem;
+    display: block;
+    width: 100%;
+    opacity: 0.85;
+}
+
+.summary-phase-divider {
+    border: 0;
+    border-top: 1px dashed #667085;
+    margin: 1rem 0;
+    display: block;
+    width: 100%;
+    opacity: 0.75;
 }
 
 .slider-labels {
