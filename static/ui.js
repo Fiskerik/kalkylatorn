@@ -216,11 +216,11 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                     </div>
                 </div>
                 <div class="info-box">
-                    <div class="info-header">
+                    <button type="button" class="info-header" aria-expanded="false">
                         <span class="info-icon">ℹ️</span>
                         <span><strong>Information om föräldralön</strong></span>
                         <span class="info-arrow">▾</span>
-                    </div>
+                    </button>
                     <div class="info-content">
                         <p>
                             Eftersom du har kollektivavtal har du sannolikt rätt till föräldrapenningtillägg, även kallat föräldralön, från din arbetsgivare. Detta innebär ofta att du kan få upp till 90 % av din lön under en viss period av din föräldraledighet.
