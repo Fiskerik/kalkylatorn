@@ -105,6 +105,49 @@ export function renderGanttChart(
         error: '#ff9c9c'
     };
 
+    let usedPeriodColors = new Set();
+    let usedSeverityLevels = new Set();
+
+    const baseLegendDefinitions = [
+        { color: '#800080', text: 'Överlappande Ledighet' },
+        { color: '#28a745', text: 'Förälder 1 Ledig' },
+        { color: '#f28c38', text: 'Förälder 1 Ledig (Överförda dagar)' },
+        { color: '#007bff', text: 'Förälder 2 Ledig' },
+        { color: 'red', text: 'Efter Ledighet' }
+    ];
+
+    const buildLegendEntries = () => {
+        const entries = baseLegendDefinitions
+            .filter(definition => usedPeriodColors.has(definition.color))
+            .map(definition => ({
+                text: definition.text,
+                fillStyle: definition.color,
+                strokeStyle: definition.color,
+                hidden: false
+            }));
+
+        if (minIncomeRequirement) {
+            if (usedSeverityLevels.has('warning')) {
+                entries.push({
+                    text: 'Inkomst under krav (< 10%)',
+                    fillStyle: pointFillColors.warning,
+                    strokeStyle: pointFillColors.warning,
+                    hidden: false
+                });
+            }
+            if (usedSeverityLevels.has('error')) {
+                entries.push({
+                    text: 'Inkomst under krav (> 10%)',
+                    fillStyle: pointFillColors.error,
+                    strokeStyle: pointFillColors.error,
+                    hidden: false
+                });
+            }
+        }
+
+        return entries;
+    };
+
     const getIncomeSeverity = income => {
         if (!minIncomeRequirement || typeof income !== 'number') {
             return null;
@@ -460,6 +503,14 @@ export function renderGanttChart(
     }
 
     generateInkomstData();
+
+    usedPeriodColors = new Set(inkomstData.map(data => getPeriodColor(data.x)));
+    usedSeverityLevels = new Set(
+        inkomstData
+            .map(data => getIncomeSeverity(data.y))
+            .filter(Boolean)
+    );
+    const legendEntries = buildLegendEntries();
 
     const formatDate = (date) => {
         if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -888,17 +939,9 @@ export function renderGanttChart(
             },
             plugins: {
                 legend: {
-                    display: true,
+                    display: legendEntries.length > 0,
                     labels: {
-                        generateLabels: chart => [
-                            { text: 'Överlappande Ledighet', fillStyle: '#800080', strokeStyle: '#800080', hidden: false },
-                            { text: 'Förälder 1 Ledig', fillStyle: '#28a745', strokeStyle: '#28a745', hidden: false },
-                            transferredDays > 0 ? { text: 'Förälder 1 Ledig (Överförda dagar)', fillStyle: '#f28c38', strokeStyle: '#f28c38', hidden: false } : null,
-                            { text: 'Förälder 2 Ledig', fillStyle: '#007bff', strokeStyle: '#007bff', hidden: false },
-                            { text: 'Efter Ledighet', fillStyle: 'red', strokeStyle: 'red', hidden: false },
-                            minIncomeRequirement ? { text: 'Inkomst under krav (< 10%)', fillStyle: pointFillColors.warning, strokeStyle: pointFillColors.warning, hidden: false } : null,
-                            minIncomeRequirement ? { text: 'Inkomst under krav (> 10%)', fillStyle: pointFillColors.error, strokeStyle: pointFillColors.error, hidden: false } : null
-                        ].filter(Boolean)
+                        generateLabels: () => legendEntries.map(item => ({ ...item }))
                     }
                 },
                 tooltip: {

@@ -1131,39 +1131,99 @@ canvas#gantt-canvas {
 #leave-slider {
     -webkit-appearance: none;
     width: 100%;
-    height: 8px;
-    border-radius: 5px;
+    height: 14px;
+    border-radius: 999px;
     background: linear-gradient(to right, #28a745 50%, #007bff 50%);
+    border: 1px solid #d0d5dd;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.15);
     outline: none;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+#leave-slider:hover {
+    box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.25);
+}
+#leave-slider:focus-visible {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow:
+        0 0 0 3px rgba(37, 99, 235, 0.2),
+        inset 0 1px 2px rgba(15, 23, 42, 0.25);
+}
+#leave-slider::-webkit-slider-runnable-track {
+    height: 100%;
+    border-radius: inherit;
+    background: transparent;
+}
+#leave-slider::-moz-range-track {
+    height: 100%;
+    border-radius: inherit;
+    background: transparent;
+    border: none;
 }
 #leave-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: gray;
+    background: #ffffff;
+    border: 2px solid #1f2937;
+    box-shadow:
+        0 2px 6px rgba(15, 23, 42, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.9) inset;
     cursor: pointer;
-    border: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+#leave-slider::-webkit-slider-thumb:active {
+    transform: scale(1.05);
+    box-shadow:
+        0 3px 8px rgba(15, 23, 42, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+    border-color: #0f172a;
 }
 #leave-slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: gray;
+    background: #ffffff;
+    border: 2px solid #1f2937;
+    box-shadow:
+        0 2px 6px rgba(15, 23, 42, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.9) inset;
     cursor: pointer;
-    border: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+#leave-slider::-moz-range-thumb:active {
+    transform: scale(1.05);
+    box-shadow:
+        0 3px 8px rgba(15, 23, 42, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+    border-color: #0f172a;
 }
 #leave-slider-container {
-    margin-top: 10px;
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    transition: box-shadow 0.2s ease;
+}
+#leave-slider-container:hover {
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
 }
 .slider-values {
-    text-align: center;
-    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
 }
 
 .slider-value {
-    display: block;
-    margin: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
     font-weight: 500;
 }
 
