@@ -44,17 +44,12 @@ function initializeForm() {
 function setupEventListeners() {
     const form = document.getElementById('calc-form');
     const optimizeBtn = document.getElementById('optimize-btn');
-    const maximizeFöräldralönBtn = document.getElementById('maximize-parental-pay-btn');
 
     // Form submission
     form.addEventListener('submit', handleFormSubmit);
 
     // Optimization button
-    optimizeBtn.addEventListener('click', () => runOptimization({ maximizeFöräldralön: false }));
-
-    if (maximizeFöräldralönBtn) {
-        maximizeFöräldralönBtn.addEventListener('click', () => runOptimization({ maximizeFöräldralön: true }));
-    }
+    optimizeBtn.addEventListener('click', handleOptimize);
 
     // Dropdown listeners for uttag
     setupDropdownListeners();
@@ -200,7 +195,7 @@ function setupDropdownListeners() {
 /**
  * Handle optimization button click
  */
-function runOptimization({ maximizeFöräldralön }) {
+function handleOptimize() {
     updateProgress(8);
     const barnDatumInput = document.getElementById('barn-datum');
     const ledigTid1Input = document.getElementById('ledig-tid-5823');
@@ -244,8 +239,7 @@ function runOptimization({ maximizeFöräldralön }) {
         ledigTid1,
         ledigTid2,
         minInkomst,
-        strategy,
-        maximizeFöräldralön
+        strategy
     };
 
     const inputs = {
@@ -300,15 +294,7 @@ function runOptimization({ maximizeFöräldralön }) {
         }
 
         // Render Gantt chart
-        const optimizationResultEl = document.getElementById('optimization-result');
-        const maximizeBtn = document.getElementById('maximize-parental-pay-btn');
-        if (optimizationResultEl) {
-            optimizationResultEl.style.display = 'block';
-        }
-        if (maximizeBtn) {
-            const hasFöräldralön = Boolean(window.appState.extra1 || window.appState.extra2);
-            maximizeBtn.style.display = hasFöräldralön ? 'inline-flex' : 'none';
-        }
+        document.getElementById('optimization-result').style.display = 'block';
         renderGanttChart(
             result.plan1,
             result.plan2,
@@ -338,9 +324,7 @@ function runOptimization({ maximizeFöräldralön }) {
             result.maxFöräldralönWeeks1,
             result.maxFöräldralönWeeks2,
             result.unusedFöräldralönWeeks1,
-            result.unusedFöräldralönWeeks2,
-            result.plan1Savings,
-            result.plan2Savings
+            result.unusedFöräldralönWeeks2
         );
 
 
