@@ -2,104 +2,109 @@
  * calculations.js - Calculation logic for the Föräldrapenningkalkylator
  * Handles parental benefit calculations, child allowances, and leave optimization.
  */
-import {
-    INCOME_CAP,
-    SGI_CAP,
-    MINIMUM_RATE,
-    DEFAULT_BARNBIDRAG,
-    PRISBASBELOPP
-} from './config.js';
 
-/**
- * Calculate monthly net income based on daily rate, days per week, and additional benefits
- * @param {number} dag - Daily parental benefit rate
- * @param {number} dagarPerVecka - Days per week taken
- * @param {number} extra - Parental supplement
- * @param {number} barnbidrag - Child allowance
- * @param {number} tillägg - Additional child allowance
- * @returns {number} Rounded monthly net income
- */
-export function beräknaMånadsinkomst(dag, dagarPerVecka, extra, barnbidrag = DEFAULT_BARNBIDRAG, tillägg = 0) {
-    const fp = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
-    const extraBelopp = extra ? Math.round(extra * (dagarPerVecka / 7)) : 0;
-    const resultat = beräknaNetto(fp) + beräknaNetto(extraBelopp) + barnbidrag + tillägg;
-    return resultat || 0;
-}
-
-/**
- * Calculate daily parental benefit based on monthly income
- * @param {number} inkomst - Monthly income
- * @returns {number} Daily benefit rate
- */
-export function beräknaDaglig(inkomst) {
-    if (!inkomst || inkomst <= 0) return 0;
-    const sgi = Math.min(inkomst, SGI_CAP);
-    const calculatedDailyRate = Math.round((sgi * 0.8 * 12) / 365);
-    return Math.min(calculatedDailyRate, INCOME_CAP);
-}
-
-/**
- * Calculate employer-provided parental salary supplement
- * @param {number} inkomst - Monthly income
- * @returns {number} Monthly parental supplement
- */
-export function beräknaFöräldralön(inkomst) {
-    if (!inkomst || inkomst <= 0) return 0;
-
-    const årsinkomst = inkomst * 12;
-    const gräns = PRISBASBELOPP * 10;
-
-    if (årsinkomst <= gräns) {
-        return Math.round((årsinkomst * 0.10) / 12);
+(function initCalculations(global) {
+    if (global.calculationUtils) {
+        return;
     }
 
-    const basal = gräns * 0.10;
-    const över = (årsinkomst - gräns) * 0.90;
-    return Math.round((basal + över) / 12);
-}
+    const config = global.appConfig || {};
+    const {
+        INCOME_CAP = 1250,
+        SGI_CAP = 49000,
+        MINIMUM_RATE = 180,
+        DEFAULT_BARNBIDRAG = 625,
+        PRISBASBELOPP = 58800
+    } = config;
 
-/**
- * Calculate net monthly income from gross and tax rate
- * @param {number} inkomst - Gross monthly income
- * @param {number} skattesats - Tax rate percentage (default 30)
- * @returns {number} Net monthly income
- */
-export function beräknaNetto(inkomst, skattesats = 30) {
-    if (!inkomst || inkomst <= 0) return 0;
-    const rate = skattesats / 100;
-    return Math.round(inkomst * (1 - rate));
-}
+    /**
+     * Calculate monthly net income based on daily rate, days per week, and additional benefits
+     * @param {number} dag - Daily parental benefit rate
+     * @param {number} dagarPerVecka - Days per week taken
+     * @param {number} extra - Parental supplement
+     * @param {number} barnbidrag - Child allowance
+     * @param {number} tillägg - Additional child allowance
+     * @returns {number} Rounded monthly net income
+     */
+    function beräknaMånadsinkomst(dag, dagarPerVecka, extra, barnbidrag = DEFAULT_BARNBIDRAG, tillägg = 0) {
+        const fp = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
+        const extraBelopp = extra ? Math.round(extra * (dagarPerVecka / 7)) : 0;
+        const resultat = beräknaNetto(fp) + beräknaNetto(extraBelopp) + barnbidrag + tillägg;
+        return resultat || 0;
+    }
 
-/**
- * Calculate child allowance and additional benefits
- * @param {number} totalBarn - Total number of children
- * @param {boolean} ensamVårdnad - True if sole custody
- * @returns {Object} Object with barnbidrag, tillägg, total, and details
- */
-export function beräknaBarnbidrag(totalBarn, ensamVårdnad) {
-    const bidragPerBarn = 1250;
-    const flerbarnstillägg = { 2: 150, 3: 730, 4: 1740, 5: 2990, 6: 4240 };
-    const barnbidrag = bidragPerBarn * totalBarn;
-    const tillägg = flerbarnstillägg[totalBarn] || 0;
-    const total = barnbidrag + tillägg;
-    const details = `${totalBarn} barn ger ${barnbidrag.toLocaleString()} kr barnbidrag${tillägg ? " + " + tillägg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
-    return {
-        barnbidrag: ensamVårdnad ? barnbidrag : Math.round(barnbidrag / 2),
-        tillägg: ensamVårdnad ? tillägg : Math.round(tillägg / 2),
-        total: ensamVårdnad ? total : Math.round(total / 2),
-        details
-    };
-}
+    /**
+     * Calculate daily parental benefit based on monthly income
+     * @param {number} inkomst - Monthly income
+     * @returns {number} Daily benefit rate
+     */
+    function beräknaDaglig(inkomst) {
+        if (!inkomst || inkomst <= 0) return 0;
+        const sgi = Math.min(inkomst, SGI_CAP);
+        const calculatedDailyRate = Math.round((sgi * 0.8 * 12) / 365);
+        return Math.min(calculatedDailyRate, INCOME_CAP);
+    }
 
-/**
- * Optimize parental leave based on preferences and inputs
- * @param {Object} preferences - User preferences (deltid, ledigTid1, etc.)
- * @param {Object} inputs - Input data (inkomst1, vårdnad, etc.)
- * @returns {Object} Optimized leave plans and related data
- */
+    /**
+     * Calculate employer-provided parental salary supplement
+     * @param {number} inkomst - Monthly income
+     * @returns {number} Monthly parental supplement
+     */
+    function beräknaFöräldralön(inkomst) {
+        if (!inkomst || inkomst <= 0) return 0;
 
-export function optimizeParentalLeave(preferences, inputs, options = {}) {
-    const { maximizeFöräldralön = false } = options;
+        const årsinkomst = inkomst * 12;
+        const gräns = PRISBASBELOPP * 10;
+
+        if (årsinkomst <= gräns) {
+            return Math.round((årsinkomst * 0.10) / 12);
+        }
+
+        const basal = gräns * 0.10;
+        const över = (årsinkomst - gräns) * 0.90;
+        return Math.round((basal + över) / 12);
+    }
+
+    /**
+     * Calculate net monthly income from gross and tax rate
+     * @param {number} inkomst - Gross monthly income
+     * @param {number} skattesats - Tax rate percentage (default 30)
+     * @returns {number} Net monthly income
+     */
+    function beräknaNetto(inkomst, skattesats = 30) {
+        if (!inkomst || inkomst <= 0) return 0;
+        const rate = skattesats / 100;
+        return Math.round(inkomst * (1 - rate));
+    }
+
+    /**
+     * Calculate child allowance and additional benefits
+     * @param {number} totalBarn - Total number of children
+     * @param {boolean} ensamVårdnad - True if sole custody
+     * @returns {Object} Object with barnbidrag, tillägg, total, and details
+     */
+    function beräknaBarnbidrag(totalBarn, ensamVårdnad) {
+        const bidragPerBarn = 1250;
+        const flerbarnstillägg = { 2: 150, 3: 730, 4: 1740, 5: 2990, 6: 4240 };
+        const barnbidrag = bidragPerBarn * totalBarn;
+        const tillägg = flerbarnstillägg[totalBarn] || 0;
+        const total = barnbidrag + tillägg;
+        const details = `${totalBarn} barn ger ${barnbidrag.toLocaleString()} kr barnbidrag${tillägg ? " + " + tillägg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
+        return {
+            barnbidrag: ensamVårdnad ? barnbidrag : Math.round(barnbidrag / 2),
+            tillägg: ensamVårdnad ? tillägg : Math.round(tillägg / 2),
+            total: ensamVårdnad ? total : Math.round(total / 2),
+            details
+        };
+    }
+
+    /**
+     * Optimize parental leave based on preferences and inputs
+     * @param {Object} preferences - User preferences (deltid, ledigTid1, etc.)
+     * @param {Object} inputs - Input data (inkomst1, vårdnad, etc.)
+     * @returns {Object} Optimized leave plans and related data
+     */
+    function optimizeParentalLeave(preferences, inputs) {
     const { deltid, ledigTid1, ledigTid2 = 0, minInkomst, strategy } = preferences;
 
 export function optimizeParentalLeave(preferences, inputs) {
@@ -739,4 +744,14 @@ export function optimizeParentalLeave(preferences, inputs) {
         plan2Savings
 
     };
-}
+    }
+
+    global.calculationUtils = {
+        beräknaMånadsinkomst,
+        beräknaDaglig,
+        beräknaFöräldralön,
+        beräknaNetto,
+        beräknaBarnbidrag,
+        optimizeParentalLeave
+    };
+})(window);

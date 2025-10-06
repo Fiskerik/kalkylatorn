@@ -2,45 +2,70 @@
  * index.js - Main initialization and form handling for the Föräldrapenningkalkylator
  * Sets up event listeners and orchestrates calculations, UI, and chart rendering.
  */
-import {
-    vårdnad, beräknaPartner, barnbidragPerPerson, tilläggPerPerson,
-    barnIdag, barnPlanerat, hasCalculated, defaultPreferences,
-    förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar
-} from './config.js';
-import {
-    beräknaDaglig,
-    beräknaBarnbidrag,
-    optimizeParentalLeave,
-    beräknaFöräldralön,
-    beräknaNetto
-} from './calculations.js';
-import {
-    updateProgress, setupInfoBoxToggle,
-    generateParentSection, setupStrategyToggle, updateMonthlyBox
-} from './ui.js';
-import { renderGanttChart } from './chart.js';
+(function initIndex(global) {
+    if (global.__INDEX_MODULE_INITIALIZED__) {
+        return;
+    }
+    global.__INDEX_MODULE_INITIALIZED__ = true;
 
-if (!globalThis.__INDEX_MODULE_INITIALIZED__) {
-    globalThis.__INDEX_MODULE_INITIALIZED__ = true;
+    const config = global.appConfig || {};
+    const {
+        vårdnad: defaultVårdnad = 'gemensam',
+        beräknaPartner: defaultBeräknaPartner = 'ja',
+        barnbidragPerPerson: defaultBarnbidragPerPerson = 625,
+        tilläggPerPerson: defaultTilläggPerPerson = 0,
+        defaultPreferences = {},
+        förälder1InkomstDagar = 195,
+        förälder2InkomstDagar = 195,
+        förälder1MinDagar = 45,
+        förälder2MinDagar = 45
+    } = config;
 
-    (function () {
-        // Initialize on DOM content loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeForm();
-            setupEventListeners();
-        });
+    const calculations = global.calculationUtils || {};
+    const {
+        beräknaDaglig = () => 0,
+        beräknaBarnbidrag = () => ({ barnbidrag: defaultBarnbidragPerPerson, tillägg: defaultTilläggPerPerson, total: 0, details: '' }),
+        optimizeParentalLeave = () => ({}),
+        beräknaFöräldralön = () => 0,
+        beräknaNetto = () => 0
+    } = calculations;
 
-        /**
-         * Initialize form elements and UI
-         */
-        function initializeForm() {
-            // Initialize progress bar
-            updateProgress(1);
+    const ui = global.uiUtils || {};
+    const {
+        updateProgress = () => {},
+        setupInfoBoxToggle = () => {},
+        generateParentSection = () => '',
+        setupStrategyToggle = () => {},
+        updateMonthlyBox = () => {}
+    } = ui;
 
-            // Setup strategy and info boxes
-            setupStrategyToggle();
-            setupInfoBoxToggle();
-        }
+    const chart = global.chartUtils || {};
+    const { renderGanttChart = () => {} } = chart;
+
+    global.appState = global.appState || {};
+
+    function onReady() {
+        initializeForm();
+        setupEventListeners();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onReady);
+    } else {
+        onReady();
+    }
+
+    /**
+     * Initialize form elements and UI
+     */
+    function initializeForm() {
+        // Initialize progress bar
+        updateProgress(1);
+
+        // Setup strategy and info boxes
+        setupStrategyToggle();
+        setupInfoBoxToggle();
+    }
 
         /**
          * Setup all event listeners
@@ -73,8 +98,8 @@ if (!globalThis.__INDEX_MODULE_INITIALIZED__) {
             // Collect form inputs
             const inkomst1 = parseFloat(document.getElementById('inkomst1').value) || 0;
             const inkomst2 = parseFloat(document.getElementById('inkomst2').value) || 0;
-            const vårdnad = document.getElementById('vårdnad').value || 'gemensam';
-            const beräknaPartner = document.getElementById('beräkna-partner').value || 'ja';
+            const vårdnad = document.getElementById('vårdnad').value || defaultVårdnad;
+            const beräknaPartner = document.getElementById('beräkna-partner').value || defaultBeräknaPartner;
             const barnTidigare = parseInt(document.getElementById('barn-tidigare').value) || 0;
             const barnPlanerade = parseInt(document.getElementById('barn-planerade').value) || 1;
             const avtal1 = document.getElementById('har-avtal-1').value || 'nej';
@@ -392,5 +417,5 @@ if (!globalThis.__INDEX_MODULE_INITIALIZED__) {
             const percent = total > 0 ? (p1 / total) * 100 : 0;
             slider.style.background = `linear-gradient(to right, #28a745 0%, #28a745 ${percent}%, #007bff ${percent}%, #007bff 100%)`;
         }
-    })();
-}
+    }
+})(window);
