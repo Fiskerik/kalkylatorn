@@ -441,8 +441,26 @@ input[type="number"] {
 }
 
 .combined-income {
+    font-weight: inherit;
+}
+
+.income-flag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
     color: #2e7d32;
-    font-weight: bold;
+    background-color: transparent;
+}
+
+.income-flag.income-warning {
+    background-color: #fff4cc;
+    color: #8a6d3b;
+}
+
+.income-flag.income-error {
+    background-color: #ffd6d6;
+    color: #a94442;
 }
 .days-split {
     margin-top: 1rem;

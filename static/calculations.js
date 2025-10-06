@@ -114,7 +114,30 @@ export function optimizeParentalLeave(preferences, inputs) {
         ärGenomförbar: true,
         meddelande: "",
         transferredDays: 0,
-        status: "ok"
+        status: "ok",
+        minInkomst: minInkomst,
+        maxShortfallRatio: 0
+    };
+
+    const updateStatusFromSeverity = severity => {
+        if (severity === "error") {
+            genomförbarhet.status = "error";
+        } else if (severity === "warning" && genomförbarhet.status !== "error") {
+            genomförbarhet.status = "warning";
+        }
+    };
+
+    const evaluateIncomeSeverity = income => {
+        if (minInkomst <= 0 || income >= minInkomst) {
+            return null;
+        }
+        const diff = minInkomst - income;
+        const ratio = minInkomst > 0 ? diff / minInkomst : 0;
+        const severity = ratio > 0.10 ? "error" : "warning";
+        if (ratio > genomförbarhet.maxShortfallRatio) {
+            genomförbarhet.maxShortfallRatio = ratio;
+        }
+        return severity;
     };
 
     const barnbidrag = inputs.barnbidragPerPerson || 1250;
@@ -232,7 +255,8 @@ export function optimizeParentalLeave(preferences, inputs) {
         }
         if (kombineradInkomst < minInkomst) {
             genomförbarhet.ärGenomförbar = false;
-            genomförbarhet.status = "warning";
+            const severity = evaluateIncomeSeverity(kombineradInkomst);
+            updateStatusFromSeverity(severity || "warning");
             genomförbarhet.meddelande =
                 `Kombinerad inkomst ${kombineradInkomst.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${dagarPerVecka1} dagar/vecka).`;
         }
@@ -279,7 +303,8 @@ export function optimizeParentalLeave(preferences, inputs) {
         }
         if (kombineradInkomst < minInkomst) {
             genomförbarhet.ärGenomförbar = false;
-            genomförbarhet.status = "warning";
+            const severity = evaluateIncomeSeverity(kombineradInkomst);
+            updateStatusFromSeverity(severity || "warning");
             genomförbarhet.meddelande =
                 `Kombinerad inkomst ${kombineradInkomst.toLocaleString()} kr/månad i fas 2 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${dagarPerVecka2} dagar/vecka).`;
         }
@@ -391,7 +416,8 @@ export function optimizeParentalLeave(preferences, inputs) {
                 const kombEfter = plan1NoExtra.inkomst + arbetsInkomst2;
                 if (kombEfter < minInkomst) {
                     genomförbarhet.ärGenomförbar = false;
-                    genomförbarhet.status = "warning";
+                    const severity = evaluateIncomeSeverity(kombEfter);
+                    updateStatusFromSeverity(severity || "warning");
                     genomförbarhet.meddelande =
                         `Kombinerad inkomst ${kombEfter.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${dagarPerVecka1} dagar/vecka).`;
                 }
@@ -492,9 +518,13 @@ export function optimizeParentalLeave(preferences, inputs) {
 
     if (minPhase1 !== null && minPhase1 < minInkomst) {
         genomförbarhet.ärGenomförbar = false;
+        const severity = evaluateIncomeSeverity(minPhase1);
+        updateStatusFromSeverity(severity || "warning");
         genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase1.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${plan1.dagarPerVecka} dagar/vecka).`;
     } else if (minPhase2 !== null && minPhase2 < minInkomst) {
         genomförbarhet.ärGenomförbar = false;
+        const severity = evaluateIncomeSeverity(minPhase2);
+        updateStatusFromSeverity(severity || "warning");
         genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase2.toLocaleString()} kr/månad i fas 2 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${plan2.dagarPerVecka} dagar/vecka).`;
     }
 
