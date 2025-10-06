@@ -1123,6 +1123,22 @@ canvas#gantt-canvas {
     color: #007bff;
 }
 
+.leave-parent {
+    border-left: 4px solid transparent;
+    padding-left: 4px;
+    display: inline-block;
+}
+
+.leave-parent.parent1 {
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.leave-parent.parent2 {
+    border-color: #007bff;
+    color: #007bff;
+}
+
 
 @media (max-width: 600px) {
     .button-group {
