@@ -95,6 +95,43 @@ export function renderGanttChart(
     summaryBox.style.overflowY = 'auto'; // Scroll if content overflows
     summaryBox.innerHTML = '<p>Hovra över en punkt för att se detaljer.</p>';
 
+    const minIncomeRequirement = Number(genomförbarhet?.minInkomst) || 0;
+    const highlightColors = {
+        warning: 'rgba(255, 223, 94, 0.25)',
+        error: 'rgba(255, 128, 128, 0.28)'
+    };
+    const pointFillColors = {
+        warning: '#ffe58f',
+        error: '#ff9c9c'
+    };
+
+    const getIncomeSeverity = income => {
+        if (!minIncomeRequirement || typeof income !== 'number') {
+            return null;
+        }
+        if (income >= minIncomeRequirement) {
+            return null;
+        }
+        const ratio = (minIncomeRequirement - income) / minIncomeRequirement;
+        return ratio > 0.10 ? 'error' : 'warning';
+    };
+
+    const getIncomeHighlightClass = income => {
+        const severity = getIncomeSeverity(income);
+        if (severity === 'error') {
+            return 'income-flag income-error';
+        }
+        if (severity === 'warning') {
+            return 'income-flag income-warning';
+        }
+        return 'income-flag';
+    };
+
+    const formatCombinedIncome = (label, income) => {
+        const className = getIncomeHighlightClass(income);
+        return `<strong class="${className}">${label} ${income.toLocaleString()} kr/månad</strong>`;
+    };
+
     const period1ExtraWeeks = plan1.weeks || 0;
     const period1NoExtraWeeks = plan1NoExtra.weeks || 0;
     const period1MinWeeks = plan1MinDagar.weeks || 0;
@@ -260,6 +297,56 @@ export function renderGanttChart(
 
     let inkomstData = [];
     let draggablePoints = [];
+    let highlightRanges = [];
+
+    const computeHighlightRanges = () => {
+        highlightRanges = [];
+        if (!minIncomeRequirement) {
+            return;
+        }
+        let currentRange = null;
+        inkomstData.forEach((point, index) => {
+            const severity = getIncomeSeverity(point.y);
+            if (severity) {
+                if (!currentRange || currentRange.severity !== severity) {
+                    if (currentRange) {
+                        currentRange.end = index;
+                        highlightRanges.push(currentRange);
+                    }
+                    currentRange = { start: index, end: index, severity };
+                } else {
+                    currentRange.end = index;
+                }
+            } else if (currentRange) {
+                currentRange.end = index;
+                highlightRanges.push(currentRange);
+                currentRange = null;
+            }
+        });
+        if (currentRange) {
+            highlightRanges.push(currentRange);
+        }
+    };
+
+    const getPeriodColor = x => {
+        if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
+        if (x < period1TotalWeeks) {
+            if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
+            return '#28a745';
+        }
+        if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
+        return 'red';
+    };
+
+    const getPointBorderColors = () => inkomstData.map(data => getPeriodColor(data.x));
+
+    const getPointBackgroundColors = () => inkomstData.map(data => {
+        const severity = getIncomeSeverity(data.y);
+        if (severity && pointFillColors[severity]) {
+            return pointFillColors[severity];
+        }
+        return getPeriodColor(data.x);
+    });
 
     function generateInkomstData() {
         inkomstData = [];
@@ -361,6 +448,8 @@ export function renderGanttChart(
                 draggablePoints.push({ index: week, type: 'period2Start' });
             }
         }
+
+        computeHighlightRanges();
     }
 
     generateInkomstData();
@@ -408,23 +497,23 @@ export function renderGanttChart(
         Överlappande ledighet: 10 arbetsdagar (${dadLeaveDurationWeeks} veckor)<br>
         <span class="leave-parent parent1">Förälder 1: Inkomst ${dadLeaveFörälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span><br>
         <span class="leave-parent parent2">Förälder 2: Inkomst ${dadLeaveFörälder2Inkomst.toLocaleString()} kr/månad (5 dagar/vecka).</span><br>
-        <strong>Kombinerad inkomst: ${(dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+        ${formatCombinedIncome('Kombinerad inkomst:', dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst)}<br><br>
 
         <strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1End)}</i>)</strong><br>
         <span class="leave-parent parent1">Förälder 1: ${(period1ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1ExtraWeeks)} veckor) med föräldralön, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span><br>
         <span class="working-parent parent2">Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.</span><br>
-        <strong>Kombinerad inkomst: ${period1KombExtra.toLocaleString()} kr/månad</strong><br>
-        ${period1NoExtraWeeks > 0 ? `<span class="leave-parent parent1">Förälder 1: ${(period1NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period1NoExtraFörälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span> <strong>Kombinerad inkomst: ${period1KombNoExtra.toLocaleString()} kr/månad</strong><br>` : ''}
-        ${period1MinWeeks > 0 ? `<span class="leave-parent parent1">Förälder 1: ${(period1MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1MinWeeks)} veckor) på lägstanivå, inkomst ${period1MinFörälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span> <strong>Kombinerad inkomst: ${period1KombMin.toLocaleString()} kr/månad</strong><br>` : ''}<br>
+        ${formatCombinedIncome('Kombinerad inkomst:', period1KombExtra)}<br>
+        ${period1NoExtraWeeks > 0 ? `<span class="leave-parent parent1">Förälder 1: ${(period1NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period1NoExtraFörälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span> ${formatCombinedIncome('Kombinerad inkomst:', period1KombNoExtra)}<br>` : ''}
+        ${period1MinWeeks > 0 ? `<span class="leave-parent parent1">Förälder 1: ${(period1MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1MinWeeks)} veckor) på lägstanivå, inkomst ${period1MinFörälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span> ${formatCombinedIncome('Kombinerad inkomst:', period1KombMin)}<br>` : ''}<br>
 
         <strong>Period 2 (Förälder 1 jobbar, Förälder 2 ledig) (<i>${formatDate(period2Start)} till ${formatDate(period2End)}</i>)</strong><br>
         <span class="working-parent parent1">Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.</span><br>
         ${extra2 > 0
             ? `<span class="leave-parent parent2">Förälder 2: ${(period2ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2ExtraWeeks)} veckor) med föräldralön, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span><br>`
             : `<span class="leave-parent parent2">Förälder 2: Föräldrapenning ${period2Förälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span><br>`}
-        <strong>Kombinerad inkomst: ${period2KombExtra.toLocaleString()} kr/månad</strong><br>
-        ${period2NoExtraWeeks > 0 ? `<span class="leave-parent parent2">Förälder 2: ${(period2NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period2NoExtraFörälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span> <strong>Kombinerad inkomst: ${period2KombNoExtra.toLocaleString()} kr/månad</strong><br>` : ''}
-        ${period2MinWeeks > 0 ? `<span class="leave-parent parent2">Förälder 2: ${(period2MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2MinWeeks)} veckor) på lägstanivå, inkomst ${period2MinFörälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span> <strong>Kombinerad inkomst: ${period2KombMin.toLocaleString()} kr/månad</strong><br>` : ''}<br>
+        ${formatCombinedIncome('Kombinerad inkomst:', period2KombExtra)}<br>
+        ${period2NoExtraWeeks > 0 ? `<span class="leave-parent parent2">Förälder 2: ${(period2NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period2NoExtraFörälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span> ${formatCombinedIncome('Kombinerad inkomst:', period2KombNoExtra)}<br>` : ''}
+        ${period2MinWeeks > 0 ? `<span class="leave-parent parent2">Förälder 2: ${(period2MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2MinWeeks)} veckor) på lägstanivå, inkomst ${period2MinFörälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span> ${formatCombinedIncome('Kombinerad inkomst:', period2KombMin)}<br>` : ''}<br>
 
         <strong>Återstående dagar:</strong><br>
         Förälder 1: ${förälder1InkomstDagar.toLocaleString()} dagar (sjukpenningnivå), ${förälder1MinDagar.toLocaleString()} dagar (lägstanivå)<br>
@@ -436,6 +525,41 @@ export function renderGanttChart(
     ganttChart.appendChild(messageDiv);
     ganttChart.appendChild(canvas);
     ganttChart.appendChild(summaryBox);
+
+    const highlightPlugin = {
+        id: 'highlightPlugin',
+        beforeDatasetsDraw: chart => {
+            if (!minIncomeRequirement || !highlightRanges.length) {
+                return;
+            }
+            const { ctx, chartArea, scales } = chart;
+            if (!chartArea) {
+                return;
+            }
+            const xScale = scales?.x;
+            if (!xScale) {
+                return;
+            }
+            ctx.save();
+            highlightRanges.forEach(range => {
+                const color = highlightColors[range.severity];
+                if (!color) {
+                    return;
+                }
+                const startValue = Math.max(range.start, xScale.min);
+                const endValue = Math.min(range.end + 1, (xScale.max ?? range.end) + 1);
+                const startPixel = xScale.getPixelForValue(startValue);
+                const endPixel = xScale.getPixelForValue(endValue);
+                const width = endPixel - startPixel;
+                if (width <= 0) {
+                    return;
+                }
+                ctx.fillStyle = color;
+                ctx.fillRect(startPixel, chartArea.top, width, chartArea.bottom - chartArea.top);
+            });
+            ctx.restore();
+        }
+    };
 
     const dragPlugin = {
         id: 'dragPlugin',
@@ -487,6 +611,8 @@ export function renderGanttChart(
 
                         generateInkomstData();
                         chart.data.datasets[0].data = inkomstData;
+                        chart.data.datasets[0].pointBackgroundColor = getPointBackgroundColors();
+                        chart.data.datasets[0].pointBorderColor = getPointBorderColors();
                         chart.update();
                         updateMessage();
                     }
@@ -535,17 +661,17 @@ export function renderGanttChart(
             Överlappande ledighet: 10 arbetsdagar (${dadLeaveDurationWeeks} veckor)<br>
             <span class="leave-parent parent1">Förälder 1: Inkomst ${dadLeaveFörälder1Inkomst.toLocaleString()} kr/månad.</span><br>
             <span class="leave-parent parent2">Förälder 2: Inkomst ${dadLeaveFörälder2Inkomst.toLocaleString()} kr/månad.</span><br>
-            <strong>Kombinerad inkomst: ${(dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+            ${formatCombinedIncome('Kombinerad inkomst:', dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst)}<br><br>
 
             <strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1EndDate)}</i>)</strong><br>
             <span class="leave-parent parent1">Förälder 1: ${(period1TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1TotalWeeks)} veckor), ${safeDagarPerVecka(plan1.dagarPerVecka)} dagar/vecka, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.</span><br>
             <span class="working-parent parent2">Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.</span><br>
-            <strong>Kombinerad inkomst: ${(period1Förälder1Inkomst + period1Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+            ${formatCombinedIncome('Kombinerad inkomst:', period1Förälder1Inkomst + period1Förälder2Inkomst)}<br><br>
             
             <strong>Period 2 (Förälder 1 jobbar, Förälder 2 ledig) (<i>${formatDate(period2StartDate)} till ${formatDate(period2EndDate)}</i>)</strong><br>
             <span class="working-parent parent1">Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.</span><br>
-            <span class="leave-parent parent2">Förälder 2: ${(period2Weeks / 4.3).toFixed(1)} månader (~${Math.round(period2Weeks)} veckor), ${safeDagarPerVecka(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.</span><br>
-            <strong>Kombinerad inkomst: ${(period2Förälder1Inkomst + period2Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+            <span class="leave-parent parent2">Förälder 2: ${(period2TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2TotalWeeks)} veckor), ${safeDagarPerVecka(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.</span><br>
+            ${formatCombinedIncome('Kombinerad inkomst:', period2Förälder1Inkomst + period2Förälder2Inkomst)}<br><br>
 
 
             <strong>Återstående dagar:</strong><br>
@@ -574,9 +700,10 @@ export function renderGanttChart(
         let html =
             `<div class="summary-section"><strong>${weekLabel}</strong><br>` +
             `Period: ${data.periodLabel || 'Okänd period'}</div>`;
+        const combinedClass = `${getIncomeHighlightClass(data.y)} combined-income`.trim();
         html +=
             `<div class="summary-section">Total inkomst: ` +
-            `<span class="combined-income">${data.y.toLocaleString()} kr/månad</span></div>`;
+            `<span class="${combinedClass}">${data.y.toLocaleString()} kr/månad</span></div>`;
         html +=
             `<div class="summary-section"><strong>Förälder 1</strong>: ` +
             `${data.förälder1Inkomst.toLocaleString()} kr/månad<br>`;
@@ -637,47 +764,11 @@ export function renderGanttChart(
                 pointRadius: inkomstData.map((_, index) => draggablePoints.some(p => p.index === index) ? 6 : 4),
                 pointHoverRadius: inkomstData.map((_, index) => draggablePoints.some(p => p.index === index) ? 8 : 6),
                 segment: {
-                    borderColor: ctx => {
-                        const x = ctx.p0.parsed.x;
-                        if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
-                        if (x < period1TotalWeeks) {
-                            if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-                            return '#28a745';
-                        }
-                        if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
-                        return 'red';
-                    },
-                    backgroundColor: ctx => {
-                        const x = ctx.p0.parsed.x;
-                        if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
-                        if (x < period1TotalWeeks) {
-                            if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-                            return '#28a745';
-                        }
-                        if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
-                        return 'red';
-                    }
+                    borderColor: ctx => getPeriodColor(ctx.p0.parsed.x),
+                    backgroundColor: ctx => getPeriodColor(ctx.p0.parsed.x)
                 },
-                pointBackgroundColor: inkomstData.map(data => {
-                    const x = data.x;
-                    if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
-                    if (x < period1TotalWeeks) {
-                        if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-                        return '#28a745';
-                    }
-                    if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
-                    return 'red';
-                }),
-                pointBorderColor: inkomstData.map(data => {
-                    const x = data.x;
-                    if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
-                    if (x < period1TotalWeeks) {
-                        if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-                        return '#28a745';
-                    }
-                    if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
-                    return 'red';
-                })
+                pointBackgroundColor: getPointBackgroundColors(),
+                pointBorderColor: getPointBorderColors()
             }]
         },
         options: {
@@ -725,7 +816,9 @@ export function renderGanttChart(
                             { text: 'Förälder 1 Ledig', fillStyle: '#28a745', strokeStyle: '#28a745', hidden: false },
                             transferredDays > 0 ? { text: 'Förälder 1 Ledig (Överförda dagar)', fillStyle: '#f28c38', strokeStyle: '#f28c38', hidden: false } : null,
                             { text: 'Förälder 2 Ledig', fillStyle: '#007bff', strokeStyle: '#007bff', hidden: false },
-                            { text: 'Efter Ledighet', fillStyle: 'red', strokeStyle: 'red', hidden: false }
+                            { text: 'Efter Ledighet', fillStyle: 'red', strokeStyle: 'red', hidden: false },
+                            minIncomeRequirement ? { text: 'Inkomst under krav (< 10%)', fillStyle: pointFillColors.warning, strokeStyle: pointFillColors.warning, hidden: false } : null,
+                            minIncomeRequirement ? { text: 'Inkomst under krav (> 10%)', fillStyle: pointFillColors.error, strokeStyle: pointFillColors.error, hidden: false } : null
                         ].filter(Boolean)
                     }
                 },
@@ -734,6 +827,6 @@ export function renderGanttChart(
                 }
             }
         },
-        plugins: [dragPlugin, summaryPlugin]
+        plugins: [highlightPlugin, dragPlugin, summaryPlugin]
     });
 }
