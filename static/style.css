@@ -456,19 +456,6 @@ input[type="number"] {
     padding-top: 0;
 }
 
-.benefit-table .table-wrapper {
-    margin-top: 0.75rem;
-    overflow-x: auto;
-}
-
-.benefit-table table {
-    margin-top: 0;
-}
-
-.benefit-table .info-content {
-    padding-top: 0;
-}
-
 .table-wrapper {
     overflow-x: auto;
 }

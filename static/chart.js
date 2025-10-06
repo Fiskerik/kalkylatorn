@@ -2,47 +2,42 @@
  * chart.js - Chart rendering for the Föräldrapenningkalkylator
  * Renders an interactive Gantt chart showing parental leave schedules and income.
  */
-(function initChart(global) {
-    if (global.chartUtils) {
-        return;
-    }
+import { beräknaMånadsinkomst, beräknaNetto } from './calculations.js';
 
-    const { calculationUtils = {} } = global;
-    const { beräknaMånadsinkomst = () => 0 } = calculationUtils;
 
-    /**
-     * Render the Gantt chart
-     * @param {Object} plan1 - Plan for Parent 1
-     * @param {Object} plan2 - Plan for Parent 2
-     * @param {Object} plan1NoExtra - Plan 1 without extra
-     * @param {Object} plan2NoExtra - Plan 1 without extra
-     * @param {Object} plan1MinDagar - Plan 1 minimum days
-     * @param {Object} plan2MinDagar - Plan 2 minimum days
-     * @param {Object} plan1Overlap - Overlap plan
-     * @param {number} inkomst1 - Income for Parent 1
-     * @param {number} inkomst2 - Income for Parent 2
-     * @param {string} vårdnad - Custody type
-     * @param {string} beräknaPartner - Calculate for partner
-     * @param {Object} genomförbarhet - Feasibility data
-     * @param {number} dag1 - Daily rate for Parent 1
-     * @param {number} extra1 - Extra for Parent 1
-     * @param {number} dag2 - Daily rate for Parent 2
-     * @param {number} extra2 - Extra for Parent 2
-     * @param {number} förälder1InkomstDagar - Income days for Parent 1
-     * @param {number} förälder2InkomstDagar - Income days for Parent 2
-     * @param {number} förälder1MinDagar - Minimum days for Parent 1
-     * @param {number} förälder2MinDagar - Minimum days for Parent 2
-     * @param {string} barnDatum - Child's birth date
-     * @param {number} arbetsInkomst1 - Work income for Parent 1
-     * @param {number} arbetsInkomst2 - Work income for Parent 2
-     * @param {number} barnbidragPerPerson - Child allowance per parent
-     * @param {number} tilläggPerPerson - Additional allowance per parent
-     * @param {number} maxFöräldralönWeeks1 - Allowed weeks with parental salary for Parent 1
+/**
+ * Render the Gantt chart
+ * @param {Object} plan1 - Plan for Parent 1
+ * @param {Object} plan2 - Plan for Parent 2
+ * @param {Object} plan1NoExtra - Plan 1 without extra
+ * @param {Object} plan2NoExtra - Plan 1 without extra
+ * @param {Object} plan1MinDagar - Plan 1 minimum days
+ * @param {Object} plan2MinDagar - Plan 2 minimum days
+ * @param {Object} plan1Overlap - Overlap plan
+ * @param {number} inkomst1 - Income for Parent 1
+ * @param {number} inkomst2 - Income for Parent 2
+ * @param {string} vårdnad - Custody type
+ * @param {string} beräknaPartner - Calculate for partner
+ * @param {Object} genomförbarhet - Feasibility data
+ * @param {number} dag1 - Daily rate for Parent 1
+ * @param {number} extra1 - Extra for Parent 1
+ * @param {number} dag2 - Daily rate for Parent 2
+ * @param {number} extra2 - Extra for Parent 2
+ * @param {number} förälder1InkomstDagar - Income days for Parent 1
+ * @param {number} förälder2InkomstDagar - Income days for Parent 2
+ * @param {number} förälder1MinDagar - Minimum days for Parent 1
+ * @param {number} förälder2MinDagar - Minimum days for Parent 2
+ * @param {string} barnDatum - Child's birth date
+ * @param {number} arbetsInkomst1 - Work income for Parent 1
+ * @param {number} arbetsInkomst2 - Work income for Parent 2
+ * @param {number} barnbidragPerPerson - Child allowance per parent
+ * @param {number} tilläggPerPerson - Additional allowance per parent
+ * @param {number} maxFöräldralönWeeks1 - Allowed weeks with parental salary for Parent 1
  * @param {number} maxFöräldralönWeeks2 - Allowed weeks with parental salary for Parent 2
  * @param {number} unusedFöräldralönWeeks1 - Unused parental salary weeks for Parent 1
  * @param {number} unusedFöräldralönWeeks2 - Unused parental salary weeks for Parent 2
  */
-    function renderGanttChart(
+export function renderGanttChart(
     plan1,
     plan2,
     plan1NoExtra,
@@ -865,10 +860,4 @@
         },
         plugins: [dragPlugin, summaryPlugin]
     });
-    }
-
-    global.chartUtils = {
-        renderGanttChart
-    };
-})(window);
-
+}
