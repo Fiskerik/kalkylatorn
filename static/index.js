@@ -50,7 +50,11 @@ function setupEventListeners() {
     form.addEventListener('submit', handleFormSubmit);
 
     // Optimization button
-    optimizeBtn.addEventListener('click', handleOptimize);
+    optimizeBtn.addEventListener('click', () => runOptimization({ maximizeFöräldralön: false }));
+
+    if (maximizeFöräldralönBtn) {
+        maximizeFöräldralönBtn.addEventListener('click', () => runOptimization({ maximizeFöräldralön: true }));
+    }
 
     if (maximizeBtn) {
         maximizeBtn.addEventListener('click', handleMaximizeFöräldralön);
@@ -200,7 +204,7 @@ function setupDropdownListeners() {
 /**
  * Handle optimization button click
  */
-function handleOptimize() {
+function runOptimization({ maximizeFöräldralön }) {
     updateProgress(8);
     const barnDatumInput = document.getElementById('barn-datum');
     const ledigTid1Input = document.getElementById('ledig-tid-5823');
@@ -244,7 +248,8 @@ function handleOptimize() {
         ledigTid1,
         ledigTid2,
         minInkomst,
-        strategy
+        strategy,
+        maximizeFöräldralön
     };
 
     const inputs = {
@@ -299,7 +304,15 @@ function handleOptimize() {
         }
 
         // Render Gantt chart
-        document.getElementById('optimization-result').style.display = 'block';
+        const optimizationResultEl = document.getElementById('optimization-result');
+        const maximizeBtn = document.getElementById('maximize-parental-pay-btn');
+        if (optimizationResultEl) {
+            optimizationResultEl.style.display = 'block';
+        }
+        if (maximizeBtn) {
+            const hasFöräldralön = Boolean(window.appState.extra1 || window.appState.extra2);
+            maximizeBtn.style.display = hasFöräldralön ? 'inline-flex' : 'none';
+        }
         renderGanttChart(
             result.plan1,
             result.plan2,

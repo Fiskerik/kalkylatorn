@@ -1166,7 +1166,31 @@ canvas#gantt-canvas {
     button,
     .toggle-btn {
         width: 100%;
-    }
+}
+
+#maximize-parental-pay-btn {
+    margin-bottom: 15px;
+    background-color: #f28c38;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    transition: background-color 0.2s ease-in-out;
+}
+
+#maximize-parental-pay-btn:hover,
+#maximize-parental-pay-btn:focus {
+    background-color: #d9762c;
+    outline: none;
+}
+
+.summary-section.savings {
+    color: #f28c38;
+    font-weight: 500;
+}
 
     form,
     .result {

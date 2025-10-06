@@ -116,6 +116,7 @@ export function renderGanttChart(
     const period2ExtraWeeks = plan2.weeks || 0;
     const period2NoExtraWeeks = plan2NoExtra.weeks || 0;
     const period2MinWeeks = plan2MinDagar.weeks || 0;
+
     const period1OverlapWeeks = plan1Overlap.weeks || 0;
 
     const baseWeeks1 = period1ExtraWeeks + period1NoExtraWeeks;
@@ -131,6 +132,16 @@ export function renderGanttChart(
     const parent2BufferStartWeek = dadLeaveDurationWeeks + period1TotalWeeks + period2ExtraWeeks;
     const parent2BufferTotalWeeks = parent2BufferWeeks > 0 ? Math.round(parent2BufferWeeks) : 0;
     const parent2BufferEndWeek = parent2BufferStartWeek + parent2BufferTotalWeeks;
+
+    const period1OverlapWeeks = plan1Overlap.weeks || 0;
+
+    const baseWeeks1 = period1ExtraWeeks + period1NoExtraWeeks;
+    const transferredDays = genomförbarhet.transferredDays || 0;
+    const transferredWeeks = transferredDays > 0 && plan1.dagarPerVecka > 0 ? Math.ceil(transferredDays / plan1.dagarPerVecka) : 0;
+    const transferredStartWeek = transferredWeeks > 0 ? Math.max(0, baseWeeks1 - transferredWeeks) : baseWeeks1;
+    const savingsColor = '#f28c38';
+    const transferredColor = '#c47b34';
+
 
     let startDate = barnDatum ? new Date(barnDatum) : new Date();
     if (isNaN(startDate.getTime())) {
@@ -152,11 +163,26 @@ export function renderGanttChart(
 
     const period2Start = new Date(period1End);
     period2Start.setDate(period2Start.getDate() + 1);
+
     const period2TotalWeeks = period2ExtraWeeks + period2NoExtraWeeks + period2MinWeeks;
     const period2End = new Date(period2Start);
     period2End.setDate(period2End.getDate() + (period2TotalWeeks * 7) - 1);
 
     const totalaWeeks = Math.max(dadLeaveDurationWeeks + period1TotalWeeks + period2TotalWeeks, 60);
+
+    const period2TotalWeeks = period2ExtraWeeks + period2NoExtraWeeks + period2MinWeeks;
+    const period2End = new Date(period2Start);
+    period2End.setDate(period2End.getDate() + (period2TotalWeeks * 7) - 1);
+
+    const totalaWeeks = Math.max(period1TotalWeeks + period2TotalWeeks, 60);
+
+    const hasSavingsHighlight1 = plan1SavingsPerMonth > 0 && plan1SavingsWeeks > 0;
+    const hasSavingsHighlight2 = plan2SavingsPerMonth > 0 && plan2SavingsWeeks > 0;
+    const savingsHighlightStart1 = period1ExtraWeeks;
+    const savingsHighlightEnd1 = savingsHighlightStart1 + (hasSavingsHighlight1 ? plan1SavingsWeeks : 0);
+    const savingsHighlightStart2 = period1TotalWeeks + period2ExtraWeeks;
+    const savingsHighlightEnd2 = savingsHighlightStart2 + (hasSavingsHighlight2 ? plan2SavingsWeeks : 0);
+
 
     const weekLabels = [];
     const monthLabels = new Array(totalaWeeks).fill('');
@@ -226,7 +252,12 @@ export function renderGanttChart(
         return enforceMinimum ? safeDagarPerVecka(numeric) : numeric;
     };
 
-    const calculateLeaveComponents = (dailyRate, dagarPerVecka, extraBelopp, { includeBenefits = true, enforceMinimum = false } = {}) => {
+    const calculateLeaveComponents = (
+        dailyRate,
+        dagarPerVecka,
+        extraBelopp,
+        { includeBenefits = true, enforceMinimum = false, savings = 0 } = {}
+    ) => {
         const daysPerWeek = normalizeDaysPerWeek(dagarPerVecka, enforceMinimum);
         const fpGross = Math.round((dailyRate * daysPerWeek * 4.3) / 100) * 100;
         const extraGross = extraBelopp ? Math.round(extraBelopp * (daysPerWeek / 7)) : 0;
@@ -236,7 +267,11 @@ export function renderGanttChart(
             barnbidrag: includeBenefits ? barnbidragPerPerson : 0,
             tillägg: includeBenefits ? tilläggPerPerson : 0,
             lön: 0,
+
             buffert: 0
+
+            sparade: savings
+
         };
     };
 
@@ -249,7 +284,11 @@ export function renderGanttChart(
             barnbidrag: includeBenefits ? barnbidragPerPerson : 0,
             tillägg: includeBenefits ? tilläggPerPerson : 0,
             lön: netSalary,
+
             buffert: 0
+
+            sparade: 0
+
         };
     };
 
@@ -382,7 +421,8 @@ export function renderGanttChart(
                 förälder1Components = calculateWorkComponents(arbetsInkomst1);
                 förälder2Components = calculateLeaveComponents(180, safePlan2MinDays, 0, {
                     includeBenefits: includePartner,
-                    enforceMinimum: true
+                    enforceMinimum: true,
+                    savings: period2MinSavings
                 });
                 if (parent2BufferPerMonth > 0) {
                     förälder2Components.buffert = parent2BufferPerMonth;
@@ -449,7 +489,7 @@ export function renderGanttChart(
 
     if (transferredDays > 0 && genomförbarhet.status === 'ok' && parent1BufferTotalWeeks === 0 && parent2BufferTotalWeeks === 0) {
         meddelandeHtml += `
-            <span style="color: #f28c38;">Överförde ${transferredDays} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>
+            <span style="color: ${transferredColor};">Överförde ${transferredDays} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>
         `;
     }
     if (!genomförbarhet.ärGenomförbar && genomförbarhet.meddelande) {
@@ -573,6 +613,7 @@ export function renderGanttChart(
         period2StartDate.setDate(period2StartDate.getDate() + 1);
         const period2EndDate = new Date(period2StartDate);
         period2EndDate.setDate(period2EndDate.getDate() + (period2TotalWeeks * 7) - 1);
+        const period2Weeks = period2ExtraWeeks + period2NoExtraWeeks + period2MinWeeks;
 
         const status = statusFärger[genomförbarhet.status || 'ok'];
         let newMeddelandeHtml = `
@@ -582,7 +623,7 @@ export function renderGanttChart(
 
         if (transferredDays > 0) {
             newMeddelandeHtml += `
-                <span style="color: #f28c38;">Överförde ${transferredDays.toLocaleString()} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>
+                <span style="color: ${transferredColor};">Överförde ${transferredDays.toLocaleString()} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>
             `;
         }
 
@@ -590,19 +631,21 @@ export function renderGanttChart(
          newMeddelandeHtml += `
             <strong>10 dagar efter barns födsel (<i>${formatDate(dadLeaveStart)} till ${formatDate(dadLeaveEnd)}</i>)</strong><br>
             Överlappande ledighet: 10 arbetsdagar (${dadLeaveDurationWeeks} veckor)<br>
-            <span class="leave-parent parent1">Förälder 1: Inkomst ${dadLeaveFörälder1Inkomst.toLocaleString()} kr/månad.</span><br>
-            <span class="leave-parent parent2">Förälder 2: Inkomst ${dadLeaveFörälder2Inkomst.toLocaleString()} kr/månad.</span><br>
+            <span class="leave-parent parent1">Förälder 1: Inkomst ${dadLeaveFörälder1Inkomst.toLocaleString()} kr/månad (5 dagar/vecka).</span><br>
+            <span class="leave-parent parent2">Förälder 2: Inkomst ${dadLeaveFörälder2Inkomst.toLocaleString()} kr/månad (5 dagar/vecka).</span><br>
             <strong>Kombinerad inkomst: ${(dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
 
             <strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1EndDate)}</i>)</strong><br>
             <span class="leave-parent parent1">Förälder 1: ${(period1TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1TotalWeeks)} veckor), ${safeDagarPerVecka(plan1.dagarPerVecka)} dagar/vecka, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.</span><br>
             <span class="working-parent parent2">Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.</span><br>
             <strong>Kombinerad inkomst: ${(period1Förälder1Inkomst + period1Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
-            
+            ${plan1SavingsPerMonth > 0 && plan1SavingsWeeks > 0 ? `<span style="color: ${savingsColor};">Sparade medel för Förälder 1: ${plan1SavingsPerMonth.toLocaleString()} kr/månad under ${(plan1SavingsWeeks / 4.3).toFixed(1)} månader.</span><br><br>` : ''}
+
             <strong>Period 2 (Förälder 1 jobbar, Förälder 2 ledig) (<i>${formatDate(period2StartDate)} till ${formatDate(period2EndDate)}</i>)</strong><br>
             <span class="working-parent parent1">Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.</span><br>
             <span class="leave-parent parent2">Förälder 2: ${(period2Weeks / 4.3).toFixed(1)} månader (~${Math.round(period2Weeks)} veckor), ${safeDagarPerVecka(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.</span><br>
             <strong>Kombinerad inkomst: ${(period2Förälder1Inkomst + period2Förälder2Inkomst).toLocaleString()} kr/månad</strong><br><br>
+            ${plan2SavingsPerMonth > 0 && plan2SavingsWeeks > 0 ? `<span style="color: ${savingsColor};">Sparade medel för Förälder 2: ${plan2SavingsPerMonth.toLocaleString()} kr/månad under ${(plan2SavingsWeeks / 4.3).toFixed(1)} månader.</span><br><br>` : ''}
 
 
             <strong>Återstående dagar:</strong><br>
