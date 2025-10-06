@@ -105,7 +105,13 @@ export function optimizeParentalLeave(preferences, inputs) {
     let plan2NoExtra = { startWeek: 0, weeks: 0, dagarPerVecka: 0, inkomst: 0 };
     let plan1MinDagar = { startWeek: 0, weeks: 0, dagarPerVecka: 0, inkomst: 0 };
     let plan2MinDagar = { startWeek: 0, weeks: 0, dagarPerVecka: 0, inkomst: 0 };
-    let plan1Overlap = { startWeek: 0, weeks: 2, dagarPerVecka: 0, inkomst: 0 };
+    let plan1Overlap = {
+        startWeek: 0,
+        weeks: 2,
+        dagarPerVecka: 0,
+        inkomst: 0,
+        inkomstUtanExtra: 0
+    };
     let plan1ExtraWeeks = 0;
     let plan1NoExtraWeeksTotal = 0;
     let plan2ExtraWeeks = 0;
@@ -432,11 +438,17 @@ export function optimizeParentalLeave(preferences, inputs) {
         };
 
         if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja") {
+            const overlapDaysPerWeek = 5;
             plan1Overlap = {
                 startWeek: 0,
                 weeks: 2,
-                dagarPerVecka: dagarPerVecka1,
-                inkomst: Math.round(beräknaMånadsinkomst(dag1, dagarPerVecka1, extra1, barnbidrag, tillägg))
+                dagarPerVecka: overlapDaysPerWeek,
+                inkomst: Math.round(
+                    beräknaMånadsinkomst(dag1, overlapDaysPerWeek, extra1, barnbidrag, tillägg)
+                ),
+                inkomstUtanExtra: Math.round(
+                    beräknaMånadsinkomst(dag1, overlapDaysPerWeek, 0, barnbidrag, tillägg)
+                )
             };
         }
         unusedFöräldralönWeeks1 = Math.max(0, maxFöräldralönWeeks1 - plan1ExtraWeeks);

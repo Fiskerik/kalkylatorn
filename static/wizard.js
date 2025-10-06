@@ -107,14 +107,18 @@ document.addEventListener('DOMContentLoaded', () => {
             goTo(idx.barnIdag);
         } else {
             partnerSelected = true;
-            step6?.style.setProperty('display', 'block');
+            step6?.style.setProperty('display', 'flex');
             goTo(idx.partner);
         }
     });
 
     setupToggleButtons('partner-group', 'beräkna-partner', value => {
         partnerSelected = value === 'ja';
-        if (!partnerSelected) step6?.style.setProperty('display', 'none');
+        if (partnerSelected) {
+            step6?.style.setProperty('display', 'flex');
+        } else {
+            step6?.style.setProperty('display', 'none');
+        }
         goTo(idx.barnIdag);
     });
 

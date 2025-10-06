@@ -139,6 +139,7 @@ export function renderGanttChart(
     const period2NoExtraWeeks = plan2NoExtra.weeks || 0;
     const period2MinWeeks = plan2MinDagar.weeks || 0;
     const period1OverlapWeeks = plan1Overlap.weeks || 0;
+    const overlapDaysPerWeek = plan1Overlap.dagarPerVecka || 5;
 
     const baseWeeks1 = period1ExtraWeeks + period1NoExtraWeeks;
     const transferredDays = genomförbarhet.transferredDays || 0;
@@ -292,8 +293,9 @@ export function renderGanttChart(
     const period2KombNoExtra = period2Förälder1Inkomst + period2NoExtraFörälder2Inkomst;
     const period2KombMin = period2Förälder1Inkomst + period2MinFörälder2Inkomst;
 
-    const dadLeaveFörälder2Inkomst = dag2 > 0 ? beräknaMånadsinkomst(dag2, 5, extra2, barnbidragPerPerson, tilläggPerPerson) : 0;
-    const dadLeaveFörälder1Inkomst = period1Förälder1Inkomst;
+    const dadLeaveFörälder2Inkomst = dag2 > 0 ?
+        beräknaMånadsinkomst(dag2, 5, extra2, barnbidragPerPerson, tilläggPerPerson) : 0;
+    const dadLeaveFörälder1Inkomst = plan1Overlap.inkomst || period1Förälder1Inkomst;
 
     let inkomstData = [];
     let draggablePoints = [];
@@ -364,7 +366,7 @@ export function renderGanttChart(
                 förälder1Inkomst = dadLeaveFörälder1Inkomst;
                 förälder2Inkomst = dadLeaveFörälder2Inkomst;
                 periodLabel = '10-dagar vid barns födelse';
-                förälder1Components = calculateLeaveComponents(dag1, plan1.dagarPerVecka, extra1);
+                förälder1Components = calculateLeaveComponents(dag1, overlapDaysPerWeek, extra1);
                 förälder2Components = calculateLeaveComponents(dag2, 5, extra2, { includeBenefits: includePartner });
             } else if (week < period1ExtraWeeks) {
                 förälder1Inkomst = period1Förälder1Inkomst;
@@ -495,7 +497,7 @@ export function renderGanttChart(
     meddelandeHtml += `
         <strong>10 dagar efter barns födsel (<i>${formatDate(dadLeaveStart)} till ${formatDate(dadLeaveEnd)}</i>)</strong><br>
         Överlappande ledighet: 10 arbetsdagar (${dadLeaveDurationWeeks} veckor)<br>
-        <span class="leave-parent parent1">Förälder 1: Inkomst ${dadLeaveFörälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span><br>
+        <span class="leave-parent parent1">Förälder 1: Inkomst ${dadLeaveFörälder1Inkomst.toLocaleString()} kr/månad (${overlapDaysPerWeek} dagar/vecka).</span><br>
         <span class="leave-parent parent2">Förälder 2: Inkomst ${dadLeaveFörälder2Inkomst.toLocaleString()} kr/månad (5 dagar/vecka).</span><br>
         ${formatCombinedIncome('Kombinerad inkomst:', dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst)}<br><br>
 
@@ -659,8 +661,8 @@ export function renderGanttChart(
          newMeddelandeHtml += `
             <strong>10 dagar efter barns födsel (<i>${formatDate(dadLeaveStart)} till ${formatDate(dadLeaveEnd)}</i>)</strong><br>
             Överlappande ledighet: 10 arbetsdagar (${dadLeaveDurationWeeks} veckor)<br>
-            <span class="leave-parent parent1">Förälder 1: Inkomst ${dadLeaveFörälder1Inkomst.toLocaleString()} kr/månad.</span><br>
-            <span class="leave-parent parent2">Förälder 2: Inkomst ${dadLeaveFörälder2Inkomst.toLocaleString()} kr/månad.</span><br>
+            <span class="leave-parent parent1">Förälder 1: Inkomst ${dadLeaveFörälder1Inkomst.toLocaleString()} kr/månad (${overlapDaysPerWeek} dagar/vecka).</span><br>
+            <span class="leave-parent parent2">Förälder 2: Inkomst ${dadLeaveFörälder2Inkomst.toLocaleString()} kr/månad (5 dagar/vecka).</span><br>
             ${formatCombinedIncome('Kombinerad inkomst:', dadLeaveFörälder1Inkomst + dadLeaveFörälder2Inkomst)}<br><br>
 
             <strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1EndDate)}</i>)</strong><br>
