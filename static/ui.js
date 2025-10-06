@@ -80,20 +80,21 @@ function toggleInfoBox(e) {
     }
 }
 
-function handleInfoHeaderKeydown(event) {
-    if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        const target = event.currentTarget;
-        if (target instanceof HTMLElement) {
-            target.click();
-        }
-    }
-}
-
 export function setupInfoBoxToggle() {
     const infoHeaders = document.querySelectorAll('.info-header');
     infoHeaders.forEach(header => {
         header.removeEventListener('click', toggleInfoBox);
+        if (header.tagName !== 'BUTTON') {
+            header.setAttribute('role', 'button');
+            header.setAttribute('tabindex', '0');
+            header.removeEventListener('keydown', handleInfoHeaderKeydown);
+            header.addEventListener('keydown', handleInfoHeaderKeydown);
+        } else {
+            header.removeEventListener('keydown', handleInfoHeaderKeydown);
+        }
+        const parentBox = header.closest('.info-box');
+        const isOpen = parentBox?.classList.contains('open') ?? false;
+        header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         header.addEventListener('click', toggleInfoBox);
 
         if (header.tagName !== 'BUTTON') {
@@ -109,6 +110,13 @@ export function setupInfoBoxToggle() {
         const isOpen = parentBox?.classList.contains('open') ?? false;
         header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
+}
+
+function handleInfoHeaderKeydown(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        event.currentTarget.click();
+    }
 }
 
 /**
@@ -216,11 +224,11 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                     </div>
                 </div>
                 <div class="info-box">
-                    <div class="info-header">
+                    <button type="button" class="info-header" aria-expanded="false">
                         <span class="info-icon">ℹ️</span>
                         <span><strong>Information om föräldralön</strong></span>
                         <span class="info-arrow">▾</span>
-                    </div>
+                    </button>
                     <div class="info-content">
                         <p>
                             Eftersom du har kollektivavtal har du sannolikt rätt till föräldrapenningtillägg, även kallat föräldralön, från din arbetsgivare. Detta innebär ofta att du kan få upp till 90 % av din lön under en viss period av din föräldraledighet.
