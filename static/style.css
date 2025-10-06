@@ -640,7 +640,6 @@ input[type="number"] {
     z-index: 1000;
     counter-reset: step;
     min-height: 50px;
-    --progress-circle-size: 42px;
 }
 
 #progress-bar .step {
@@ -648,33 +647,20 @@ input[type="number"] {
     text-align: center;
     flex: 1;
     color: #666; /* Unreached steps remain gray */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
 }
 
 #progress-bar .step::before {
-    content: none;
-}
-
-#progress-bar .step-circle {
-    width: var(--progress-circle-size);
-    height: var(--progress-circle-size);
+    content: counter(step);
+    counter-increment: step;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
     border: 2px solid #ccc;
+    display: block;
+    text-align: center;
+    margin: 0 auto 10px auto;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background-color: white;
-    color: inherit;
-    font-size: 1.2rem;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
-#progress-bar .step-label {
-    font-size: 0.85rem;
-    line-height: 1.1;
 }
 
 /* Completed steps (darker color) */
@@ -683,7 +669,7 @@ input[type="number"] {
     font-weight: bold;
 }
 
-#progress-bar .step.completed .step-circle {
+#progress-bar .step.completed::before {
     border-color: #1f5a58;
     background-color: #1f5a58;
     color: white;
@@ -695,7 +681,7 @@ input[type="number"] {
     font-weight: bold;
 }
 
-#progress-bar .step.active:not(.completed) .step-circle {
+#progress-bar .step.active:not(.completed)::before {
     border-color: #00796b;
     background-color: #00796b;
     color: white;
@@ -707,7 +693,7 @@ input[type="number"] {
     pointer-events: none;
 }
 
-#progress-bar .step.skipped .step-circle {
+#progress-bar .step.skipped::before {
     border-color: #757575;
     background-color: #757575;
     color: white;
@@ -717,9 +703,9 @@ input[type="number"] {
 #progress-bar .step:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: calc(var(--progress-circle-size) / 2);
-    left: calc(50% + (var(--progress-circle-size) / 2)); /* Start from the right edge of the circle */
-    width: calc(100% - var(--progress-circle-size)); /* Span to the next step, accounting for circle width */
+    top: 15px;
+    left: calc(50% + 15px); /* Start from the right edge of the circle */
+    width: calc(100% - 30px); /* Span to the next step, accounting for circle width */
     height: 2px;
     background-color: #ccc;
     z-index: -1;
