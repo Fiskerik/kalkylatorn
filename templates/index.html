@@ -283,13 +283,8 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-    <script src="{{ url_for('static', filename='config.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='calculations.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='chart.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='index.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='wizard.js') }}" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <script type="module" src="{{ url_for('static', filename='main.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>

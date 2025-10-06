@@ -3,37 +3,36 @@
  * Stores static values like income caps, benefit amounts, and default preferences.
  */
 
-(function initConfig(global) {
-    if (global.appConfig) {
-        return;
-    }
+// Global configuration variables
+export const vårdnad = "gemensam";
+export const beräknaPartner = "ja";
+export const barnIdag = 0;
+export const barnPlanerat = 0;
+export const hasCalculated = false;
 
-    const config = {
-        vårdnad: "gemensam",
-        beräknaPartner: "ja",
-        barnIdag: 0,
-        barnPlanerat: 0,
-        hasCalculated: false,
-        förälder1InkomstDagar: 195,
-        förälder2InkomstDagar: 195,
-        förälder1LägstanivåDagar: 45,
-        förälder2LägstanivåDagar: 45,
-        förälder1MinDagar: 45,
-        förälder2MinDagar: 45,
-        barnbidragPerPerson: 625,
-        tilläggPerPerson: 0,
-        INCOME_CAP: 1250,
-        MINIMUM_RATE: 180,
-        SGI_CAP: 49000,
-        DEFAULT_BARNBIDRAG: 625,
-        PRISBASBELOPP: 58800,
-        defaultPreferences: {
-            deltid: "nej",
-            ledigTid1: 6,
-            minInkomst: 10000,
-            strategy: "longer"
-        }
-    };
+// Parental leave days
+export const förälder1InkomstDagar = 195; // Sjukpenningnivå days for Parent 1
+export const förälder2InkomstDagar = 195; // Sjukpenningnivå days for Parent 2
+export const förälder1LägstanivåDagar = 45; // Lägstanivå days for Parent 1
+export const förälder2LägstanivåDagar = 45; // Lägstanivå days for Parent 2
+export const förälder1MinDagar = 45; // Minimum reserved days for Parent 1
+export const förälder2MinDagar = 45; // Minimum reserved days for Parent 2
 
-    global.appConfig = config;
-})(window);
+// Benefits
+export const barnbidragPerPerson = 625; // Child allowance per person (SEK/month)
+export const tilläggPerPerson = 0; // Additional allowance per person (SEK/month)
+
+// Constants
+export const INCOME_CAP = 1250; // SEK/day max parental benefit
+export const MINIMUM_RATE = 180; // SEK/day minimum parental benefit
+export const SGI_CAP = 49000; // Max monthly SGI
+export const DEFAULT_BARNBIDRAG = 625; // Default child allowance per person
+export const PRISBASBELOPP = 58800; // Prisbasbelopp 2025 (SEK)
+
+// Default preferences
+export const defaultPreferences = {
+    deltid: "nej",
+    ledigTid1: 6,
+    minInkomst: 10000,
+    strategy: "longer"
+};
