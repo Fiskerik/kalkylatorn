@@ -366,6 +366,16 @@ input[type="number"] {
     padding: 1rem;
     font-weight: 500;
     cursor: pointer;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    font: inherit;
+}
+
+.info-header:focus {
+    outline: 2px solid #2e9483;
+    outline-offset: 2px;
 }
 
 .info-icon {
@@ -392,6 +402,19 @@ input[type="number"] {
 .info-box.open .info-content {
     display: block;
     text-align: left;
+}
+
+.benefit-table .info-content {
+    padding-top: 0;
+}
+
+.benefit-table .table-wrapper {
+    margin-top: 0.75rem;
+    overflow-x: auto;
+}
+
+.benefit-table table {
+    margin-top: 0;
 }
 
 .combined-income {
