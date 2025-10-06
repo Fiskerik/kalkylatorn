@@ -383,22 +383,11 @@ input[type="number"] {
     padding: 1rem;
     font-weight: 500;
     cursor: pointer;
-    background: none;
-    border: none;
-    width: 100%;
-    text-align: left;
-    font-family: inherit;
-    font-size: 1rem;
 }
 
 .info-icon {
     color: #00796b;
     font-size: 1.2rem;
-}
-
-.info-header:focus-visible {
-    outline: 2px solid #2e9483;
-    outline-offset: 2px;
 }
 
 .info-arrow {
@@ -420,14 +409,6 @@ input[type="number"] {
 .info-box.open .info-content {
     display: block;
     text-align: left;
-}
-
-.benefit-table .info-content {
-    padding-top: 0;
-}
-
-.table-wrapper {
-    overflow-x: auto;
 }
 
 .combined-income {

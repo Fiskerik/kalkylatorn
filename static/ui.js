@@ -71,39 +71,16 @@ export function setupToggleButtons(groupId, inputId, callback = null) {
  * Set up toggle for info boxes
  */
 function toggleInfoBox(e) {
-    const header = e.currentTarget;
-    const box = header.closest('.info-box');
-    if (!box) return;
-    const isOpen = box.classList.toggle('open');
-    if (header instanceof HTMLElement) {
-        header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    }
+    const box = e.currentTarget.closest('.info-box');
+    if (box) box.classList.toggle('open');
 }
 
 export function setupInfoBoxToggle() {
     const infoHeaders = document.querySelectorAll('.info-header');
     infoHeaders.forEach(header => {
         header.removeEventListener('click', toggleInfoBox);
-        if (header.tagName !== 'BUTTON') {
-            header.setAttribute('role', 'button');
-            header.setAttribute('tabindex', '0');
-            header.removeEventListener('keydown', handleInfoHeaderKeydown);
-            header.addEventListener('keydown', handleInfoHeaderKeydown);
-        } else {
-            header.removeEventListener('keydown', handleInfoHeaderKeydown);
-        }
-        const parentBox = header.closest('.info-box');
-        const isOpen = parentBox?.classList.contains('open') ?? false;
-        header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         header.addEventListener('click', toggleInfoBox);
     });
-}
-
-function handleInfoHeaderKeydown(event) {
-    if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        event.currentTarget.click();
-    }
 }
 
 /**
@@ -119,6 +96,7 @@ export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, till
     let rows = '';
     for (let i = 1; i <= 7; i++) {
         const månadsersättning = Math.round((dailyRate * i * 4.3) / 100) * 100;
+        const totalDisponibelt = månadsersättning + barnbidrag + tillägg + extra;
         const veckor = Math.floor(dagar / i);
         rows += `
             <tr>
@@ -129,27 +107,16 @@ export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, till
         `;
     }
     return `
-        <div class="info-box benefit-table">
-            <button type="button" class="info-header" aria-expanded="false">
-                <span class="info-icon">📊</span>
-                <span><strong>Tabell för uttag och ersättning</strong></span>
-                <span class="info-arrow">▾</span>
-            </button>
-            <div class="info-content">
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Dagar per vecka</th>
-                                <th>Så länge räcker dagarna</th>
-                                <th>Föräldrapenning per månad</th>
-                            </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Dagar per vecka</th>
+                    <th>Så länge räcker dagarna</th>
+                    <th>Föräldrapenning per månad</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
     `;
 }
 
@@ -211,11 +178,11 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                     </div>
                 </div>
                 <div class="info-box">
-                    <button type="button" class="info-header" aria-expanded="false">
+                    <div class="info-header">
                         <span class="info-icon">ℹ️</span>
                         <span><strong>Information om föräldralön</strong></span>
                         <span class="info-arrow">▾</span>
-                    </button>
+                    </div>
                     <div class="info-content">
                         <p>
                             Eftersom du har kollektivavtal har du sannolikt rätt till föräldrapenningtillägg, även kallat föräldralön, från din arbetsgivare. Detta innebär ofta att du kan få upp till 90 % av din lön under en viss period av din föräldraledighet.
