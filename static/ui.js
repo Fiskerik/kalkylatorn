@@ -107,13 +107,13 @@ export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, till
         `;
     }
     return `
-        <div class="result-box open">
-            <div class="result-header">
-                <span class="result-icon"><i class="fa-solid fa-table-list"></i></span>
+        <div class="info-box">
+            <div class="info-header">
+                <span class="info-icon"><i class="fa-solid fa-circle-info"></i></span>
                 <span><strong>Tabell för uttag av föräldradagar</strong></span>
-                <span class="result-arrow">▾</span>
+                <span class="info-arrow">▾</span>
             </div>
-            <div class="result-content">
+            <div class="info-content">
                 <table>
                     <thead>
                         <tr>
