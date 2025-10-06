@@ -14,15 +14,39 @@
 <body>
     <div class="container">
         <div id="progress-bar">
-            <div class="step step-1 active">Vårdnad</div>
-            <div class="step step-2">Beräkna för partner?</div>
-            <div class="step step-3">Antal barn idag</div>
-            <div class="step step-4">Antal barn planerade</div>
-            <div class="step step-5">Inkomst förälder 1</div>
-            <div class="step step-6">Inkomst förälder 2</div>
-            <div class="step step-7">Beräkna</div>
-            <div class="step step-8">Optimera</div>
-        </div>    
+            <div class="step step-1 active">
+                <div class="step-circle"><i class="fa-solid fa-people-roof"></i></div>
+                <span class="step-label">Vårdnad</span>
+            </div>
+            <div class="step step-2">
+                <div class="step-circle"><i class="fa-solid fa-user-plus"></i></div>
+                <span class="step-label">Beräkna för partner?</span>
+            </div>
+            <div class="step step-3">
+                <div class="step-circle"><i class="fa-solid fa-children"></i></div>
+                <span class="step-label">Antal barn idag</span>
+            </div>
+            <div class="step step-4">
+                <div class="step-circle"><i class="fa-solid fa-baby-carriage"></i></div>
+                <span class="step-label">Antal barn planerade</span>
+            </div>
+            <div class="step step-5">
+                <div class="step-circle"><i class="fa-solid fa-sack-dollar"></i></div>
+                <span class="step-label">Inkomst förälder 1</span>
+            </div>
+            <div class="step step-6">
+                <div class="step-circle"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                <span class="step-label">Inkomst förälder 2</span>
+            </div>
+            <div class="step step-7">
+                <div class="step-circle"><i class="fa-solid fa-calculator"></i></div>
+                <span class="step-label">Beräkna</span>
+            </div>
+            <div class="step step-8">
+                <div class="step-circle"><i class="fa-solid fa-chart-line"></i></div>
+                <span class="step-label">Optimera</span>
+            </div>
+        </div>
         
         <h1>Föräldrapenningkalkylator</h1>
         
@@ -30,7 +54,7 @@
             <button type="button" id="back-btn" class="hidden back-btn">&larr; Tillbaka</button>
 
             <div class="form-section wizard-step">
-                <div class="question-icon"><i class="fa-solid fa-users"></i></div>
+                <div class="question-icon"><i class="fa-solid fa-people-roof"></i></div>
                 <label for="vårdnad">Har du Gemensam eller Ensam vårdnad?</label>
                 <div class="button-group" id="vårdnad-group">
                     <button type="button" class="vårdnad-btn toggle-btn" data-value="gemensam">Gemensam vårdnad</button>
@@ -51,7 +75,7 @@
             </div>
 
             <div class="form-section wizard-step">
-                <div class="question-icon"><i class="fa-solid fa-child"></i></div>
+                <div class="question-icon"><i class="fa-solid fa-children"></i></div>
                 <label>Hur många barn har du/ni sedan tidigare?</label>
                 <div class="button-group barnval" id="barn-tidigare-group">
                     <button type="button" class="toggle-btn" data-value="0">0</button>
@@ -83,7 +107,7 @@
             </div>
 
             <div class="form-section wizard-step" id="inkomst-avtal-1">
-                <div class="question-icon"><i class="fa-solid fa-money-bill"></i></div>
+                <div class="question-icon"><i class="fa-solid fa-sack-dollar"></i></div>
                 <label for="inkomst1">
                     Vad är din månadsinkomst före skatt?
                     <span class="help-tooltip"
@@ -124,7 +148,7 @@
             </div>
 
             <div id="inkomst-block-2" class="form-section wizard-step">
-                <div class="question-icon"><i class="fa-solid fa-money-bill"></i></div>
+                <div class="question-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
                 <label for="inkomst2">
                     Månadsinkomst förälder 2 (före skatt):
                     <span class="help-tooltip"

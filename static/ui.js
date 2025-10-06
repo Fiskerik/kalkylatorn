@@ -71,12 +71,12 @@ export function setupToggleButtons(groupId, inputId, callback = null) {
  * Set up toggle for info boxes
  */
 function toggleInfoBox(e) {
-    const box = e.currentTarget.closest('.info-box');
+    const box = e.currentTarget.closest('.info-box, .result-box');
     if (box) box.classList.toggle('open');
 }
 
 export function setupInfoBoxToggle() {
-    const infoHeaders = document.querySelectorAll('.info-header');
+    const infoHeaders = document.querySelectorAll('.info-header, .result-header');
     infoHeaders.forEach(header => {
         header.removeEventListener('click', toggleInfoBox);
         header.addEventListener('click', toggleInfoBox);
@@ -107,16 +107,25 @@ export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, till
         `;
     }
     return `
-        <table>
-            <thead>
-                <tr>
-                    <th>Dagar per vecka</th>
-                    <th>Så länge räcker dagarna</th>
-                    <th>Föräldrapenning per månad</th>
-                </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-        </table>
+        <div class="result-box open">
+            <div class="result-header">
+                <span class="result-icon"><i class="fa-solid fa-table-list"></i></span>
+                <span><strong>Tabell för uttag av föräldradagar</strong></span>
+                <span class="result-arrow">▾</span>
+            </div>
+            <div class="result-content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dagar per vecka</th>
+                            <th>Så länge räcker dagarna</th>
+                            <th>Föräldrapenning per månad</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>
     `;
 }
 
