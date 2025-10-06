@@ -83,23 +83,6 @@ button, .toggle-btn {
     border-radius: 6px;
 }
 
-.secondary-action {
-    width: auto;
-    background-color: #f28c38;
-    color: #ffffff;
-    margin-bottom: 1rem;
-    align-self: flex-start;
-}
-
-.secondary-action:hover {
-    background-color: #d97422;
-}
-
-.buffer-info {
-    color: #f28c38;
-    font-weight: 600;
-}
-
 
 
 .button-group {
