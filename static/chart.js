@@ -4,7 +4,6 @@
  */
 import { beräknaMånadsinkomst, beräknaNetto } from './calculations.js';
 
-
 /**
  * Render the Gantt chart
  * @param {Object} plan1 - Plan for Parent 1
@@ -253,7 +252,12 @@ export function renderGanttChart(
         return enforceMinimum ? safeDagarPerVecka(numeric) : numeric;
     };
 
-    const calculateLeaveComponents = (dailyRate, dagarPerVecka, extraBelopp, { includeBenefits = true, enforceMinimum = false } = {}) => {
+    const calculateLeaveComponents = (
+        dailyRate,
+        dagarPerVecka,
+        extraBelopp,
+        { includeBenefits = true, enforceMinimum = false, savings = 0 } = {}
+    ) => {
         const daysPerWeek = normalizeDaysPerWeek(dagarPerVecka, enforceMinimum);
         const fpGross = Math.round((dailyRate * daysPerWeek * 4.3) / 100) * 100;
         const extraGross = extraBelopp ? Math.round(extraBelopp * (daysPerWeek / 7)) : 0;
@@ -262,31 +266,14 @@ export function renderGanttChart(
             extra: beräknaNetto(extraGross),
             barnbidrag: includeBenefits ? barnbidragPerPerson : 0,
             tillägg: includeBenefits ? tilläggPerPerson : 0,
-            lön: 0
+            lön: 0,
+
+            buffert: 0
+
+            sparade: savings
+
         };
     };
-
-    const calculateWorkComponents = (arbetsInkomst, { includeBenefits = true } = {}) => {
-        const benefitsTotal = includeBenefits ? barnbidragPerPerson + tilläggPerPerson : 0;
-        const netSalary = Math.max(0, (arbetsInkomst || 0) - benefitsTotal);
-        return {
-            fp: 0,
-            extra: 0,
-            barnbidrag: includeBenefits ? barnbidragPerPerson : 0,
-            tillägg: includeBenefits ? tilläggPerPerson : 0,
-            lön: netSalary
-        };
-    };
-
-    const createBaseComponents = (includeBenefits = true) => ({
-        fp: 0,
-        extra: 0,
-        barnbidrag: includeBenefits ? barnbidragPerPerson : 0,
-        tillägg: includeBenefits ? tilläggPerPerson : 0,
-        lön: 0
-    });
-
-    const includePartner = vårdnad === 'gemensam' && beräknaPartner === 'ja';
 
     const calculateWorkComponents = (arbetsInkomst, { includeBenefits = true } = {}) => {
         const benefitsTotal = includeBenefits ? barnbidragPerPerson + tilläggPerPerson : 0;
@@ -364,28 +351,42 @@ export function renderGanttChart(
                 förälder1Inkomst = dadLeaveFörälder1Inkomst;
                 förälder2Inkomst = dadLeaveFörälder2Inkomst;
                 periodLabel = '10-dagar vid barns födelse';
-                förälder1Components = calculateLeaveComponents(dag1, plan1.dagarPerVecka, extra1);
+                förälder1Components = calculateLeaveComponents(dag1, overlapDaysPerWeek1, extra1);
                 förälder2Components = calculateLeaveComponents(dag2, 5, extra2, { includeBenefits: includePartner });
-            } else if (week < period1ExtraWeeks) {
+            } else if (week < period1ExtraWeeks + dadLeaveDurationWeeks) {
                 förälder1Inkomst = period1Förälder1Inkomst;
                 förälder2Inkomst = vårdnad === "ensam" ? 0 : (arbetsInkomst2 || 0);
-                periodLabel = week >= transferredStartWeek && transferredWeeks > 0 ? 'Förälder 1 Ledig (Överförda dagar)' : 'Förälder 1 Ledig';
-                förälder1Components = calculateLeaveComponents(dag1, plan1.dagarPerVecka, extra1);
+                const currentWeek = week - dadLeaveDurationWeeks;
+                const isBufferWeek = parent1BufferWeeks > 0 && currentWeek >= period1ExtraWeeks && currentWeek < period1ExtraWeeks + parent1BufferWeeks;
+                const effectiveDays = parent1ForcedDays || plan1.dagarPerVecka;
+                periodLabel = (transferredWeeks > 0 && week >= transferredStartWeek && week < transferredStartWeek + transferredWeeks)
+                    ? 'Förälder 1 Ledig (Överförda dagar)'
+                    : 'Förälder 1 Ledig';
+                förälder1Components = calculateLeaveComponents(dag1, effectiveDays, extra1);
+                if (isBufferWeek && parent1BufferPerMonth > 0) {
+                    förälder1Components.buffert = parent1BufferPerMonth;
+                }
                 förälder2Components = vårdnad === "ensam" ? createBaseComponents(false) : calculateWorkComponents(arbetsInkomst2, { includeBenefits: includePartner });
-            } else if (week < period1ExtraWeeks + period1NoExtraWeeks) {
+            } else if (week < dadLeaveDurationWeeks + period1ExtraWeeks + period1NoExtraWeeks) {
                 förälder1Inkomst = period1NoExtraFörälder1Inkomst;
                 förälder2Inkomst = vårdnad === "ensam" ? 0 : (arbetsInkomst2 || 0);
                 periodLabel = 'Förälder 1 Ledig (utan föräldralön)';
-                förälder1Components = calculateLeaveComponents(dag1, plan1.dagarPerVecka, 0);
+                förälder1Components = calculateLeaveComponents(dag1, safePlan1NoExtraDays, 0);
+                if (parent1BufferPerMonth > 0) {
+                    förälder1Components.buffert = parent1BufferPerMonth;
+                }
                 förälder2Components = vårdnad === "ensam" ? createBaseComponents(false) : calculateWorkComponents(arbetsInkomst2, { includeBenefits: includePartner });
-            } else if (week < period1TotalWeeks) {
+            } else if (week < dadLeaveDurationWeeks + period1TotalWeeks) {
                 förälder1Inkomst = period1MinFörälder1Inkomst;
                 förälder2Inkomst = vårdnad === "ensam" ? 0 : (arbetsInkomst2 || 0);
                 periodLabel = 'Förälder 1 Ledig (lägstanivå)';
-                förälder1Components = calculateLeaveComponents(180, plan1.dagarPerVecka, 0, { enforceMinimum: true });
+                förälder1Components = calculateLeaveComponents(180, safePlan1MinDays, 0, { enforceMinimum: true });
+                if (parent1BufferPerMonth > 0) {
+                    förälder1Components.buffert = parent1BufferPerMonth;
+                }
                 förälder2Components = vårdnad === "ensam" ? createBaseComponents(false) : calculateWorkComponents(arbetsInkomst2, { includeBenefits: includePartner });
             } else if (
-                week < period1TotalWeeks + period2ExtraWeeks &&
+                week < dadLeaveDurationWeeks + period1TotalWeeks + period2ExtraWeeks &&
                 vårdnad === "gemensam" &&
                 beräknaPartner === "ja"
             ) {
@@ -393,10 +394,10 @@ export function renderGanttChart(
                 förälder2Inkomst = period2Förälder2Inkomst;
                 periodLabel = 'Förälder 2 Ledig';
                 förälder1Components = calculateWorkComponents(arbetsInkomst1);
-                förälder2Components = calculateLeaveComponents(dag2, plan2.dagarPerVecka, extra2, { includeBenefits: includePartner });
+                förälder2Components = calculateLeaveComponents(dag2, safePlan2Days, extra2, { includeBenefits: includePartner });
                 förälder2DaysUsed += safeDagarPerVecka(plan2.dagarPerVecka);
             } else if (
-                week < period1TotalWeeks + period2ExtraWeeks + period2NoExtraWeeks &&
+                week < dadLeaveDurationWeeks + period1TotalWeeks + period2ExtraWeeks + period2NoExtraWeeks &&
                 vårdnad === "gemensam" &&
                 beräknaPartner === "ja"
             ) {
@@ -404,10 +405,13 @@ export function renderGanttChart(
                 förälder2Inkomst = period2NoExtraFörälder2Inkomst;
                 periodLabel = 'Förälder 2 Ledig (utan föräldralön)';
                 förälder1Components = calculateWorkComponents(arbetsInkomst1);
-                förälder2Components = calculateLeaveComponents(dag2, plan2.dagarPerVecka, 0, { includeBenefits: includePartner });
+                förälder2Components = calculateLeaveComponents(dag2, safePlan2NoExtraDays, 0, { includeBenefits: includePartner });
+                if (parent2BufferPerMonth > 0) {
+                    förälder2Components.buffert = parent2BufferPerMonth;
+                }
                 förälder2DaysUsed += safeDagarPerVecka(plan2.dagarPerVecka);
             } else if (
-                week < period1TotalWeeks + period2TotalWeeks &&
+                week < dadLeaveDurationWeeks + period1TotalWeeks + period2TotalWeeks &&
                 vårdnad === "gemensam" &&
                 beräknaPartner === "ja"
             ) {
@@ -415,10 +419,14 @@ export function renderGanttChart(
                 förälder2Inkomst = period2MinFörälder2Inkomst;
                 periodLabel = 'Förälder 2 Ledig (lägstanivå)';
                 förälder1Components = calculateWorkComponents(arbetsInkomst1);
-                förälder2Components = calculateLeaveComponents(180, plan2.dagarPerVecka, 0, {
+                förälder2Components = calculateLeaveComponents(180, safePlan2MinDays, 0, {
                     includeBenefits: includePartner,
-                    enforceMinimum: true
+                    enforceMinimum: true,
+                    savings: period2MinSavings
                 });
+                if (parent2BufferPerMonth > 0) {
+                    förälder2Components.buffert = parent2BufferPerMonth;
+                }
                 förälder2DaysUsed += safeDagarPerVecka(plan2.dagarPerVecka);
             } else {
                 förälder1Inkomst = arbetsInkomst1 || 0;
@@ -682,6 +690,9 @@ export function renderGanttChart(
             `${data.förälder1Components.barnbidrag.toLocaleString()} kr/månad<br>`;
         html += `  Flerbarnstillägg: ` +
             `${data.förälder1Components.tillägg.toLocaleString()} kr/månad</div>`;
+        if (data.förälder1Components.buffert) {
+            html += `<div class="summary-section buffer-info">Buffert: ${data.förälder1Components.buffert.toLocaleString()} kr/månad</div>`;
+        }
         const showParent2 = vårdnad !== 'ensam' && beräknaPartner === 'ja';
         if (showParent2) {
             html +=
@@ -697,6 +708,9 @@ export function renderGanttChart(
                 `${data.förälder2Components.barnbidrag.toLocaleString()} kr/månad<br>`;
             html += `  Flerbarnstillägg: ` +
                 `${data.förälder2Components.tillägg.toLocaleString()} kr/månad</div>`;
+            if (data.förälder2Components.buffert) {
+                html += `<div class="summary-section buffer-info">Buffert: ${data.förälder2Components.buffert.toLocaleString()} kr/månad</div>`;
+            }
         }
         return html;
     }
