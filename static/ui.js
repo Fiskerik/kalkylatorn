@@ -96,19 +96,6 @@ export function setupInfoBoxToggle() {
         const isOpen = parentBox?.classList.contains('open') ?? false;
         header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         header.addEventListener('click', toggleInfoBox);
-
-        if (header.tagName !== 'BUTTON') {
-            header.setAttribute('role', 'button');
-            header.setAttribute('tabindex', '0');
-            header.removeEventListener('keydown', handleInfoHeaderKeydown);
-            header.addEventListener('keydown', handleInfoHeaderKeydown);
-        } else {
-            header.removeEventListener('keydown', handleInfoHeaderKeydown);
-        }
-
-        const parentBox = header.closest('.info-box');
-        const isOpen = parentBox?.classList.contains('open') ?? false;
-        header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
 }
 
