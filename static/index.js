@@ -44,12 +44,17 @@ function initializeForm() {
 function setupEventListeners() {
     const form = document.getElementById('calc-form');
     const optimizeBtn = document.getElementById('optimize-btn');
+    const maximizeBtn = document.getElementById('maximize-parental-salary-btn');
 
     // Form submission
     form.addEventListener('submit', handleFormSubmit);
 
     // Optimization button
     optimizeBtn.addEventListener('click', handleOptimize);
+
+    if (maximizeBtn) {
+        maximizeBtn.addEventListener('click', handleMaximizeFöräldralön);
+    }
 
     // Dropdown listeners for uttag
     setupDropdownListeners();
@@ -324,15 +329,131 @@ function handleOptimize() {
             result.maxFöräldralönWeeks1,
             result.maxFöräldralönWeeks2,
             result.unusedFöräldralönWeeks1,
-            result.unusedFöräldralönWeeks2
+            result.unusedFöräldralönWeeks2,
+            result.maximization || null
         );
 
+        window.optimizationState = {
+            preferences,
+            inputs,
+            result,
+            mode: 'optimize'
+        };
 
+        const maximizeBtn = document.getElementById('maximize-parental-salary-btn');
+        if (maximizeBtn) {
+            const hasFöräldralön = (result.maxFöräldralönWeeks1 || 0) > 0 || (result.maxFöräldralönWeeks2 || 0) > 0;
+            maximizeBtn.style.display = hasFöräldralön ? 'inline-flex' : 'none';
+        }
     } catch (error) {
         console.error('Optimization failed:', error);
         document.getElementById('leave-duration-error').style.display = 'block';
         document.getElementById('leave-duration-error').textContent = 
             'Fel vid optimering: Kontrollera indata och försök igen.';
+    }
+}
+
+function handleMaximizeFöräldralön() {
+    updateProgress(8);
+    const maximizeBtn = document.getElementById('maximize-parental-salary-btn');
+    if (!window.optimizationState) {
+        if (maximizeBtn) maximizeBtn.style.display = 'none';
+        console.warn('Maximera föräldralön: Ingen tidigare optimering att utgå ifrån.');
+        return;
+    }
+
+    const { preferences, inputs } = window.optimizationState;
+    const maximizePreferences = {
+        ...preferences,
+        strategy: 'maximize'
+    };
+
+    const stateInputs = {
+        ...inputs
+    };
+
+    if (maximizeBtn) maximizeBtn.disabled = true;
+
+    try {
+        const result = optimizeParentalLeave(maximizePreferences, stateInputs, { maximizeFöräldralön: true });
+
+        const err = document.getElementById('leave-duration-error');
+        if (!result.genomförbarhet.ärGenomförbar && err) {
+            err.textContent = result.genomförbarhet.meddelande;
+            err.style.display = 'block';
+        } else if (err) {
+            err.style.display = 'none';
+        }
+
+        const totalDays1 =
+            result.plan1.användaInkomstDagar +
+            result.plan1.användaMinDagar;
+        const totalDays2 =
+            result.plan2.användaInkomstDagar +
+            result.plan2.användaMinDagar;
+        const transferred = result.genomförbarhet.transferredDays || 0;
+        const maxDays1 = förälder1InkomstDagar + förälder1MinDagar + transferred;
+        const maxDays2 = förälder2InkomstDagar + förälder2MinDagar - transferred;
+
+        if (totalDays1 > maxDays1 || totalDays2 > maxDays2) {
+            if (err) {
+                err.style.display = 'block';
+                err.textContent = 'Planen överskrider tillgängliga dagar vid maximering av föräldralön.';
+            }
+            return;
+        }
+
+        document.getElementById('optimization-result').style.display = 'block';
+        renderGanttChart(
+            result.plan1,
+            result.plan2,
+            result.plan1NoExtra,
+            result.plan2NoExtra,
+            result.plan1MinDagar,
+            result.plan2MinDagar,
+            result.plan1Overlap,
+            window.appState.inkomst1,
+            window.appState.inkomst2,
+            window.appState.vårdnad,
+            window.appState.beräknaPartner,
+            result.genomförbarhet,
+            result.dag1,
+            result.extra1,
+            result.dag2,
+            result.extra2,
+            result.förälder1InkomstDagar,
+            result.förälder2InkomstDagar,
+            result.förälder1MinDagar,
+            result.förälder2MinDagar,
+            stateInputs.barnDatum,
+            result.arbetsInkomst1,
+            result.arbetsInkomst2,
+            window.appState.barnbidragPerPerson,
+            window.appState.tilläggPerPerson,
+            result.maxFöräldralönWeeks1,
+            result.maxFöräldralönWeeks2,
+            result.unusedFöräldralönWeeks1,
+            result.unusedFöräldralönWeeks2,
+            result.maximization || null
+        );
+
+        window.optimizationState = {
+            preferences: maximizePreferences,
+            inputs: stateInputs,
+            result,
+            mode: 'maximize'
+        };
+
+        if (maximizeBtn) maximizeBtn.style.display = 'inline-flex';
+    } catch (error) {
+        console.error('Maximering av föräldralön misslyckades:', error);
+        const err = document.getElementById('leave-duration-error');
+        if (err) {
+            err.style.display = 'block';
+            err.textContent = 'Fel vid maximering: Kontrollera indata och försök igen.';
+        }
+    } finally {
+        if (maximizeBtn) maximizeBtn.disabled = false;
     }
 }
 
