@@ -98,18 +98,27 @@ export function beräknaBarnbidrag(totalBarn, ensamVårdnad) {
  * @returns {Object} Optimized leave plans and related data
  */
 export function optimizeParentalLeave(preferences, inputs) {
-    const { deltid, ledigTid1, ledigTid2 = 0, minInkomst, strategy } = preferences;
+    const {
+        deltid,
+        ledigTid1,
+        ledigTid2 = 0,
+        minInkomst,
+        strategy,
+        maximizeFöräldralön = false
+    } = preferences;
     let plan1 = { startWeek: 0, weeks: 0, dagarPerVecka: 0, inkomst: 0, inkomstUtanExtra: 0, användaInkomstDagar: 0, användaMinDagar: 0 };
     let plan1NoExtra = { startWeek: 0, weeks: 0, dagarPerVecka: 0, inkomst: 0 };
     let plan2 = { startWeek: 0, weeks: 0, dagarPerVecka: 0, inkomst: 0, inkomstUtanExtra: 0, användaInkomstDagar: 0, användaMinDagar: 0 };
     let plan2NoExtra = { startWeek: 0, weeks: 0, dagarPerVecka: 0, inkomst: 0 };
     let plan1MinDagar = { startWeek: 0, weeks: 0, dagarPerVecka: 0, inkomst: 0 };
     let plan2MinDagar = { startWeek: 0, weeks: 0, dagarPerVecka: 0, inkomst: 0 };
-    let plan1Overlap = { startWeek: 0, weeks: 2, dagarPerVecka: 0, inkomst: 0 };
+    let plan1Overlap = { startWeek: 0, weeks: 2, dagarPerVecka: 5, inkomst: 0 };
     let plan1ExtraWeeks = 0;
     let plan1NoExtraWeeksTotal = 0;
     let plan2ExtraWeeks = 0;
     let plan2NoExtraWeeksTotal = 0;
+    let plan1Savings = { total: 0, perMonth: 0, weeks: 0, months: 0 };
+    let plan2Savings = { total: 0, perMonth: 0, weeks: 0, months: 0 };
     let genomförbarhet = {
         ärGenomförbar: true,
         meddelande: "",
@@ -159,6 +168,8 @@ export function optimizeParentalLeave(preferences, inputs) {
 
     let dagarPerVecka1 = 0;
     let dagarPerVecka2 = 0;
+    let plan1OriginalDaysPerWeek = 0;
+    let plan2OriginalDaysPerWeek = 0;
     let weeks1 = Math.round(ledigTid1 * 4.3);
     let weeks2 = Math.round(ledigTid2 * 4.3);
     let inkomst1Result = arbetsInkomst1;
@@ -323,6 +334,7 @@ export function optimizeParentalLeave(preferences, inputs) {
             användaInkomstDagar: användaInkomstDagar1,
             användaMinDagar: användaMinDagar1
         };
+        plan1OriginalDaysPerWeek = plan1.dagarPerVecka;
 
         plan1NoExtra = {
             startWeek: plan1ExtraWeeks,
@@ -406,11 +418,12 @@ export function optimizeParentalLeave(preferences, inputs) {
         };
 
         if (inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja") {
+            const overlapDaysPerWeek = 5;
             plan1Overlap = {
                 startWeek: 0,
                 weeks: 2,
-                dagarPerVecka: dagarPerVecka1,
-                inkomst: Math.round(beräknaMånadsinkomst(dag1, dagarPerVecka1, extra1, barnbidrag, tillägg))
+                dagarPerVecka: overlapDaysPerWeek,
+                inkomst: Math.round(beräknaMånadsinkomst(dag1, overlapDaysPerWeek, extra1, barnbidrag, tillägg))
             };
         }
         unusedFöräldralönWeeks1 = Math.max(0, maxFöräldralönWeeks1 - plan1ExtraWeeks);
@@ -445,6 +458,7 @@ export function optimizeParentalLeave(preferences, inputs) {
             användaInkomstDagar: användaInkomstDagar2,
             användaMinDagar: användaMinDagar2
         };
+        plan2OriginalDaysPerWeek = plan2.dagarPerVecka;
 
         const plan2StartNoExtra = plan2.startWeek + plan2ExtraWeeks;
         plan2NoExtra = {
@@ -461,6 +475,110 @@ export function optimizeParentalLeave(preferences, inputs) {
             inkomst: Math.round(beräknaMånadsinkomst(MINIMUM_RATE, dagarPerVecka2, 0, barnbidrag, tillägg))
         };
         unusedFöräldralönWeeks2 = Math.max(0, maxFöräldralönWeeks2 - plan2ExtraWeeks);
+    }
+
+    if (
+        maximizeFöräldralön &&
+        plan1.weeks > 0 &&
+        extra1 > 0 &&
+        maxFöräldralönWeeks1 > 0
+    ) {
+        const baselineDaysPerWeek = Math.max(1, plan1OriginalDaysPerWeek || plan1.dagarPerVecka || 1);
+        const targetWeeks = Math.min(plan1.weeks, Math.round(maxFöräldralönWeeks1));
+        const maximizedIncome = Math.round(
+            beräknaMånadsinkomst(dag1, 7, extra1, barnbidrag, tillägg)
+        );
+        const baselineIncome = Math.round(
+            beräknaMånadsinkomst(dag1, baselineDaysPerWeek, extra1, barnbidrag, tillägg)
+        );
+        const additionalDays = Math.max(0, targetWeeks * (7 - baselineDaysPerWeek));
+        if (additionalDays > 0) {
+            plan1.dagarPerVecka = 7;
+            plan1.inkomst = maximizedIncome;
+            plan1.inkomstUtanExtra = Math.round(
+                beräknaMånadsinkomst(dag1, 7, 0, barnbidrag, tillägg)
+            );
+            plan1.användaInkomstDagar += additionalDays;
+            förälder1InkomstDagar = Math.max(0, förälder1InkomstDagar - additionalDays);
+        }
+        const totalSavings = Math.max(0, maximizedIncome - baselineIncome) * (targetWeeks / 4.3);
+        const savingsWeeks = (plan1NoExtra.weeks || 0) + (plan1MinDagar.weeks || 0);
+        const savingsMonths = savingsWeeks / 4.3;
+        const perMonth = savingsMonths > 0 ? Math.round(totalSavings / savingsMonths) : 0;
+        plan1Savings = {
+            total: Math.round(totalSavings),
+            perMonth,
+            weeks: savingsWeeks,
+            months: savingsMonths
+        };
+        if (plan1NoExtra.weeks > 0) {
+            plan1NoExtra.dagarPerVecka = baselineDaysPerWeek;
+            plan1NoExtra.inkomst = Math.round(
+                beräknaMånadsinkomst(dag1, baselineDaysPerWeek, 0, barnbidrag, tillägg)
+            );
+        }
+        if (plan1MinDagar.weeks > 0) {
+            plan1MinDagar.dagarPerVecka = baselineDaysPerWeek;
+            plan1MinDagar.inkomst = Math.round(
+                beräknaMånadsinkomst(MINIMUM_RATE, baselineDaysPerWeek, 0, barnbidrag, tillägg)
+            );
+        }
+        if (perMonth > 0) {
+            plan1NoExtra.savingsPerMonth = perMonth;
+            plan1MinDagar.savingsPerMonth = perMonth;
+        }
+    }
+
+    if (
+        maximizeFöräldralön &&
+        plan2.weeks > 0 &&
+        extra2 > 0 &&
+        maxFöräldralönWeeks2 > 0
+    ) {
+        const baselineDaysPerWeek = Math.max(1, plan2OriginalDaysPerWeek || plan2.dagarPerVecka || 1);
+        const targetWeeks = Math.min(plan2.weeks, Math.round(maxFöräldralönWeeks2));
+        const maximizedIncome = Math.round(
+            beräknaMånadsinkomst(dag2, 7, extra2, barnbidrag, tillägg)
+        );
+        const baselineIncome = Math.round(
+            beräknaMånadsinkomst(dag2, baselineDaysPerWeek, extra2, barnbidrag, tillägg)
+        );
+        const additionalDays = Math.max(0, targetWeeks * (7 - baselineDaysPerWeek));
+        if (additionalDays > 0) {
+            plan2.dagarPerVecka = 7;
+            plan2.inkomst = maximizedIncome;
+            plan2.inkomstUtanExtra = Math.round(
+                beräknaMånadsinkomst(dag2, 7, 0, barnbidrag, tillägg)
+            );
+            plan2.användaInkomstDagar += additionalDays;
+            förälder2InkomstDagar = Math.max(0, förälder2InkomstDagar - additionalDays);
+        }
+        const totalSavings = Math.max(0, maximizedIncome - baselineIncome) * (targetWeeks / 4.3);
+        const savingsWeeks = (plan2NoExtra.weeks || 0) + (plan2MinDagar.weeks || 0);
+        const savingsMonths = savingsWeeks / 4.3;
+        const perMonth = savingsMonths > 0 ? Math.round(totalSavings / savingsMonths) : 0;
+        plan2Savings = {
+            total: Math.round(totalSavings),
+            perMonth,
+            weeks: savingsWeeks,
+            months: savingsMonths
+        };
+        if (plan2NoExtra.weeks > 0) {
+            plan2NoExtra.dagarPerVecka = baselineDaysPerWeek;
+            plan2NoExtra.inkomst = Math.round(
+                beräknaMånadsinkomst(dag2, baselineDaysPerWeek, 0, barnbidrag, tillägg)
+            );
+        }
+        if (plan2MinDagar.weeks > 0) {
+            plan2MinDagar.dagarPerVecka = baselineDaysPerWeek;
+            plan2MinDagar.inkomst = Math.round(
+                beräknaMånadsinkomst(MINIMUM_RATE, baselineDaysPerWeek, 0, barnbidrag, tillägg)
+            );
+        }
+        if (perMonth > 0) {
+            plan2NoExtra.savingsPerMonth = perMonth;
+            plan2MinDagar.savingsPerMonth = perMonth;
+        }
     }
 
     // Step 5: Handle overlap days (10 days for Förälder 2)
@@ -520,6 +638,8 @@ export function optimizeParentalLeave(preferences, inputs) {
         maxFöräldralönWeeks1,
         maxFöräldralönWeeks2,
         unusedFöräldralönWeeks1,
-        unusedFöräldralönWeeks2
+        unusedFöräldralönWeeks2,
+        plan1Savings,
+        plan2Savings
     };
 }
