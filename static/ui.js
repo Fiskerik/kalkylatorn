@@ -188,7 +188,7 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                 </div>
                 <div class="info-box">
                     <div class="info-header">
-                        <span class="info-icon">ℹ️</span>
+                        <span class="info-icon"><i class="fa-solid fa-circle-info"></i></span>
                         <span><strong>Information om föräldralön</strong></span>
                         <span class="info-arrow">▾</span>
                     </div>
