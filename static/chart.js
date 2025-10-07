@@ -886,6 +886,16 @@ export function renderGanttChart(
         }
         const data = inkomstData[index];
         const weekLabel = weekLabels[index] || 'Okänd vecka';
+        let requiresFootnote = false;
+        const formatIncomeLine = (label, value, applyAsterisk = false) => {
+            const needsAsterisk = applyAsterisk && value > 0;
+            if (needsAsterisk) {
+                requiresFootnote = true;
+            }
+            const labelText = needsAsterisk ? `${label}*` : label;
+            return `  ${labelText}: ${value.toLocaleString()} kr/månad<br>`;
+        };
+
         let html =
             `<div class="summary-section"><strong>${weekLabel}</strong><br>` +
             `Period: ${data.periodLabel || 'Okänd period'}</div>`;
@@ -896,12 +906,9 @@ export function renderGanttChart(
         html +=
             `<div class="summary-section"><strong>Förälder 1</strong>: ` +
             `${data.förälder1Inkomst.toLocaleString()} kr/månad<br>`;
-        html += `  Föräldrapenning: ` +
-            `${data.förälder1Components.fp.toLocaleString()} kr/månad<br>`;
-        html += `  Föräldralön: ` +
-            `${data.förälder1Components.extra.toLocaleString()} kr/månad<br>`;
-        html += `  Lön: ` +
-            `${data.förälder1Components.lön.toLocaleString()} kr/månad<br>`;
+        html += formatIncomeLine('Föräldrapenning', data.förälder1Components.fp, true);
+        html += formatIncomeLine('Föräldralön', data.förälder1Components.extra, true);
+        html += formatIncomeLine('Lön', data.förälder1Components.lön, true);
         html += `  Barnbidrag: ` +
             `${data.förälder1Components.barnbidrag.toLocaleString()} kr/månad<br>`;
         html += `  Flerbarnstillägg: ` +
@@ -911,16 +918,16 @@ export function renderGanttChart(
             html +=
                 `<div class="summary-section"><strong>Förälder 2</strong>: ` +
                 `${data.förälder2Inkomst.toLocaleString()} kr/månad<br>`;
-            html += `  Föräldrapenning: ` +
-                `${data.förälder2Components.fp.toLocaleString()} kr/månad<br>`;
-            html += `  Föräldralön: ` +
-                `${data.förälder2Components.extra.toLocaleString()} kr/månad<br>`;
-            html += `  Lön: ` +
-                `${data.förälder2Components.lön.toLocaleString()} kr/månad<br>`;
+            html += formatIncomeLine('Föräldrapenning', data.förälder2Components.fp, true);
+            html += formatIncomeLine('Föräldralön', data.förälder2Components.extra, true);
+            html += formatIncomeLine('Lön', data.förälder2Components.lön, true);
             html += `  Barnbidrag: ` +
                 `${data.förälder2Components.barnbidrag.toLocaleString()} kr/månad<br>`;
             html += `  Flerbarnstillägg: ` +
                 `${data.förälder2Components.tillägg.toLocaleString()} kr/månad</div>`;
+        }
+        if (requiresFootnote) {
+            html += '<div class="summary-footnote" style="margin-top: 10px; font-size: 0.85em; color: #666; text-align: left;">* Estimerad nettoinkomst baserad på 30% skatt</div>';
         }
         return html;
     }
