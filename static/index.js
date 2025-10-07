@@ -243,8 +243,14 @@ function handleOptimize() {
     }
     if (minIncomeErr) minIncomeErr.style.display = 'none';
     const slider = document.getElementById('leave-slider');
-    const ledigTid1 = slider ? parseFloat(slider.value) || 0 : 0;
-    const ledigTid2 = Math.max(totalMonths - ledigTid1, 0);
+    const includePartner = window.appState.vårdnad === 'gemensam' && window.appState.beräknaPartner === 'ja';
+    let ledigTid1 = totalMonths;
+    if (includePartner && slider) {
+        const sliderValue = parseFloat(slider.value);
+        ledigTid1 = Number.isFinite(sliderValue) ? sliderValue : totalMonths;
+    }
+    ledigTid1 = Math.max(0, Math.min(ledigTid1, totalMonths));
+    const ledigTid2 = includePartner ? Math.max(totalMonths - ledigTid1, 0) : 0;
     const minInkomst = parseInt(minInkomstValue, 10);
     const strategy = strategyInput.value || 'longer';
     const deltid = defaultPreferences.deltid; // From config, could be made dynamic
@@ -462,8 +468,9 @@ function setupLeaveSlider() {
         slider.max = total;
         const step = total > 2 ? 1 : 0.5;
         slider.step = step;
-        const half = Math.round(total / 2);
-        slider.value = half;
+        const isSingleParent = window.appState?.vårdnad === 'ensam' || window.appState?.beräknaPartner !== 'ja';
+        const defaultValue = isSingleParent ? total : Math.round(total / 2);
+        slider.value = defaultValue;
         updateLeaveDisplay(slider, total);
         if (tickList) {
             tickList.innerHTML = '';
@@ -473,7 +480,6 @@ function setupLeaveSlider() {
         }
         if (startLabel) startLabel.textContent = '0';
         if (endLabel) endLabel.textContent = total;
-        const isSingleParent = window.appState?.vårdnad === 'ensam' || window.appState?.beräknaPartner !== 'ja';
         container.style.display = !isSingleParent && total > 0 ? 'block' : 'none';
     };
 
