@@ -275,46 +275,115 @@ function handleOptimize() {
             err.style.display = 'none';
         }
 
-        const totalDays1 =
-            (result.plan1.användaInkomstDagar || 0) +
-            (result.plan1NoExtra.användaInkomstDagar || 0) +
-            (result.plan1.användaMinDagar || 0) +
-            (result.plan1MinDagar.användaMinDagar || 0);
-        const totalDays2 =
-            (result.plan2.användaInkomstDagar || 0) +
-            (result.plan2NoExtra.användaInkomstDagar || 0) +
-            (result.plan2.användaMinDagar || 0) +
-            (result.plan2MinDagar.användaMinDagar || 0);
-        const transferred = result.genomförbarhet.transferredDays || 0;
-        const maxDays1 = förälder1InkomstDagar + förälder1MinDagar + transferred;
-        const maxDays2 = förälder2InkomstDagar + förälder2MinDagar - transferred;
+        const toNumber = (value) => (Number.isFinite(value) ? value : 0);
+        const computeDaysFromPlan = (plan, fallbackDaysPerWeek = 0) => {
+            if (!plan) return 0;
+            const weeks = toNumber(plan.weeks);
+            const daysPerWeek = toNumber(plan.dagarPerVecka || fallbackDaysPerWeek);
+            if (weeks <= 0 || daysPerWeek <= 0) {
+                return 0;
+            }
+            return Math.round(weeks * daysPerWeek);
+        };
+        const extractDays = (plan, property, fallbackDaysPerWeek = 0) => {
+            if (!plan) return 0;
+            const stored = plan[property];
+            if (Number.isFinite(stored) && stored > 0) {
+                return Math.round(stored);
+            }
+            return computeDaysFromPlan(plan, fallbackDaysPerWeek);
+        };
+        const getInkomstDays = (plan, fallbackDaysPerWeek = 0) =>
+            extractDays(plan, 'användaInkomstDagar', fallbackDaysPerWeek);
+        const getMinDays = (plan, fallbackDaysPerWeek = 0) =>
+            extractDays(plan, 'användaMinDagar', fallbackDaysPerWeek);
 
-        if (totalDays1 > maxDays1 || totalDays2 > maxDays2) {
-            const buildDetails = (segments) => segments
-                .filter(segment => segment.days > 0)
-                .map(segment => `${segment.label}: ${segment.days} dagar`)
-                .join(', ');
+        const plan1TotalInkomstDays = getInkomstDays(result.plan1, result.plan1.dagarPerVecka);
+        const plan1NoExtraDays = getInkomstDays(
+            result.plan1NoExtra,
+            result.plan1NoExtra.dagarPerVecka || result.plan1.dagarPerVecka
+        );
+        const plan1ExtraDays = Math.max(0, plan1TotalInkomstDays - plan1NoExtraDays);
+        const plan1MinDays = getMinDays(result.plan1, result.plan1.dagarPerVecka);
+        const plan1MinContinuationDays = getMinDays(
+            result.plan1MinDagar,
+            result.plan1MinDagar.dagarPerVecka || result.plan1.dagarPerVecka
+        );
 
-            if (totalDays1 > maxDays1) {
-                const shortage = totalDays1 - maxDays1;
+        const plan2TotalInkomstDays = getInkomstDays(result.plan2, result.plan2.dagarPerVecka);
+        const plan2NoExtraDays = getInkomstDays(
+            result.plan2NoExtra,
+            result.plan2NoExtra.dagarPerVecka || result.plan2.dagarPerVecka
+        );
+        const plan2ExtraDays = Math.max(0, plan2TotalInkomstDays - plan2NoExtraDays);
+        const plan2MinDays = getMinDays(result.plan2, result.plan2.dagarPerVecka);
+        const plan2MinContinuationDays = getMinDays(
+            result.plan2MinDagar,
+            result.plan2MinDagar.dagarPerVecka || result.plan2.dagarPerVecka
+        );
+        const overlapDaysUsed = computeDaysFromPlan(
+            result.plan1Overlap,
+            result.plan1Overlap?.dagarPerVecka || 0
+        );
+
+        const usedInkomstDays1 = plan1ExtraDays + plan1NoExtraDays;
+        const usedMinDays1 = plan1MinDays + plan1MinContinuationDays;
+        const usedInkomstDays2 = plan2ExtraDays + plan2NoExtraDays + overlapDaysUsed;
+        const usedMinDays2 = plan2MinDays + plan2MinContinuationDays;
+
+        const remainingInkomstDays1 = toNumber(result.förälder1InkomstDagar);
+        const remainingMinDays1 = toNumber(result.förälder1MinDagar);
+        const remainingInkomstDays2 = toNumber(result.förälder2InkomstDagar);
+        const remainingMinDays2 = toNumber(result.förälder2MinDagar);
+
+        const shortageInkomst1 = Math.max(0, -remainingInkomstDays1);
+        const shortageMin1 = Math.max(0, -remainingMinDays1);
+        const shortageInkomst2 = Math.max(0, -remainingInkomstDays2);
+        const shortageMin2 = Math.max(0, -remainingMinDays2);
+
+        const totalShortage1 = shortageInkomst1 + shortageMin1;
+        const totalShortage2 = shortageInkomst2 + shortageMin2;
+
+        const totalDays1 = usedInkomstDays1 + usedMinDays1;
+        const totalDays2 = usedInkomstDays2 + usedMinDays2;
+        const maxDays1 =
+            usedInkomstDays1 + Math.max(0, remainingInkomstDays1) + usedMinDays1 + Math.max(0, remainingMinDays1);
+        const maxDays2 =
+            usedInkomstDays2 + Math.max(0, remainingInkomstDays2) + usedMinDays2 + Math.max(0, remainingMinDays2);
+
+        if (totalShortage1 > 0 || totalShortage2 > 0) {
+            const buildDetails = (segments) =>
+                segments
+                    .map(({ label, days }) => ({ label, days: Math.round(days) }))
+                    .filter((segment) => segment.days > 0)
+                    .map((segment) => `${segment.label}: ${segment.days} dagar`)
+                    .join(', ');
+
+            if (totalShortage1 > 0) {
                 const segments = [
-                    { label: 'Fas 1 med föräldralön', days: result.plan1.användaInkomstDagar || 0 },
-                    { label: 'Fas 1 utan föräldralön', days: result.plan1NoExtra.användaInkomstDagar || 0 },
-                    { label: 'Fas 1 lägstanivå', days: result.plan1.användaMinDagar || 0 },
-                    { label: 'Fas 1 lägstanivå (forts.)', days: result.plan1MinDagar.användaMinDagar || 0 }
+                    { label: 'Fas 1 med föräldralön', days: plan1ExtraDays },
+                    { label: 'Fas 1 utan föräldralön', days: plan1NoExtraDays },
+                    { label: 'Fas 1 lägstanivå', days: plan1MinDays },
+                    { label: 'Fas 1 lägstanivå (forts.)', days: plan1MinContinuationDays }
                 ];
+                const shortage = Math.round(totalShortage1);
                 const details = buildDetails(segments);
-                err.textContent = `Förälder 1 behöver ${totalDays1} dagar${details ? ` (${details})` : ''} men har bara ${maxDays1} dagar tillgängliga. ${shortage} dagar saknas.`;
+                err.textContent = `Förälder 1 behöver ${Math.round(totalDays1)} dagar${
+                    details ? ` (${details})` : ''
+                } men har bara ${Math.round(maxDays1)} dagar tillgängliga. ${shortage} dagar saknas.`;
             } else {
-                const shortage = totalDays2 - maxDays2;
                 const segments = [
-                    { label: 'Fas 2 med föräldralön', days: result.plan2.användaInkomstDagar || 0 },
-                    { label: 'Fas 2 utan föräldralön', days: result.plan2NoExtra.användaInkomstDagar || 0 },
-                    { label: 'Fas 2 lägstanivå', days: result.plan2.användaMinDagar || 0 },
-                    { label: 'Fas 2 lägstanivå (forts.)', days: result.plan2MinDagar.användaMinDagar || 0 }
+                    { label: 'Fas 2 med föräldralön', days: plan2ExtraDays },
+                    { label: 'Fas 2 utan föräldralön', days: plan2NoExtraDays },
+                    { label: 'Fas 2 lägstanivå', days: plan2MinDays },
+                    { label: 'Fas 2 lägstanivå (forts.)', days: plan2MinContinuationDays },
+                    { label: 'Överlappande dagar', days: overlapDaysUsed }
                 ];
+                const shortage = Math.round(totalShortage2);
                 const details = buildDetails(segments);
-                err.textContent = `Förälder 2 behöver ${totalDays2} dagar${details ? ` (${details})` : ''} men har bara ${maxDays2} dagar tillgängliga. ${shortage} dagar saknas.`;
+                err.textContent = `Förälder 2 behöver ${Math.round(totalDays2)} dagar${
+                    details ? ` (${details})` : ''
+                } men har bara ${Math.round(maxDays2)} dagar tillgängliga. ${shortage} dagar saknas.`;
             }
             err.style.display = 'block';
             return;
