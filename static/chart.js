@@ -280,6 +280,17 @@ export function renderGanttChart(
     }
 
     const safeDagarPerVecka = (value) => value > 0 ? value : 1;
+    const formatDaysPerWeekLabel = value => {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric) || numeric <= 0) {
+            return '0';
+        }
+        if (Number.isInteger(numeric)) {
+            return `${numeric}`;
+        }
+        const fixed = numeric.toFixed(1);
+        return fixed.endsWith('.0') ? fixed.slice(0, -2) : fixed;
+    };
     const normalizeDaysPerWeek = (value, enforceMinimum = false) => {
         const numeric = Number(value);
         if (!Number.isFinite(numeric) || numeric <= 0) {
@@ -583,7 +594,7 @@ export function renderGanttChart(
             if (period1ExtraWeeks > 0) {
                 period1Blocks.push([
                     `<strong>Period 1 (Fas 1) (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(parent1Fas1End || period1EndDate)}</i>)</strong>`,
-                    `<span class="leave-parent parent1">Förälder 1: ${(period1ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1ExtraWeeks)} veckor) med föräldralön, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span>`,
+                    `<span class="leave-parent parent1">Förälder 1: ${(period1ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1ExtraWeeks)} veckor) med föräldralön, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad (${formatDaysPerWeekLabel(plan1.dagarPerVecka)} dagar/vecka).</span>`,
                     `<span class="working-parent parent2">Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.</span>`,
                     formatCombinedIncome('Kombinerad inkomst:', period1KombExtra)
                 ]);
@@ -595,11 +606,11 @@ export function renderGanttChart(
                     `<span class="working-parent parent2">Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.</span>`
                 ];
                 if (period1NoExtraWeeks > 0) {
-                    fas2Lines.push(`<span class="leave-parent parent1">Förälder 1: ${(period1NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period1NoExtraFörälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span>`);
+                    fas2Lines.push(`<span class="leave-parent parent1">Förälder 1: ${(period1NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period1NoExtraFörälder1Inkomst.toLocaleString()} kr/månad (${formatDaysPerWeekLabel(plan1NoExtra.dagarPerVecka || plan1.dagarPerVecka)} dagar/vecka).</span>`);
                     fas2Lines.push(formatCombinedIncome('Kombinerad inkomst:', period1KombNoExtra));
                 }
                 if (period1MinWeeks > 0) {
-                    fas2Lines.push(`<span class="leave-parent parent1">Förälder 1: ${(period1MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1MinWeeks)} veckor) på lägstanivå, inkomst ${period1MinFörälder1Inkomst.toLocaleString()} kr/månad (${plan1.dagarPerVecka} dagar/vecka).</span>`);
+                    fas2Lines.push(`<span class="leave-parent parent1">Förälder 1: ${(period1MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1MinWeeks)} veckor) på lägstanivå, inkomst ${period1MinFörälder1Inkomst.toLocaleString()} kr/månad (${formatDaysPerWeekLabel(plan1MinDagar.dagarPerVecka || plan1.dagarPerVecka)} dagar/vecka).</span>`);
                     fas2Lines.push(formatCombinedIncome('Kombinerad inkomst:', period1KombMin));
                 }
                 if (fas2Lines.length === 2) {
@@ -610,7 +621,7 @@ export function renderGanttChart(
         } else if (period1TotalWeeks > 0) {
             period1Blocks.push([
                 `<strong>Period 1 (Förälder 1 ledig, Förälder 2 jobbar) (<i>${formatDate(period1Start)} till ${formatDate(period1EndDate)}</i>)</strong>`,
-                `<span class="leave-parent parent1">Förälder 1: ${(period1TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1TotalWeeks)} veckor), ${safeDagarPerVecka(plan1.dagarPerVecka)} dagar/vecka, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.</span>`,
+                `<span class="leave-parent parent1">Förälder 1: ${(period1TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period1TotalWeeks)} veckor), ${formatDaysPerWeekLabel(plan1.dagarPerVecka)} dagar/vecka, inkomst ${period1Förälder1Inkomst.toLocaleString()} kr/månad.</span>`,
                 `<span class="working-parent parent2">Förälder 2: Inkomst ${period1Förälder2Inkomst.toLocaleString()} kr/månad.</span>`,
                 formatCombinedIncome('Kombinerad inkomst:', period1KombExtra)
             ]);
@@ -623,7 +634,7 @@ export function renderGanttChart(
                 period2Blocks.push([
                     `<strong>Period 2 (Fas 1) (Förälder 1 jobbar, Förälder 2 ledig) (<i>${formatDate(period2StartDate)} till ${formatDate(parent2Fas1End || period2EndDate)}</i>)</strong>`,
                     `<span class="working-parent parent1">Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.</span>`,
-                    `<span class="leave-parent parent2">Förälder 2: ${(period2ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2ExtraWeeks)} veckor) med föräldralön, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span>`,
+                    `<span class="leave-parent parent2">Förälder 2: ${(period2ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2ExtraWeeks)} veckor) med föräldralön, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad (${formatDaysPerWeekLabel(plan2.dagarPerVecka)} dagar/vecka).</span>`,
                     formatCombinedIncome('Kombinerad inkomst:', period2KombExtra)
                 ]);
             }
@@ -634,11 +645,11 @@ export function renderGanttChart(
                     `<span class="working-parent parent1">Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.</span>`
                 ];
                 if (period2NoExtraWeeks > 0) {
-                    fas2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period2NoExtraFörälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span>`);
+                    fas2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period2NoExtraFörälder2Inkomst.toLocaleString()} kr/månad (${formatDaysPerWeekLabel(plan2NoExtra.dagarPerVecka || plan2.dagarPerVecka)} dagar/vecka).</span>`);
                     fas2Lines.push(formatCombinedIncome('Kombinerad inkomst:', period2KombNoExtra));
                 }
                 if (period2MinWeeks > 0) {
-                    fas2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2MinWeeks)} veckor) på lägstanivå, inkomst ${period2MinFörälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span>`);
+                    fas2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2MinWeeks)} veckor) på lägstanivå, inkomst ${period2MinFörälder2Inkomst.toLocaleString()} kr/månad (${formatDaysPerWeekLabel(plan2MinDagar.dagarPerVecka || plan2.dagarPerVecka)} dagar/vecka).</span>`);
                     fas2Lines.push(formatCombinedIncome('Kombinerad inkomst:', period2KombMin));
                 }
                 if (fas2Lines.length === 2) {
@@ -652,18 +663,18 @@ export function renderGanttChart(
                 `<span class="working-parent parent1">Förälder 1: Inkomst ${period2Förälder1Inkomst.toLocaleString()} kr/månad.</span>`
             ];
             if (extra2 > 0 && period2ExtraWeeks > 0) {
-                period2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2ExtraWeeks)} veckor) med föräldralön, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span>`);
+                period2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2ExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2ExtraWeeks)} veckor) med föräldralön, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad (${formatDaysPerWeekLabel(plan2.dagarPerVecka)} dagar/vecka).</span>`);
                 period2Lines.push(formatCombinedIncome('Kombinerad inkomst:', period2KombExtra));
             } else {
-                period2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2TotalWeeks)} veckor), ${safeDagarPerVecka(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.</span>`);
+                period2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2TotalWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2TotalWeeks)} veckor), ${formatDaysPerWeekLabel(plan2.dagarPerVecka)} dagar/vecka, inkomst ${period2Förälder2Inkomst.toLocaleString()} kr/månad.</span>`);
                 period2Lines.push(formatCombinedIncome('Kombinerad inkomst:', period2KombExtra));
             }
             if (extra2 > 0 && period2NoExtraWeeks > 0) {
-                period2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period2NoExtraFörälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span>`);
+                period2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2NoExtraWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2NoExtraWeeks)} veckor) utan föräldralön, inkomst ${period2NoExtraFörälder2Inkomst.toLocaleString()} kr/månad (${formatDaysPerWeekLabel(plan2NoExtra.dagarPerVecka || plan2.dagarPerVecka)} dagar/vecka).</span>`);
                 period2Lines.push(formatCombinedIncome('Kombinerad inkomst:', period2KombNoExtra));
             }
             if (period2MinWeeks > 0) {
-                period2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2MinWeeks)} veckor) på lägstanivå, inkomst ${period2MinFörälder2Inkomst.toLocaleString()} kr/månad (${plan2.dagarPerVecka} dagar/vecka).</span>`);
+                period2Lines.push(`<span class="leave-parent parent2">Förälder 2: ${(period2MinWeeks / 4.3).toFixed(1)} månader (~${Math.round(period2MinWeeks)} veckor) på lägstanivå, inkomst ${period2MinFörälder2Inkomst.toLocaleString()} kr/månad (${formatDaysPerWeekLabel(plan2MinDagar.dagarPerVecka || plan2.dagarPerVecka)} dagar/vecka).</span>`);
                 period2Lines.push(formatCombinedIncome('Kombinerad inkomst:', period2KombMin));
             }
             period2Blocks.push(period2Lines);
