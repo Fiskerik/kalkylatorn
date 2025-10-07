@@ -1313,6 +1313,51 @@ canvas#gantt-canvas {
     line-height: 1.5;
 }
 
+.period-summary {
+    padding: 0.25rem 0 0.75rem;
+}
+
+.summary-period-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: #101828;
+}
+
+.summary-period-title {
+    font-size: 1.05rem;
+}
+
+.summary-phase-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #475467;
+}
+
+.summary-period-description {
+    margin-top: 0.25rem;
+    color: #667085;
+    font-style: italic;
+    font-size: 0.95rem;
+}
+
+.summary-period-range {
+    margin-top: 0.15rem;
+    font-size: 0.95rem;
+    color: #344054;
+    font-weight: 500;
+}
+
+.summary-body-line {
+    margin-top: 0.75rem;
+    color: #344054;
+}
+
+.summary-body-line:first-of-type {
+    margin-top: 0.85rem;
+}
+
 .summary-period-divider {
     border: 0;
     border-top: 2px solid #475467;
