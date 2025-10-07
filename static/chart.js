@@ -748,7 +748,7 @@ export function renderGanttChart(
     };
 
     const buildFeasibilityHtml = () => {
-        let html = `<div class="feasibility-message" style="background-color: ${status.bakgrund}; border: 1px solid ${status.kant}; padding: 15px; margin-bottom: 15px; font-family: Inter, sans-serif;">` +
+        let html = `<div class="feasibility-message" style="background-color: ${status.bakgrund}; border: 1px solid ${status.kant}; padding: 15px; margin-bottom: 15px; font-family: Inter, sans-serif; border-radius: 10px;">` +
             `<strong style="font-size: 1.2em;">${status.titel}</strong><br><br>`;
         if (transferredDays > 0 && genomförbarhet.status === 'ok') {
             html += `<span style="color: #f28c38;">Överförde ${transferredDays} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>`;
