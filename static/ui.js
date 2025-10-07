@@ -144,9 +144,18 @@ export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, till
  * @returns {string} HTML section string
 */
 export function generateParentSection(parentNum, dag, extra, månadsinkomst,
-    dagar, avtal, barnbidrag, tillägg, ärEnsam, inkomst) {
-    const lagstanivådagar = Math.round(dagar * 0.23076923);
+    inkomstDagar, lagstanivådagar, avtal, barnbidrag, tillägg, ärEnsam, inkomst) {
+    const incomeDays = Number.isFinite(inkomstDagar) ? inkomstDagar : 0;
+    const lowDays = Number.isFinite(lagstanivådagar) ? lagstanivådagar : 0;
     const fpNet = beräknaNetto(månadsinkomst);
+    const tooltipLines = [
+        'Föräldrapenning uppgår till 480 föräldradagar för ett barn.',
+        'Du som har ensam vårdnad om ditt barn har rätt att ta ut samtliga 480 dagar, medan två föräldrar får 240 dagar var.',
+        'Du som har fått tvillingar har rätt till totalt 660 dagars ersättning för föräldraledighet. Då är 480 dagar på sjukpenningnivå och 180 dagar på lägstanivå.',
+        'För dig med trillingar gäller 660 dagar på sjukpenningnivå och 180 dagar på lägstanivå, för totalt 840 föräldradagar.'
+    ];
+    const tooltipTitle = tooltipLines.join('&#10;');
+    const tooltipAria = tooltipLines.join(' ');
     const gemensamDetails = `
         <div class="benefit-details">
             <div class="benefit-detail-line">
@@ -199,24 +208,29 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                     </div>
                 </div>
             </div>
-            <h4>Föräldradagar</h4>
+            <h4>Föräldradagar
+                <span class="help-tooltip"
+                      title="${tooltipTitle}"
+                      aria-label="${tooltipAria}"
+                      tabindex="0">?</span>
+            </h4>
             <div class="benefit-grid">
                 <div class="benefit-card">
                     <div class="benefit-title">Föräldradagar på sjukpenningnivå</div>
                     <div class="benefit-value-large">
-                        <span>${dagar}</span><span class="unit">dagar</span>
+                        <span>${incomeDays}</span><span class="unit">dagar</span>
                     </div>
                     ${ärEnsam ? '' : gemensamDetails}
                 </div>
                 <div class="benefit-card">
                     <div class="benefit-title">Föräldradagar på lägstanivå</div>
                     <div class="benefit-value-large">
-                        <span>${lagstanivådagar}</span><span class="unit">dagar</span>
+                        <span>${lowDays}</span><span class="unit">dagar</span>
                         <br><div><span class="unit">180 kr/dag</span></div>
                     </div>
                 </div>
             </div>
-            ${genereraTabell(dag, dagar, extra, barnbidrag, tillägg)}
+            ${genereraTabell(dag, incomeDays, extra, barnbidrag, tillägg)}
 
             <div class="monthly-wrapper" id="monthly-wrapper-${parentNum}">
                 <div class="monthly-box">

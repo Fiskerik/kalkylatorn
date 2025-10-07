@@ -12,6 +12,83 @@ import {
 } from './config.js';
 
 /**
+ * Determine parental leave day distribution based on custody and expected children.
+ * @param {string} vårdnadstyp - 'gemensam' or 'ensam'
+ * @param {number} expectedChildren - Number of children in the upcoming birth
+ * @returns {{
+ *  parent1: { incomeDays: number, lowDays: number },
+ *  parent2: { incomeDays: number, lowDays: number },
+ *  total: { incomeDays: number, lowDays: number }
+ * }}
+ */
+export function calculateParentalLeaveDays(vårdnadstyp, expectedChildren = 1) {
+    const normalizedCustody = (vårdnadstyp || 'gemensam').toLowerCase() === 'ensam'
+        ? 'ensam'
+        : 'gemensam';
+    const parsedChildren = Number(expectedChildren);
+    const plannedChildren = Number.isFinite(parsedChildren)
+        ? Math.max(1, Math.round(parsedChildren))
+        : 1;
+
+    let totalIncomeDays = 390;
+    let totalLowDays = 90;
+
+    if (plannedChildren === 2) {
+        totalIncomeDays = 480;
+        totalLowDays = 180;
+    } else if (plannedChildren === 3) {
+        totalIncomeDays = 660;
+        totalLowDays = 180;
+    }
+
+    const total = { incomeDays: totalIncomeDays, lowDays: totalLowDays };
+
+    if (normalizedCustody === 'ensam') {
+        return {
+            parent1: { incomeDays: totalIncomeDays, lowDays: totalLowDays },
+            parent2: { incomeDays: 0, lowDays: 0 },
+            total
+        };
+    }
+
+    const parent1IncomeDays = Math.round(totalIncomeDays / 2);
+    const parent2IncomeDays = totalIncomeDays - parent1IncomeDays;
+    const parent1LowDays = Math.round(totalLowDays / 2);
+    const parent2LowDays = totalLowDays - parent1LowDays;
+
+    return {
+        parent1: { incomeDays: parent1IncomeDays, lowDays: parent1LowDays },
+        parent2: { incomeDays: parent2IncomeDays, lowDays: parent2LowDays },
+        total
+    };
+}
+
+function parseNonNegativeNumber(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+function resolveLeaveDayAllocation(inputs = {}) {
+    const custodyValue = typeof inputs.vårdnad === 'string' && inputs.vårdnad.toLowerCase() === 'ensam'
+        ? 'ensam'
+        : 'gemensam';
+    const plannedChildren = Math.max(1, parseNonNegativeNumber(inputs.planeradeBarn) ?? 1);
+    const baseAllocation = calculateParentalLeaveDays(custodyValue, plannedChildren);
+
+    const parent1Income = parseNonNegativeNumber(inputs.förälder1InkomstDagar);
+    const parent2Income = parseNonNegativeNumber(inputs.förälder2InkomstDagar);
+    const parent1Low = parseNonNegativeNumber(inputs.förälder1MinDagar);
+    const parent2Low = parseNonNegativeNumber(inputs.förälder2MinDagar);
+
+    return {
+        förälder1InkomstDagar: parent1Income ?? baseAllocation.parent1.incomeDays,
+        förälder2InkomstDagar: parent2Income ?? baseAllocation.parent2.incomeDays,
+        förälder1MinDagar: parent1Low ?? baseAllocation.parent1.lowDays,
+        förälder2MinDagar: parent2Low ?? baseAllocation.parent2.lowDays
+    };
+}
+
+/**
  * Calculate monthly net income based on daily rate, days per week, and additional benefits
  * @param {number} dag - Daily parental benefit rate
  * @param {number} dagarPerVecka - Days per week taken
@@ -179,10 +256,11 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
     let unusedFöräldralönWeeks1 = 0;
     let unusedFöräldralönWeeks2 = 0;
 
-    let förälder1InkomstDagar = inputs.vårdnad === "ensam" ? 390 : 195;
-    let förälder2InkomstDagar = inputs.vårdnad === "ensam" ? 0 : 195;
-    let förälder1MinDagar = inputs.vårdnad === "ensam" ? 90 : 45;
-    let förälder2MinDagar = inputs.vårdnad === "ensam" ? 0 : 45;
+    const leaveAllocation = resolveLeaveDayAllocation(inputs);
+    let förälder1InkomstDagar = leaveAllocation.förälder1InkomstDagar;
+    let förälder2InkomstDagar = leaveAllocation.förälder2InkomstDagar;
+    let förälder1MinDagar = leaveAllocation.förälder1MinDagar;
+    let förälder2MinDagar = leaveAllocation.förälder2MinDagar;
     let användaInkomstDagar1 = 0;
     let användaInkomstDagar2 = 0;
     let användaMinDagar1 = 0;
@@ -858,10 +936,11 @@ function optimizeParentalLeaveParentalSalary(preferences, inputs) {
     let unusedFöräldralönWeeks1 = 0;
     let unusedFöräldralönWeeks2 = 0;
 
-    let förälder1InkomstDagar = inputs.vårdnad === "ensam" ? 390 : 195;
-    let förälder2InkomstDagar = inputs.vårdnad === "ensam" ? 0 : 195;
-    let förälder1MinDagar = inputs.vårdnad === "ensam" ? 90 : 45;
-    let förälder2MinDagar = inputs.vårdnad === "ensam" ? 0 : 45;
+    const leaveAllocation = resolveLeaveDayAllocation(inputs);
+    let förälder1InkomstDagar = leaveAllocation.förälder1InkomstDagar;
+    let förälder2InkomstDagar = leaveAllocation.förälder2InkomstDagar;
+    let förälder1MinDagar = leaveAllocation.förälder1MinDagar;
+    let förälder2MinDagar = leaveAllocation.förälder2MinDagar;
     let användaInkomstDagar1 = 0;
     let användaInkomstDagar2 = 0;
     let användaMinDagar1 = 0;
