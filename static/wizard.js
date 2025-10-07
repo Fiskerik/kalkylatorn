@@ -201,6 +201,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function resetFormState() {
+        const toggleGroups = [
+            'vårdnad-group',
+            'partner-group',
+            'barn-tidigare-group',
+            'barn-planerade-group',
+            'avtal-group-1',
+            'anstallningstid-group-1',
+            'avtal-group-2',
+            'anstallningstid-group-2'
+        ];
+        toggleGroups.forEach(groupId => applyToggleValue(groupId, null));
+
+        const inputsToClear = [
+            'inkomst1',
+            'inkomst2',
+            'ledig-tid-5823',
+            'ledig-tid-2',
+            'min-inkomst'
+        ];
+        inputsToClear.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = '';
+            }
+        });
+
+        const container1 = document.getElementById('anstallningstid-container-1');
+        if (container1) container1.style.display = 'none';
+        const container2 = document.getElementById('anstallningstid-container-2');
+        if (container2) container2.style.display = 'none';
+
+        step6?.style.setProperty('display', 'none');
+        partnerSelected = false;
+        history = [];
+        currentIndex = idx.vardnad;
+        showCurrent();
+    }
+
     function employmentOptionForParent(parent) {
         if (!parent) return null;
         if (typeof parent.anstalld_mer_an_ett_ar === 'boolean') {
@@ -216,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateFamilyData(family) {
         if (!family) return;
+        resetFormState();
         const custodyType = (family.custody?.typ || '').toString().toLowerCase();
         const custodyValue = custodyType.includes('ensam') ? 'ensam' : 'gemensam';
         applyToggleValue('vårdnad-group', custodyValue);
@@ -249,6 +289,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (income2Input) {
             income2Input.value = parent2?.salary_sek_per_month ?? '';
+        }
+
+        const minIncomeInput = document.getElementById('min-inkomst');
+        if (minIncomeInput) {
+            const minIncome = family.miniminkomst_sek_per_manad;
+            minIncomeInput.value = (minIncome ?? '').toString();
         }
 
         const avtal1Value = parent1.kollektivavtal ? 'ja' : 'nej';
