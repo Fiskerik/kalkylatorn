@@ -7,7 +7,8 @@ import {
     SGI_CAP,
     MINIMUM_RATE,
     DEFAULT_BARNBIDRAG,
-    PRISBASBELOPP
+    PRISBASBELOPP,
+    GRUNDNIVÅ
 } from './config.js';
 
 /**
@@ -33,9 +34,13 @@ export function beräknaMånadsinkomst(dag, dagarPerVecka, extra, barnbidrag = D
  */
 export function beräknaDaglig(inkomst) {
     if (!inkomst || inkomst <= 0) return 0;
+    if (inkomst < 9800) {
+        return GRUNDNIVÅ;
+    }
     const sgi = Math.min(inkomst, SGI_CAP);
     const calculatedDailyRate = Math.round((sgi * 0.8 * 12) / 365);
-    return Math.min(calculatedDailyRate, INCOME_CAP);
+    const justeratBelopp = Math.max(calculatedDailyRate, MINIMUM_RATE);
+    return Math.min(justeratBelopp, INCOME_CAP);
 }
 
 /**
@@ -371,14 +376,80 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
             remaining -= add;
         }
 
-        const dagarPerVeckaExtra = safeExtraWeeks > 0 ? Number((usedExtraDays / safeExtraWeeks).toFixed(2)) : 0;
-        const dagarPerVeckaNoExtra = safeNoExtraWeeks > 0 ? Number((usedNoExtraDays / safeNoExtraWeeks).toFixed(2)) : 0;
+        usedExtraDays = Math.round(usedExtraDays);
+        usedNoExtraDays = Math.round(usedNoExtraDays);
+
+        const totalDaysInt = Math.max(0, Math.round(totalDays));
+        let dagarPerVeckaExtra = safeExtraWeeks > 0 ? Math.floor(usedExtraDays / safeExtraWeeks) : 0;
+        let dagarPerVeckaNoExtra = safeNoExtraWeeks > 0 ? Math.floor(usedNoExtraDays / safeNoExtraWeeks) : 0;
+
+        let adjustedExtraDays = dagarPerVeckaExtra * safeExtraWeeks;
+        let adjustedNoExtraDays = dagarPerVeckaNoExtra * safeNoExtraWeeks;
+        let remainingDays = Math.max(0, totalDaysInt - (adjustedExtraDays + adjustedNoExtraDays));
+
+        const tryIncrease = segment => {
+            const weeks = segment === 'extra' ? safeExtraWeeks : safeNoExtraWeeks;
+            if (weeks <= 0) return false;
+            const current = segment === 'extra' ? dagarPerVeckaExtra : dagarPerVeckaNoExtra;
+            if (current >= maxPerWeek) return false;
+            if (remainingDays < weeks) return false;
+            if (segment === 'extra') {
+                dagarPerVeckaExtra += 1;
+                adjustedExtraDays += weeks;
+            } else {
+                dagarPerVeckaNoExtra += 1;
+                adjustedNoExtraDays += weeks;
+            }
+            remainingDays -= weeks;
+            return true;
+        };
+
+        if (enforceHighExtra && safeExtraWeeks > 0) {
+            const target = Math.min(maxPerWeek, 5);
+            while (dagarPerVeckaExtra < target && tryIncrease('extra')) {
+                // Prioritize filling föräldralön weeks to 5 dagar/vecka when possible
+            }
+        }
+
+        while (true) {
+            const canExtra = safeExtraWeeks > 0 && dagarPerVeckaExtra < maxPerWeek && remainingDays >= safeExtraWeeks;
+            const canNoExtra = safeNoExtraWeeks > 0 && dagarPerVeckaNoExtra < maxPerWeek && remainingDays >= safeNoExtraWeeks;
+
+            if (!canExtra && !canNoExtra) {
+                break;
+            }
+
+            if (enforceHighExtra) {
+                if (canExtra && tryIncrease('extra')) {
+                    continue;
+                }
+                if (canNoExtra && tryIncrease('noExtra')) {
+                    continue;
+                }
+                break;
+            }
+
+            if (canExtra && (!canNoExtra || dagarPerVeckaExtra <= dagarPerVeckaNoExtra)) {
+                tryIncrease('extra');
+                continue;
+            }
+
+            if (canNoExtra && tryIncrease('noExtra')) {
+                continue;
+            }
+
+            if (canExtra && tryIncrease('extra')) {
+                continue;
+            }
+
+            break;
+        }
 
         return {
-            dagarPerVeckaExtra,
-            dagarPerVeckaNoExtra,
-            usedExtraDays: Math.round(usedExtraDays),
-            usedNoExtraDays: Math.round(usedNoExtraDays)
+            dagarPerVeckaExtra: safeExtraWeeks > 0 ? dagarPerVeckaExtra : 0,
+            dagarPerVeckaNoExtra: safeNoExtraWeeks > 0 ? dagarPerVeckaNoExtra : 0,
+            usedExtraDays: adjustedExtraDays,
+            usedNoExtraDays: adjustedNoExtraDays
         };
     };
 
@@ -591,28 +662,80 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
         plan2MinDagar.användaMinDagar = användaMinDagar2;
     }
 
-    const phase1Incomes = [];
-    if (plan1.weeks > 0) phase1Incomes.push(plan1.inkomst + arbetsInkomst2);
-    if (plan1NoExtra.weeks > 0) phase1Incomes.push(plan1NoExtra.inkomst + arbetsInkomst2);
-    if (plan1MinDagar.weeks > 0) phase1Incomes.push(plan1MinDagar.inkomst + arbetsInkomst2);
-    const phase2Incomes = [];
-    if (plan2.weeks > 0) phase2Incomes.push(plan2.inkomst + arbetsInkomst1);
-    if (plan2NoExtra.weeks > 0) phase2Incomes.push(plan2NoExtra.inkomst + arbetsInkomst1);
-    if (plan2MinDagar.weeks > 0) phase2Incomes.push(plan2MinDagar.inkomst + arbetsInkomst1);
+    const phase1Segments = [];
+    if (plan1.weeks > 0) {
+        phase1Segments.push({
+            totalIncome: plan1.inkomst + arbetsInkomst2,
+            dagarPerVecka: plan1.dagarPerVecka,
+            label: "fas 1"
+        });
+    }
+    if (plan1NoExtra.weeks > 0) {
+        const label = plan1ExtraWeeks > 0 ? "fas 2" : "fas 1";
+        phase1Segments.push({
+            totalIncome: plan1NoExtra.inkomst + arbetsInkomst2,
+            dagarPerVecka: plan1NoExtra.dagarPerVecka || plan1.dagarPerVecka,
+            label
+        });
+    }
+    if (plan1MinDagar.weeks > 0) {
+        const label = plan1ExtraWeeks > 0 || plan1NoExtraWeeksTotal > 0 ? "fas 2" : "fas 1";
+        phase1Segments.push({
+            totalIncome: plan1MinDagar.inkomst + arbetsInkomst2,
+            dagarPerVecka: plan1MinDagar.dagarPerVecka,
+            label
+        });
+    }
 
-    const minPhase1 = phase1Incomes.length ? Math.min(...phase1Incomes) : null;
-    const minPhase2 = phase2Incomes.length ? Math.min(...phase2Incomes) : null;
+    const phase2Segments = [];
+    if (plan2.weeks > 0) {
+        phase2Segments.push({
+            totalIncome: plan2.inkomst + arbetsInkomst1,
+            dagarPerVecka: plan2.dagarPerVecka,
+            label: "fas 1"
+        });
+    }
+    if (plan2NoExtra.weeks > 0) {
+        const label = plan2ExtraWeeks > 0 ? "fas 2" : "fas 1";
+        phase2Segments.push({
+            totalIncome: plan2NoExtra.inkomst + arbetsInkomst1,
+            dagarPerVecka: plan2NoExtra.dagarPerVecka || plan2.dagarPerVecka,
+            label
+        });
+    }
+    if (plan2MinDagar.weeks > 0) {
+        const label = plan2ExtraWeeks > 0 || plan2NoExtraWeeksTotal > 0 ? "fas 2" : "fas 1";
+        phase2Segments.push({
+            totalIncome: plan2MinDagar.inkomst + arbetsInkomst1,
+            dagarPerVecka: plan2MinDagar.dagarPerVecka,
+            label
+        });
+    }
 
-    if (minPhase1 !== null && minPhase1 < minInkomst) {
+    const minPhase1Segment = phase1Segments.reduce((min, segment) => {
+        if (!min || segment.totalIncome < min.totalIncome) {
+            return segment;
+        }
+        return min;
+    }, null);
+
+    const minPhase2Segment = phase2Segments.reduce((min, segment) => {
+        if (!min || segment.totalIncome < min.totalIncome) {
+            return segment;
+        }
+        return min;
+    }, null);
+
+    if (minPhase1Segment && minPhase1Segment.totalIncome < minInkomst) {
         genomförbarhet.ärGenomförbar = false;
-        const severity = evaluateIncomeSeverity(minPhase1);
+        const severity = evaluateIncomeSeverity(minPhase1Segment.totalIncome);
         updateStatusFromSeverity(severity || "warning");
-        genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase1.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${plan1.dagarPerVecka} dagar/vecka).`;
-    } else if (minPhase2 !== null && minPhase2 < minInkomst) {
+        genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase1Segment.totalIncome.toLocaleString()} kr/månad i ${minPhase1Segment.label} är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${minPhase1Segment.dagarPerVecka} dagar/vecka).`;
+    } else if (minPhase2Segment && minPhase2Segment.totalIncome < minInkomst) {
         genomförbarhet.ärGenomförbar = false;
-        const severity = evaluateIncomeSeverity(minPhase2);
+        const severity = evaluateIncomeSeverity(minPhase2Segment.totalIncome);
         updateStatusFromSeverity(severity || "warning");
-        genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase2.toLocaleString()} kr/månad i fas 2 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${plan2.dagarPerVecka} dagar/vecka).`;
+        genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase2Segment.totalIncome.toLocaleString()} kr/månad i ${minPhase2Segment.label} är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${minPhase2Segment.dagarPerVecka} dagar/vecka).`;
     }
 
     return {
@@ -902,14 +1025,80 @@ function optimizeParentalLeaveParentalSalary(preferences, inputs) {
             remaining -= add;
         }
 
-        const dagarPerVeckaExtra = safeExtraWeeks > 0 ? Number((usedExtraDays / safeExtraWeeks).toFixed(2)) : 0;
-        const dagarPerVeckaNoExtra = safeNoExtraWeeks > 0 ? Number((usedNoExtraDays / safeNoExtraWeeks).toFixed(2)) : 0;
+        usedExtraDays = Math.round(usedExtraDays);
+        usedNoExtraDays = Math.round(usedNoExtraDays);
+
+        const totalDaysInt = Math.max(0, Math.round(totalDays));
+        let dagarPerVeckaExtra = safeExtraWeeks > 0 ? Math.floor(usedExtraDays / safeExtraWeeks) : 0;
+        let dagarPerVeckaNoExtra = safeNoExtraWeeks > 0 ? Math.floor(usedNoExtraDays / safeNoExtraWeeks) : 0;
+
+        let adjustedExtraDays = dagarPerVeckaExtra * safeExtraWeeks;
+        let adjustedNoExtraDays = dagarPerVeckaNoExtra * safeNoExtraWeeks;
+        let remainingDays = Math.max(0, totalDaysInt - (adjustedExtraDays + adjustedNoExtraDays));
+
+        const tryIncrease = segment => {
+            const weeks = segment === 'extra' ? safeExtraWeeks : safeNoExtraWeeks;
+            if (weeks <= 0) return false;
+            const current = segment === 'extra' ? dagarPerVeckaExtra : dagarPerVeckaNoExtra;
+            if (current >= maxPerWeek) return false;
+            if (remainingDays < weeks) return false;
+            if (segment === 'extra') {
+                dagarPerVeckaExtra += 1;
+                adjustedExtraDays += weeks;
+            } else {
+                dagarPerVeckaNoExtra += 1;
+                adjustedNoExtraDays += weeks;
+            }
+            remainingDays -= weeks;
+            return true;
+        };
+
+        if (enforceHighExtra && safeExtraWeeks > 0) {
+            const target = Math.min(maxPerWeek, 5);
+            while (dagarPerVeckaExtra < target && tryIncrease('extra')) {
+                // Prioritize föräldralön days to reach 5 dagar/vecka when possible
+            }
+        }
+
+        while (true) {
+            const canExtra = safeExtraWeeks > 0 && dagarPerVeckaExtra < maxPerWeek && remainingDays >= safeExtraWeeks;
+            const canNoExtra = safeNoExtraWeeks > 0 && dagarPerVeckaNoExtra < maxPerWeek && remainingDays >= safeNoExtraWeeks;
+
+            if (!canExtra && !canNoExtra) {
+                break;
+            }
+
+            if (enforceHighExtra) {
+                if (canExtra && tryIncrease('extra')) {
+                    continue;
+                }
+                if (canNoExtra && tryIncrease('noExtra')) {
+                    continue;
+                }
+                break;
+            }
+
+            if (canExtra && (!canNoExtra || dagarPerVeckaExtra <= dagarPerVeckaNoExtra)) {
+                tryIncrease('extra');
+                continue;
+            }
+
+            if (canNoExtra && tryIncrease('noExtra')) {
+                continue;
+            }
+
+            if (canExtra && tryIncrease('extra')) {
+                continue;
+            }
+
+            break;
+        }
 
         return {
-            dagarPerVeckaExtra,
-            dagarPerVeckaNoExtra,
-            usedExtraDays: Math.round(usedExtraDays),
-            usedNoExtraDays: Math.round(usedNoExtraDays)
+            dagarPerVeckaExtra: safeExtraWeeks > 0 ? dagarPerVeckaExtra : 0,
+            dagarPerVeckaNoExtra: safeNoExtraWeeks > 0 ? dagarPerVeckaNoExtra : 0,
+            usedExtraDays: adjustedExtraDays,
+            usedNoExtraDays: adjustedNoExtraDays
         };
     };
 
@@ -1119,28 +1308,80 @@ function optimizeParentalLeaveParentalSalary(preferences, inputs) {
         plan2MinDagar.användaMinDagar = användaMinDagar2;
     }
 
-    const phase1Incomes = [];
-    if (plan1.weeks > 0) phase1Incomes.push(plan1.inkomst + arbetsInkomst2);
-    if (plan1NoExtra.weeks > 0) phase1Incomes.push(plan1NoExtra.inkomst + arbetsInkomst2);
-    if (plan1MinDagar.weeks > 0) phase1Incomes.push(plan1MinDagar.inkomst + arbetsInkomst2);
-    const phase2Incomes = [];
-    if (plan2.weeks > 0) phase2Incomes.push(plan2.inkomst + arbetsInkomst1);
-    if (plan2NoExtra.weeks > 0) phase2Incomes.push(plan2NoExtra.inkomst + arbetsInkomst1);
-    if (plan2MinDagar.weeks > 0) phase2Incomes.push(plan2MinDagar.inkomst + arbetsInkomst1);
+    const phase1Segments = [];
+    if (plan1.weeks > 0) {
+        phase1Segments.push({
+            totalIncome: plan1.inkomst + arbetsInkomst2,
+            dagarPerVecka: plan1.dagarPerVecka,
+            label: "fas 1"
+        });
+    }
+    if (plan1NoExtra.weeks > 0) {
+        const label = plan1ExtraWeeks > 0 ? "fas 2" : "fas 1";
+        phase1Segments.push({
+            totalIncome: plan1NoExtra.inkomst + arbetsInkomst2,
+            dagarPerVecka: plan1NoExtra.dagarPerVecka || plan1.dagarPerVecka,
+            label
+        });
+    }
+    if (plan1MinDagar.weeks > 0) {
+        const label = plan1ExtraWeeks > 0 || plan1NoExtraWeeksTotal > 0 ? "fas 2" : "fas 1";
+        phase1Segments.push({
+            totalIncome: plan1MinDagar.inkomst + arbetsInkomst2,
+            dagarPerVecka: plan1MinDagar.dagarPerVecka,
+            label
+        });
+    }
 
-    const minPhase1 = phase1Incomes.length ? Math.min(...phase1Incomes) : null;
-    const minPhase2 = phase2Incomes.length ? Math.min(...phase2Incomes) : null;
+    const phase2Segments = [];
+    if (plan2.weeks > 0) {
+        phase2Segments.push({
+            totalIncome: plan2.inkomst + arbetsInkomst1,
+            dagarPerVecka: plan2.dagarPerVecka,
+            label: "fas 1"
+        });
+    }
+    if (plan2NoExtra.weeks > 0) {
+        const label = plan2ExtraWeeks > 0 ? "fas 2" : "fas 1";
+        phase2Segments.push({
+            totalIncome: plan2NoExtra.inkomst + arbetsInkomst1,
+            dagarPerVecka: plan2NoExtra.dagarPerVecka || plan2.dagarPerVecka,
+            label
+        });
+    }
+    if (plan2MinDagar.weeks > 0) {
+        const label = plan2ExtraWeeks > 0 || plan2NoExtraWeeksTotal > 0 ? "fas 2" : "fas 1";
+        phase2Segments.push({
+            totalIncome: plan2MinDagar.inkomst + arbetsInkomst1,
+            dagarPerVecka: plan2MinDagar.dagarPerVecka,
+            label
+        });
+    }
 
-    if (minPhase1 !== null && minPhase1 < minInkomst) {
+    const minPhase1Segment = phase1Segments.reduce((min, segment) => {
+        if (!min || segment.totalIncome < min.totalIncome) {
+            return segment;
+        }
+        return min;
+    }, null);
+
+    const minPhase2Segment = phase2Segments.reduce((min, segment) => {
+        if (!min || segment.totalIncome < min.totalIncome) {
+            return segment;
+        }
+        return min;
+    }, null);
+
+    if (minPhase1Segment && minPhase1Segment.totalIncome < minInkomst) {
         genomförbarhet.ärGenomförbar = false;
-        const severity = evaluateIncomeSeverity(minPhase1);
+        const severity = evaluateIncomeSeverity(minPhase1Segment.totalIncome);
         updateStatusFromSeverity(severity || "warning");
-        genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase1.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${plan1.dagarPerVecka} dagar/vecka).`;
-    } else if (minPhase2 !== null && minPhase2 < minInkomst) {
+        genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase1Segment.totalIncome.toLocaleString()} kr/månad i ${minPhase1Segment.label} är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${minPhase1Segment.dagarPerVecka} dagar/vecka).`;
+    } else if (minPhase2Segment && minPhase2Segment.totalIncome < minInkomst) {
         genomförbarhet.ärGenomförbar = false;
-        const severity = evaluateIncomeSeverity(minPhase2);
+        const severity = evaluateIncomeSeverity(minPhase2Segment.totalIncome);
         updateStatusFromSeverity(severity || "warning");
-        genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase2.toLocaleString()} kr/månad i fas 2 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${plan2.dagarPerVecka} dagar/vecka).`;
+        genomförbarhet.meddelande = `Kombinerad inkomst ${minPhase2Segment.totalIncome.toLocaleString()} kr/månad i ${minPhase2Segment.label} är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${minPhase2Segment.dagarPerVecka} dagar/vecka).`;
     }
 
     return {
