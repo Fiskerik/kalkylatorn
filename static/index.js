@@ -275,15 +275,16 @@ function handleOptimize() {
             err.style.display = 'none';
         }
 
-        // `användaInkomstDagar` already accounts for both periods with and without
-        // parental supplement, so avoid double counting by excluding `plan1NoExtra`
-        // and `plan2NoExtra` from the totals.
         const totalDays1 =
-            result.plan1.användaInkomstDagar +
-            result.plan1.användaMinDagar;
+            (result.plan1.användaInkomstDagar || 0) +
+            (result.plan1NoExtra.användaInkomstDagar || 0) +
+            (result.plan1.användaMinDagar || 0) +
+            (result.plan1MinDagar.användaMinDagar || 0);
         const totalDays2 =
-            result.plan2.användaInkomstDagar +
-            result.plan2.användaMinDagar;
+            (result.plan2.användaInkomstDagar || 0) +
+            (result.plan2NoExtra.användaInkomstDagar || 0) +
+            (result.plan2.användaMinDagar || 0) +
+            (result.plan2MinDagar.användaMinDagar || 0);
         const transferred = result.genomförbarhet.transferredDays || 0;
         const maxDays1 = förälder1InkomstDagar + förälder1MinDagar + transferred;
         const maxDays2 = förälder2InkomstDagar + förälder2MinDagar - transferred;
