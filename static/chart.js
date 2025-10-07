@@ -93,6 +93,8 @@ export function renderGanttChart(
     summaryBox.style.height = 'auto';
     summaryBox.style.maxHeight = 'none';
     summaryBox.style.overflowY = 'visible';
+    summaryBox.style.position = 'relative';
+    summaryBox.style.paddingBottom = '40px';
     summaryBox.innerHTML = '<p>Hovra över en punkt för att se detaljer.</p>';
 
     const minIncomeRequirement = Number(genomförbarhet?.minInkomst) || 0;
@@ -892,8 +894,8 @@ export function renderGanttChart(
             if (needsAsterisk) {
                 requiresFootnote = true;
             }
-            const labelText = needsAsterisk ? `${label}*` : label;
-            return `  ${labelText}: ${value.toLocaleString()} kr/månad<br>`;
+            const suffix = needsAsterisk ? '* ' : '';
+            return `  ${label}${suffix}: ${value.toLocaleString()} kr/månad<br>`;
         };
 
         let html =
@@ -927,7 +929,7 @@ export function renderGanttChart(
                 `${data.förälder2Components.tillägg.toLocaleString()} kr/månad</div>`;
         }
         if (requiresFootnote) {
-            html += '<div class="summary-footnote" style="margin-top: 10px; font-size: 0.85em; color: #666; text-align: left;">* Estimerad nettoinkomst baserad på 30% skatt</div>';
+            html += '<div class="summary-footnote" style="position: absolute; left: 10px; bottom: 10px; font-size: 0.75em; color: #777; text-align: left;">* Estimerad nettoinkomst baserad på 30% skatt</div>';
         }
         return html;
     }
