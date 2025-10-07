@@ -446,7 +446,11 @@ function handleOptimize() {
             result.maxFöräldralönWeeks1,
             result.maxFöräldralönWeeks2,
             result.unusedFöräldralönWeeks1,
-            result.unusedFöräldralönWeeks2
+            result.unusedFöräldralönWeeks2,
+            result.användaInkomstDagar1,
+            result.användaMinDagar1,
+            result.användaInkomstDagar2,
+            result.användaMinDagar2
         );
 
 
