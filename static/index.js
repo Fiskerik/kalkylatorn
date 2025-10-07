@@ -36,6 +36,13 @@ function initializeForm() {
     // Setup strategy and info boxes
     setupStrategyToggle();
     setupInfoBoxToggle();
+
+    const birthDateInput = document.getElementById('barn-datum');
+    if (birthDateInput && !birthDateInput.value) {
+        const today = new Date();
+        const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+        birthDateInput.value = localDate.toISOString().split('T')[0];
+    }
 }
 
 /**

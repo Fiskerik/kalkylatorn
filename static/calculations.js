@@ -522,27 +522,36 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
                         0,
                         förälder2InkomstDagar - 90 - minBehov2 - 10
                     );
-                    const lånade = Math.min(överförbara, extraDagar);
-                    förälder2InkomstDagar -= lånade;
-                    genomförbarhet.transferredDays += lånade;
-                    användaInkomstDagar1 += lånade;
-                    const nyaNoExtraDagar = noExtraDaysUsed1 + lånade;
-                    dagarPerVecka1NoExtra = Number(
-                        (nyaNoExtraDagar / Math.max(1, plan1NoExtraWeeksTotal)).toFixed(2)
-                    );
-                    plan1NoExtra.dagarPerVecka = dagarPerVecka1NoExtra;
-                    plan1NoExtra.inkomst = Math.round(
-                        beräknaMånadsinkomst(
-                            dag1,
-                            dagarPerVecka1NoExtra,
-                            0,
-                            barnbidrag,
-                            tillägg
-                        )
-                    );
-                    noExtraDaysUsed1 = nyaNoExtraDagar;
-                    plan1NoExtra.användaInkomstDagar = nyaNoExtraDagar;
-                    användaInkomstDagar1 = extraDaysUsed1 + noExtraDaysUsed1;
+                    const blockStorlek = Math.max(1, plan1NoExtraWeeksTotal);
+                    const möjligaLån = Math.min(överförbara, extraDagar);
+                    const fullaBlock = Math.floor(möjligaLån / blockStorlek);
+                    const lånade = fullaBlock * blockStorlek;
+                    if (lånade > 0) {
+                        förälder2InkomstDagar -= lånade;
+                        genomförbarhet.transferredDays += lånade;
+                        användaInkomstDagar1 += lånade;
+                        noExtraDaysUsed1 += lånade;
+                        dagarPerVecka1NoExtra = Math.min(
+                            maxDagarPerVecka,
+                            Math.max(
+                                1,
+                                Math.round(noExtraDaysUsed1 / blockStorlek)
+                            )
+                        );
+                        noExtraDaysUsed1 = dagarPerVecka1NoExtra * blockStorlek;
+                        plan1NoExtra.dagarPerVecka = dagarPerVecka1NoExtra;
+                        plan1NoExtra.inkomst = Math.round(
+                            beräknaMånadsinkomst(
+                                dag1,
+                                dagarPerVecka1NoExtra,
+                                0,
+                                barnbidrag,
+                                tillägg
+                            )
+                        );
+                        plan1NoExtra.användaInkomstDagar = noExtraDaysUsed1;
+                        användaInkomstDagar1 = extraDaysUsed1 + noExtraDaysUsed1;
+                    }
                 }
                 const kombEfter = plan1NoExtra.inkomst + arbetsInkomst2;
                 if (kombEfter < minInkomst) {
@@ -1170,27 +1179,36 @@ function optimizeParentalLeaveParentalSalary(preferences, inputs) {
                         0,
                         förälder2InkomstDagar - 90 - minBehov2 - 10
                     );
-                    const lånade = Math.min(överförbara, extraDagar);
-                    förälder2InkomstDagar -= lånade;
-                    genomförbarhet.transferredDays += lånade;
-                    användaInkomstDagar1 += lånade;
-                    const nyaNoExtraDagar = noExtraDaysUsed1 + lånade;
-                    dagarPerVecka1NoExtra = Number(
-                        (nyaNoExtraDagar / Math.max(1, plan1NoExtraWeeksTotal)).toFixed(2)
-                    );
-                    plan1NoExtra.dagarPerVecka = dagarPerVecka1NoExtra;
-                    plan1NoExtra.inkomst = Math.round(
-                        beräknaMånadsinkomst(
-                            dag1,
-                            dagarPerVecka1NoExtra,
-                            0,
-                            barnbidrag,
-                            tillägg
-                        )
-                    );
-                    noExtraDaysUsed1 = nyaNoExtraDagar;
-                    plan1NoExtra.användaInkomstDagar = nyaNoExtraDagar;
-                    användaInkomstDagar1 = extraDaysUsed1 + noExtraDaysUsed1;
+                    const blockStorlek = Math.max(1, plan1NoExtraWeeksTotal);
+                    const möjligaLån = Math.min(överförbara, extraDagar);
+                    const fullaBlock = Math.floor(möjligaLån / blockStorlek);
+                    const lånade = fullaBlock * blockStorlek;
+                    if (lånade > 0) {
+                        förälder2InkomstDagar -= lånade;
+                        genomförbarhet.transferredDays += lånade;
+                        användaInkomstDagar1 += lånade;
+                        noExtraDaysUsed1 += lånade;
+                        dagarPerVecka1NoExtra = Math.min(
+                            maxDagarPerVecka,
+                            Math.max(
+                                1,
+                                Math.round(noExtraDaysUsed1 / blockStorlek)
+                            )
+                        );
+                        noExtraDaysUsed1 = dagarPerVecka1NoExtra * blockStorlek;
+                        plan1NoExtra.dagarPerVecka = dagarPerVecka1NoExtra;
+                        plan1NoExtra.inkomst = Math.round(
+                            beräknaMånadsinkomst(
+                                dag1,
+                                dagarPerVecka1NoExtra,
+                                0,
+                                barnbidrag,
+                                tillägg
+                            )
+                        );
+                        plan1NoExtra.användaInkomstDagar = noExtraDaysUsed1;
+                        användaInkomstDagar1 = extraDaysUsed1 + noExtraDaysUsed1;
+                    }
                 }
                 const kombEfter = plan1NoExtra.inkomst + arbetsInkomst2;
                 if (kombEfter < minInkomst) {
