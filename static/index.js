@@ -289,12 +289,7 @@ function handleOptimize() {
 
         // Validate leave duration and show message but continue rendering chart
         const err = document.getElementById('leave-duration-error');
-        if (!result.genomförbarhet.ärGenomförbar) {
-            err.textContent = result.genomförbarhet.meddelande;
-            err.style.display = 'block';
-        } else {
-            err.style.display = 'none';
-        }
+        err.style.display = 'none';
 
         const toNumber = (value) => (Number.isFinite(value) ? value : 0);
         const computeDaysFromPlan = (plan, fallbackDaysPerWeek = 0) => {
