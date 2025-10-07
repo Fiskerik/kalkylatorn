@@ -167,4 +167,158 @@ document.addEventListener('DOMContentLoaded', () => {
     setupToggleButtons('anstallningstid-group-2', 'anstallningstid-2', () => {
         goTo(idx.calc);
     });
+
+    const toggleInputMap = {
+        'vårdnad-group': 'vårdnad',
+        'partner-group': 'beräkna-partner',
+        'barn-tidigare-group': 'barn-tidigare',
+        'barn-planerade-group': 'barn-planerade',
+        'avtal-group-1': 'har-avtal-1',
+        'avtal-group-2': 'har-avtal-2',
+        'anstallningstid-group-1': 'anstallningstid-1',
+        'anstallningstid-group-2': 'anstallningstid-2'
+    };
+
+    function applyToggleValue(groupId, value) {
+        const groupEl = document.getElementById(groupId);
+        if (!groupEl) return;
+        const inputId = toggleInputMap[groupId];
+        const inputEl = inputId ? document.getElementById(inputId) : null;
+        const buttons = groupEl.querySelectorAll('.toggle-btn');
+        buttons.forEach(button => {
+            const isActive = button.dataset.value === value;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        if (inputEl) {
+            inputEl.value = value ?? '';
+        }
+        if (groupId === 'barn-tidigare-group') {
+            window.barnIdag = Number.parseInt(value ?? '0', 10);
+        }
+        if (groupId === 'barn-planerade-group') {
+            window.barnPlanerat = Number.parseInt(value ?? '0', 10);
+        }
+    }
+
+    function employmentOptionForParent(parent) {
+        if (!parent) return null;
+        if (typeof parent.anstalld_mer_an_ett_ar === 'boolean') {
+            return parent.anstalld_mer_an_ett_ar ? '>1' : '6-12';
+        }
+        if (typeof parent.anstalld_manader === 'number') {
+            if (parent.anstalld_manader <= 5) return '0-5';
+            if (parent.anstalld_manader <= 12) return '6-12';
+            return '>1';
+        }
+        return null;
+    }
+
+    function populateFamilyData(family) {
+        if (!family) return;
+        const custodyType = (family.custody?.typ || '').toString().toLowerCase();
+        const custodyValue = custodyType.includes('ensam') ? 'ensam' : 'gemensam';
+        applyToggleValue('vårdnad-group', custodyValue);
+
+        const partnerPref = family.custody?.berakna_for_bada_foraldrarna;
+        const partnerFallback = family.custody?.berakna_for_partner;
+        const shouldIncludePartner = typeof partnerPref === 'boolean'
+            ? partnerPref
+            : (typeof partnerFallback === 'boolean' ? partnerFallback : true);
+        const parents = Array.isArray(family.parents) ? family.parents : [];
+        const hasSecondParent = parents.length > 1;
+        partnerSelected = custodyValue === 'gemensam' && shouldIncludePartner && hasSecondParent;
+
+        const partnerValue = partnerSelected ? 'ja' : 'nej';
+        applyToggleValue('partner-group', partnerValue);
+        document.getElementById('beräkna-partner').value = partnerValue;
+        step6?.style.setProperty('display', partnerSelected ? 'flex' : 'none');
+
+        const existingChildren = family.barn?.befintliga ?? 0;
+        applyToggleValue('barn-tidigare-group', existingChildren.toString());
+        const plannedChildren = family.barn?.forvantade ?? 0;
+        applyToggleValue('barn-planerade-group', plannedChildren.toString());
+
+        const parent1 = parents[0] || {};
+        const parent2 = partnerSelected ? parents[1] || {} : null;
+
+        const income1Input = document.getElementById('inkomst1');
+        const income2Input = document.getElementById('inkomst2');
+        if (income1Input) {
+            income1Input.value = parent1.salary_sek_per_month ?? '';
+        }
+        if (income2Input) {
+            income2Input.value = parent2?.salary_sek_per_month ?? '';
+        }
+
+        const avtal1Value = parent1.kollektivavtal ? 'ja' : 'nej';
+        applyToggleValue('avtal-group-1', avtal1Value);
+        const employment1 = employmentOptionForParent(parent1);
+        const container1 = document.getElementById('anstallningstid-container-1');
+        if (container1) {
+            if (avtal1Value === 'ja' && employment1) {
+                container1.style.display = 'block';
+                applyToggleValue('anstallningstid-group-1', employment1);
+            } else {
+                container1.style.display = 'none';
+                applyToggleValue('anstallningstid-group-1', null);
+            }
+        }
+
+        const avtal2Value = parent2?.kollektivavtal ? 'ja' : 'nej';
+        applyToggleValue('avtal-group-2', partnerSelected ? avtal2Value : null);
+        const container2 = document.getElementById('anstallningstid-container-2');
+        const employment2 = employmentOptionForParent(parent2);
+        if (container2) {
+            if (partnerSelected && avtal2Value === 'ja' && employment2) {
+                container2.style.display = 'block';
+                applyToggleValue('anstallningstid-group-2', employment2);
+            } else {
+                container2.style.display = 'none';
+                applyToggleValue('anstallningstid-group-2', null);
+            }
+        }
+
+        const historyPath = [idx.vardnad];
+        if (custodyValue === 'gemensam') {
+            historyPath.push(idx.partner);
+        }
+        historyPath.push(idx.barnIdag, idx.barnPlan, idx.inkomst1);
+        if (partnerSelected) {
+            historyPath.push(idx.inkomst2);
+        }
+        history = [...historyPath];
+        currentIndex = idx.calc;
+        showCurrent();
+    }
+
+    const devFamilyButtons = document.querySelectorAll('.dev-family-btn');
+    let familiesRequest;
+
+    function fetchFamilies() {
+        if (!familiesRequest) {
+            familiesRequest = fetch('/dev/families', { cache: 'no-store' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to load families: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    console.error(error);
+                    return [];
+                });
+        }
+        return familiesRequest;
+    }
+
+    devFamilyButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const index = Number.parseInt(button.dataset.familyIndex, 10);
+            fetchFamilies().then(families => {
+                if (!Array.isArray(families) || !families[index]) return;
+                populateFamilyData(families[index]);
+            });
+        });
+    });
 });

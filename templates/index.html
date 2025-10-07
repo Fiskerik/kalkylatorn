@@ -53,15 +53,26 @@
         <form id="calc-form">
             <button type="button" id="back-btn" class="hidden back-btn">&larr; Tillbaka</button>
 
-            <div class="form-section wizard-step">
-                <div class="question-icon"><i class="fa-solid fa-people-roof"></i></div>
-                <label for="vårdnad">Har du Gemensam eller Ensam vårdnad?</label>
-                <div class="button-group" id="vårdnad-group">
-                    <button type="button" class="vårdnad-btn toggle-btn" data-value="gemensam">Gemensam vårdnad</button>
-                    <button type="button" class="vårdnad-btn toggle-btn" data-value="ensam">Ensam vårdnad</button>
+            <div class="form-section wizard-step" id="custody-step">
+                <!-- Development shortcuts: remove this block when no longer needed -->
+                <div class="wizard-first-step-layout">
+                    <div class="dev-shortcuts" aria-hidden="true">
+                        <button type="button" class="dev-family-btn" data-family-index="0">1</button>
+                        <button type="button" class="dev-family-btn" data-family-index="1">2</button>
+                        <button type="button" class="dev-family-btn" data-family-index="2">3</button>
+                        <button type="button" class="dev-family-btn" data-family-index="3">4</button>
+                    </div>
+                    <div class="wizard-first-step-content">
+                        <div class="question-icon"><i class="fa-solid fa-people-roof"></i></div>
+                        <label for="vårdnad">Har du Gemensam eller Ensam vårdnad?</label>
+                        <div class="button-group" id="vårdnad-group">
+                            <button type="button" class="vårdnad-btn toggle-btn" data-value="gemensam">Gemensam vårdnad</button>
+                            <button type="button" class="vårdnad-btn toggle-btn" data-value="ensam">Ensam vårdnad</button>
+                        </div>
+                        <input type="hidden" name="vårdnad" id="vårdnad" value="">
+                        <p id="vårdnad-info" class="info-text"></p>
+                    </div>
                 </div>
-                <input type="hidden" name="vårdnad" id="vårdnad" value="">
-                <p id="vårdnad-info" class="info-text"></p>
             </div>
 
             <div id="partner-question" class="form-section wizard-step">
