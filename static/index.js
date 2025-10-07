@@ -290,6 +290,32 @@ function handleOptimize() {
         const maxDays2 = förälder2InkomstDagar + förälder2MinDagar - transferred;
 
         if (totalDays1 > maxDays1 || totalDays2 > maxDays2) {
+            const buildDetails = (segments) => segments
+                .filter(segment => segment.days > 0)
+                .map(segment => `${segment.label}: ${segment.days} dagar`)
+                .join(', ');
+
+            if (totalDays1 > maxDays1) {
+                const shortage = totalDays1 - maxDays1;
+                const segments = [
+                    { label: 'Fas 1 med föräldralön', days: result.plan1.användaInkomstDagar || 0 },
+                    { label: 'Fas 1 utan föräldralön', days: result.plan1NoExtra.användaInkomstDagar || 0 },
+                    { label: 'Fas 1 lägstanivå', days: result.plan1.användaMinDagar || 0 },
+                    { label: 'Fas 1 lägstanivå (forts.)', days: result.plan1MinDagar.användaMinDagar || 0 }
+                ];
+                const details = buildDetails(segments);
+                err.textContent = `Förälder 1 behöver ${totalDays1} dagar${details ? ` (${details})` : ''} men har bara ${maxDays1} dagar tillgängliga. ${shortage} dagar saknas.`;
+            } else {
+                const shortage = totalDays2 - maxDays2;
+                const segments = [
+                    { label: 'Fas 2 med föräldralön', days: result.plan2.användaInkomstDagar || 0 },
+                    { label: 'Fas 2 utan föräldralön', days: result.plan2NoExtra.användaInkomstDagar || 0 },
+                    { label: 'Fas 2 lägstanivå', days: result.plan2.användaMinDagar || 0 },
+                    { label: 'Fas 2 lägstanivå (forts.)', days: result.plan2MinDagar.användaMinDagar || 0 }
+                ];
+                const details = buildDetails(segments);
+                err.textContent = `Förälder 2 behöver ${totalDays2} dagar${details ? ` (${details})` : ''} men har bara ${maxDays2} dagar tillgängliga. ${shortage} dagar saknas.`;
+            }
             err.style.display = 'block';
             return;
         }
