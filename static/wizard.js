@@ -256,8 +256,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateFamilyData(family) {
         if (!family) return;
         resetFormState();
-        const custodyType = (family.custody?.typ || '').toString().toLowerCase();
-        const custodyValue = custodyType.includes('ensam') ? 'ensam' : 'gemensam';
+        const custodyType = (family.custody?.typ || '').toString().toLowerCase().trim();
+        const isGemensam = /\bgemensam\b/.test(custodyType);
+        const isEnsam = /\bensam\b/.test(custodyType);
+        const custodyValue = isEnsam && !isGemensam ? 'ensam' : 'gemensam';
         applyToggleValue('vårdnad-group', custodyValue);
 
         const partnerPref = family.custody?.berakna_for_bada_foraldrarna;

@@ -4,15 +4,15 @@
  */
 import {
     vårdnad, beräknaPartner, barnbidragPerPerson, tilläggPerPerson,
-    barnIdag, barnPlanerat, hasCalculated, defaultPreferences,
-    förälder1InkomstDagar, förälder2InkomstDagar, förälder1MinDagar, förälder2MinDagar
+    defaultPreferences, förälder1InkomstDagar, förälder2InkomstDagar
 } from './config.js';
 import {
     beräknaDaglig,
     beräknaBarnbidrag,
     optimizeParentalLeave,
     beräknaFöräldralön,
-    beräknaNetto
+    beräknaNetto,
+    calculateParentalLeaveDays
 } from './calculations.js';
 import {
     updateProgress, setupInfoBoxToggle,
@@ -79,7 +79,7 @@ function handleFormSubmit(e) {
     const vårdnad = document.getElementById('vårdnad').value || 'gemensam';
     const beräknaPartner = document.getElementById('beräkna-partner').value || 'ja';
     const barnTidigare = parseInt(document.getElementById('barn-tidigare').value) || 0;
-    const barnPlanerade = parseInt(document.getElementById('barn-planerade').value) || 1;
+    const barnPlanerade = parseInt(document.getElementById('barn-planerade').value, 10) || 1;
     const avtal1 = document.getElementById('har-avtal-1').value || 'nej';
     const avtal2 = document.getElementById('har-avtal-2').value || 'nej';
     const anst1 = document.getElementById('anstallningstid-1').value || '';
@@ -102,10 +102,12 @@ function handleFormSubmit(e) {
     const extra1 = avtal1 === 'ja' && anst1 !== '0-5' ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = beräknaPartner === 'ja' && vårdnad === 'gemensam' ? beräknaDaglig(inkomst2) : 0;
     const extra2 = avtal2 === 'ja' && anst2 !== '0-5' && beräknaPartner === 'ja' ? beräknaFöräldralön(inkomst2) : 0;
-    const parent1IncomeDays = vårdnad === 'ensam'
-        ? förälder1InkomstDagar + förälder2InkomstDagar
-        : förälder1InkomstDagar;
-    const parent2IncomeDays = vårdnad === 'ensam' ? 0 : förälder2InkomstDagar;
+    const plannedChildren = Math.max(1, barnPlanerade);
+    const leaveAllocation = calculateParentalLeaveDays(vårdnad, plannedChildren);
+    const parent1IncomeDays = leaveAllocation.parent1.incomeDays;
+    const parent2IncomeDays = leaveAllocation.parent2.incomeDays;
+    const parent1LowDays = leaveAllocation.parent1.lowDays;
+    const parent2LowDays = leaveAllocation.parent2.lowDays;
     const netto1 = beräknaNetto(inkomst1);
     const netto2 = beräknaNetto(inkomst2);
 
@@ -117,7 +119,7 @@ function handleFormSubmit(e) {
     const månadsinkomst1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
         resultHtml += generateParentSection(
             1, dag1, extra1, månadsinkomst1, parent1IncomeDays,
-            avtal1 === 'ja', barnbidragResult.barnbidrag,
+            parent1LowDays, avtal1 === 'ja', barnbidragResult.barnbidrag,
             barnbidragResult.tillägg, vårdnad === 'ensam',
             inkomst1
         );
@@ -127,7 +129,7 @@ function handleFormSubmit(e) {
         const månadsinkomst2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
         resultHtml += generateParentSection(
             2, dag2, extra2, månadsinkomst2, parent2IncomeDays,
-            avtal2 === 'ja', barnbidragResult.barnbidrag,
+            parent2LowDays, avtal2 === 'ja', barnbidragResult.barnbidrag,
             barnbidragResult.tillägg, false, inkomst2
         );
     }
@@ -160,7 +162,10 @@ function handleFormSubmit(e) {
         anställningstid1: anst1,
         anställningstid2: anst2,
         förälder1InkomstDagar: parent1IncomeDays,
-        förälder2InkomstDagar: parent2IncomeDays
+        förälder2InkomstDagar: parent2IncomeDays,
+        förälder1MinDagar: parent1LowDays,
+        förälder2MinDagar: parent2LowDays,
+        planeradeBarn: plannedChildren
     };
 
     const leaveContainer = document.getElementById('leave-slider-container');
@@ -274,7 +279,12 @@ function handleOptimize() {
         beräknaPartner: window.appState.beräknaPartner,
         barnbidragPerPerson: window.appState.barnbidragPerPerson,
         tilläggPerPerson: window.appState.tilläggPerPerson,
-        barnDatum
+        barnDatum,
+        förälder1InkomstDagar: window.appState.förälder1InkomstDagar,
+        förälder2InkomstDagar: window.appState.förälder2InkomstDagar,
+        förälder1MinDagar: window.appState.förälder1MinDagar,
+        förälder2MinDagar: window.appState.förälder2MinDagar,
+        planeradeBarn: window.appState.planeradeBarn
     };
     const optimizationResult = document.getElementById('optimization-result');
     if (optimizationResult) {
