@@ -22,6 +22,10 @@ h3 {
     color: #969696;
     margin-bottom: 2rem;
 }
+
+#optimization-result > h3 {
+    text-align: center;
+}
 /* Behåll denna för barnantal */
 .button-group.barnval .toggle-btn {
     width: 50px;
@@ -947,6 +951,31 @@ canvas#gantt-canvas {
 
 .toggle-group {
     margin-bottom: 20px;
+}
+
+#strategy-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    text-align: center;
+}
+
+#strategy-group label {
+    margin: 0;
+    font-weight: 600;
+}
+
+#strategy-group .toggle-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#strategy-group .toggle-btn {
+    width: auto;
 }
 .toggle-btn {
     padding: 10px 20px;

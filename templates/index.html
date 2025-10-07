@@ -204,10 +204,11 @@
 
         <div id="result-block"></div>
         <div class="toggle-group" id="strategy-group" style="display: none;">
-            <label>Välj strategi:</label>
-            <button class="toggle-btn active" data-value="longer">Längre ledighet</button>
-            <button class="toggle-btn" data-value="maximize">Maximera inkomst</button>
-            <button class="toggle-btn" data-value="maximize_parental_salary">Maximera föräldralönen</button>
+            <label for="strategy">Välj strategi:</label>
+            <div class="toggle-options">
+                <button class="toggle-btn active" data-value="longer">Längre ledighet</button>
+                <button class="toggle-btn" data-value="maximize">Maximera inkomst</button>
+            </div>
             <input type="hidden" id="strategy" value="longer">
         </div>
         
