@@ -36,6 +36,13 @@ function initializeForm() {
     // Setup strategy and info boxes
     setupStrategyToggle();
     setupInfoBoxToggle();
+
+    const birthDateInput = document.getElementById('barn-datum');
+    if (birthDateInput && !birthDateInput.value) {
+        const today = new Date();
+        const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+        birthDateInput.value = localDate.toISOString().split('T')[0];
+    }
 }
 
 /**
@@ -95,6 +102,10 @@ function handleFormSubmit(e) {
     const extra1 = avtal1 === 'ja' && anst1 !== '0-5' ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = beräknaPartner === 'ja' && vårdnad === 'gemensam' ? beräknaDaglig(inkomst2) : 0;
     const extra2 = avtal2 === 'ja' && anst2 !== '0-5' && beräknaPartner === 'ja' ? beräknaFöräldralön(inkomst2) : 0;
+    const parent1IncomeDays = vårdnad === 'ensam'
+        ? förälder1InkomstDagar + förälder2InkomstDagar
+        : förälder1InkomstDagar;
+    const parent2IncomeDays = vårdnad === 'ensam' ? 0 : förälder2InkomstDagar;
     const netto1 = beräknaNetto(inkomst1);
     const netto2 = beräknaNetto(inkomst2);
 
@@ -105,7 +116,7 @@ function handleFormSubmit(e) {
     // Parent 1 results
     const månadsinkomst1 = Math.round((dag1 * 7 * 4.3) / 100) * 100;
         resultHtml += generateParentSection(
-            1, dag1, extra1, månadsinkomst1, förälder1InkomstDagar,
+            1, dag1, extra1, månadsinkomst1, parent1IncomeDays,
             avtal1 === 'ja', barnbidragResult.barnbidrag,
             barnbidragResult.tillägg, vårdnad === 'ensam',
             inkomst1
@@ -115,7 +126,7 @@ function handleFormSubmit(e) {
     if (vårdnad === 'gemensam' && beräknaPartner === 'ja') {
         const månadsinkomst2 = Math.round((dag2 * 7 * 4.3) / 100) * 100;
         resultHtml += generateParentSection(
-            2, dag2, extra2, månadsinkomst2, förälder2InkomstDagar,
+            2, dag2, extra2, månadsinkomst2, parent2IncomeDays,
             avtal2 === 'ja', barnbidragResult.barnbidrag,
             barnbidragResult.tillägg, false, inkomst2
         );
@@ -147,7 +158,9 @@ function handleFormSubmit(e) {
         avtal1: avtal1 === 'ja',
         avtal2: avtal2 === 'ja',
         anställningstid1: anst1,
-        anställningstid2: anst2
+        anställningstid2: anst2,
+        förälder1InkomstDagar: parent1IncomeDays,
+        förälder2InkomstDagar: parent2IncomeDays
     };
 
     const leaveContainer = document.getElementById('leave-slider-container');
@@ -168,27 +181,29 @@ function setupDropdownListeners() {
     const dropdown2 = document.getElementById('uttags-dagar-2');
 
     if (dropdown1) {
-        dropdown1.addEventListener('change', () => {
-            const dagarPerVecka = parseInt(dropdown1.value) || 7;
+        const parent1Days = window.appState?.förälder1InkomstDagar ?? förälder1InkomstDagar;
+        dropdown1.onchange = () => {
+            const dagarPerVecka = parseInt(dropdown1.value, 10) || 7;
             updateMonthlyBox(
-                'monthly-wrapper-1', dagarPerVecka, window.appState.dag1, 
-                window.appState.extra1, window.appState.barnbidragPerPerson, 
-                window.appState.tilläggPerPerson, window.appState.avtal1, 
-                förälder1InkomstDagar
+                'monthly-wrapper-1', dagarPerVecka, window.appState.dag1,
+                window.appState.extra1, window.appState.barnbidragPerPerson,
+                window.appState.tilläggPerPerson, window.appState.avtal1,
+                parent1Days
             );
-        });
+        };
     }
 
     if (dropdown2) {
-        dropdown2.addEventListener('change', () => {
-            const dagarPerVecka = parseInt(dropdown2.value) || 7;
+        const parent2Days = window.appState?.förälder2InkomstDagar ?? förälder2InkomstDagar;
+        dropdown2.onchange = () => {
+            const dagarPerVecka = parseInt(dropdown2.value, 10) || 7;
             updateMonthlyBox(
-                'monthly-wrapper-2', dagarPerVecka, window.appState.dag2, 
-                window.appState.extra2, window.appState.barnbidragPerPerson, 
-                window.appState.tilläggPerPerson, window.appState.avtal2, 
-                förälder2InkomstDagar
+                'monthly-wrapper-2', dagarPerVecka, window.appState.dag2,
+                window.appState.extra2, window.appState.barnbidragPerPerson,
+                window.appState.tilläggPerPerson, window.appState.avtal2,
+                parent2Days
             );
-        });
+        };
     }
 }
 
