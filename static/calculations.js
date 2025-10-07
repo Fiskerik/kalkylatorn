@@ -280,10 +280,10 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
 
     const maxDagarPerVecka = deltid === "ja" ? 5 : 7;
     if (strategy === "maximize") {
-        dagarPerVecka1 = weeks1 > 0 ? Math.min(maxDagarPerVecka, Math.max(1, Math.floor(förälder1InkomstDagar / weeks1))) : 0;
+        dagarPerVecka1 = weeks1 > 0 ? maxDagarPerVecka : 0;
         dagarPerVecka2 =
             inputs.vårdnad === "gemensam" && inputs.beräknaPartner === "ja" && weeks2 > 0
-                ? Math.min(maxDagarPerVecka, Math.max(1, Math.floor(förälder2InkomstDagar / weeks2)))
+                ? maxDagarPerVecka
                 : 0;
     } else {
         dagarPerVecka1 = weeks1 > 0 ? 1 : 0;
@@ -639,6 +639,42 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
                     genomförbarhet.meddelande =
                         `Kombinerad inkomst ${kombEfter.toLocaleString()} kr/månad i fas 1 är under kravet ${minInkomst.toLocaleString()} kr/månad (med ${dagarPerVecka1} dagar/vecka).`;
                 }
+            } else if (strategy === "longer") {
+                const blockWeeks = Math.max(1, plan1NoExtraWeeksTotal);
+                const initialDaysPerWeek = plan1NoExtra.dagarPerVecka || dagarPerVecka1;
+                const initialUsed = plan1NoExtra.användaInkomstDagar || 0;
+                let targetDaysPerWeek = initialDaysPerWeek;
+                while (targetDaysPerWeek > 1) {
+                    const candidateDays = targetDaysPerWeek - 1;
+                    const candidateIncome =
+                        beräknaMånadsinkomst(dag1, candidateDays, 0, barnbidrag, tillägg) + arbetsInkomst2;
+                    if (candidateIncome >= minInkomst) {
+                        targetDaysPerWeek = candidateDays;
+                        continue;
+                    }
+                    break;
+                }
+                if (targetDaysPerWeek !== initialDaysPerWeek) {
+                    const newUsed = targetDaysPerWeek * blockWeeks;
+                    const freedDays = Math.max(0, initialUsed - newUsed);
+                    if (freedDays > 0) {
+                        förälder1InkomstDagar += freedDays;
+                        const returnable = Math.min(freedDays, genomförbarhet.transferredDays);
+                        if (returnable > 0) {
+                            förälder1InkomstDagar -= returnable;
+                            förälder2InkomstDagar += returnable;
+                            genomförbarhet.transferredDays -= returnable;
+                        }
+                    }
+                    dagarPerVecka1NoExtra = targetDaysPerWeek;
+                    noExtraDaysUsed1 = newUsed;
+                    användaInkomstDagar1 = extraDaysUsed1 + noExtraDaysUsed1;
+                    plan1NoExtra.dagarPerVecka = targetDaysPerWeek;
+                    plan1NoExtra.inkomst = Math.round(
+                        beräknaMånadsinkomst(dag1, targetDaysPerWeek, 0, barnbidrag, tillägg)
+                    );
+                    plan1NoExtra.användaInkomstDagar = newUsed;
+                }
             }
         }
 
@@ -708,8 +744,8 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
         };
 
         const plan2StartNoExtra = plan2.startWeek + plan2ExtraWeeks;
-        const extraDaysUsed2 = Math.min(användaInkomstDagar2, Math.round(plan2ExtraWeeks * dagarPerVecka2));
-        const noExtraDaysUsed2 = Math.max(0, användaInkomstDagar2 - extraDaysUsed2);
+        let extraDaysUsed2 = Math.min(användaInkomstDagar2, Math.round(plan2ExtraWeeks * dagarPerVecka2));
+        let noExtraDaysUsed2 = Math.max(0, användaInkomstDagar2 - extraDaysUsed2);
         plan2NoExtra = {
             startWeek: plan2StartNoExtra,
             weeks: plan2NoExtraWeeksTotal,
@@ -728,6 +764,42 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
             inkomst: Math.round(beräknaMånadsinkomst(MINIMUM_RATE, dagarPerVecka2, 0, barnbidrag, tillägg)),
             användaMinDagar: användaMinDagar2
         };
+
+        if (strategy === "longer" && plan2NoExtraWeeksTotal > 0) {
+            const blockWeeks = Math.max(1, plan2NoExtraWeeksTotal);
+            const initialDaysPerWeek = plan2NoExtra.dagarPerVecka || dagarPerVecka2;
+            const initialUsed = plan2NoExtra.användaInkomstDagar || 0;
+            let targetDaysPerWeek = initialDaysPerWeek;
+            while (targetDaysPerWeek > 1) {
+                const candidateDays = targetDaysPerWeek - 1;
+                const candidateIncome =
+                    beräknaMånadsinkomst(dag2, candidateDays, 0, barnbidrag, tillägg) + arbetsInkomst1;
+                if (candidateIncome >= minInkomst) {
+                    targetDaysPerWeek = candidateDays;
+                    continue;
+                }
+                break;
+            }
+            if (targetDaysPerWeek !== initialDaysPerWeek) {
+                const newUsed = targetDaysPerWeek * blockWeeks;
+                const freedDays = Math.max(0, initialUsed - newUsed);
+                if (freedDays > 0) {
+                    förälder2InkomstDagar += freedDays;
+                }
+                dagarPerVecka2 = targetDaysPerWeek;
+                noExtraDaysUsed2 = newUsed;
+                användaInkomstDagar2 = extraDaysUsed2 + noExtraDaysUsed2;
+                plan2NoExtra.dagarPerVecka = targetDaysPerWeek;
+                plan2NoExtra.inkomst = Math.round(
+                    beräknaMånadsinkomst(dag2, targetDaysPerWeek, 0, barnbidrag, tillägg)
+                );
+                plan2NoExtra.användaInkomstDagar = newUsed;
+                plan2MinDagar.dagarPerVecka = targetDaysPerWeek;
+                plan2MinDagar.inkomst = Math.round(
+                    beräknaMånadsinkomst(MINIMUM_RATE, targetDaysPerWeek, 0, barnbidrag, tillägg)
+                );
+            }
+        }
         unusedFöräldralönWeeks2 = Math.max(0, maxFöräldralönWeeks2 - plan2ExtraWeeks);
     }
 
