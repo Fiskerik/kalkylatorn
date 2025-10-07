@@ -1,0 +1,63 @@
+families:
+  - name: "Family 1"
+    parents:
+      - role: "Parent 1"
+        salary_sek_per_month: 30000
+        kollektivavtal: true
+        anstalld_mer_an_ett_ar: true
+      - role: "Parent 2"
+        salary_sek_per_month: 55100
+        kollektivavtal: false
+    custody:
+      typ: "Gemensam"
+      berakna_for_bada_foraldrarna: true
+    barn:
+      befintliga: 2
+      forvantade: 1
+    miniminkomst_sek_per_manad: 45000
+  - name: "Family 2"
+    parents:
+      - role: "Parent 1"
+        salary_sek_per_month: 58000
+        kollektivavtal: true
+        anstalld_mer_an_ett_ar: true
+    custody:
+      typ: "Ensam"
+      berakna_for_bada_foraldrarna: false
+    barn:
+      befintliga: 1
+      forvantade: 1
+    miniminkomst_sek_per_manad: 32000
+  - name: "Family 3"
+    parents:
+      - role: "Parent 1"
+        salary_sek_per_month: 55000
+        kollektivavtal: true
+        anstalld_mer_an_ett_ar: true
+      - role: "Parent 2"
+        salary_sek_per_month: 59100
+        kollektivavtal: true
+        anstalld_manader: 8
+    custody:
+      typ: "Gemensam"
+      berakna_for_bada_foraldrarna: true
+    barn:
+      befintliga: 0
+      forvantade: 2
+    miniminkomst_sek_per_manad: 52000
+  - name: "Family 4"
+    parents:
+      - role: "Parent 1"
+        salary_sek_per_month: 30000
+        kollektivavtal: true
+        anstalld_mer_an_ett_ar: true
+      - role: "Parent 2"
+        salary_sek_per_month: 55100
+        kollektivavtal: false
+    custody:
+      typ: "Gemensam"
+      berakna_for_partner: false
+    barn:
+      befintliga: 2
+      forvantade: 1
+    miniminkomst_sek_per_manad: 45000
