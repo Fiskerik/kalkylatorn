@@ -387,7 +387,7 @@ function handleOptimize() {
 
             if (totalShortage1 > 0) {
                 const segments = [
-                    { label: 'Fas 1 med föräldralön', days: plan1ExtraDays },
+                    { label: 'Fas 1 (med föräldralön)', days: plan1ExtraDays },
                     { label: 'Fas 1 utan föräldralön', days: plan1NoExtraDays },
                     { label: 'Fas 1 lägstanivå', days: plan1MinDays },
                     { label: 'Fas 1 lägstanivå (forts.)', days: plan1MinContinuationDays }
@@ -399,7 +399,7 @@ function handleOptimize() {
                 } men har bara ${Math.round(maxDays1)} dagar tillgängliga. ${shortage} dagar saknas.`;
             } else {
                 const segments = [
-                    { label: 'Fas 2 med föräldralön', days: plan2ExtraDays },
+                    { label: 'Fas 2 (med föräldralön)', days: plan2ExtraDays },
                     { label: 'Fas 2 utan föräldralön', days: plan2NoExtraDays },
                     { label: 'Fas 2 lägstanivå', days: plan2MinDays },
                     { label: 'Fas 2 lägstanivå (forts.)', days: plan2MinContinuationDays },
