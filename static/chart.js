@@ -65,7 +65,11 @@ export function renderGanttChart(
     maxFöräldralönWeeks1,
     maxFöräldralönWeeks2,
     unusedFöräldralönWeeks1,
-    unusedFöräldralönWeeks2
+    unusedFöräldralönWeeks2,
+    användaInkomstDagar1 = 0,
+    användaMinDagar1 = 0,
+    användaInkomstDagar2 = 0,
+    användaMinDagar2 = 0
 ) {
     const ganttChart = document.getElementById('gantt-chart');
     if (!ganttChart) {
@@ -175,6 +179,12 @@ export function renderGanttChart(
     const formatCombinedIncome = (label, income) => {
         const className = getIncomeHighlightClass(income);
         return `<strong class="${className}">${label} ${income.toLocaleString()} kr/månad</strong>`;
+    };
+
+    const formatUsedDaysLine = (label, incomeDays, minDays) => {
+        const safeIncomeDays = Math.max(0, Math.round(Number(incomeDays) || 0));
+        const safeMinDays = Math.max(0, Math.round(Number(minDays) || 0));
+        return `${label}: ${safeIncomeDays.toLocaleString()} dagar (sjukpenningnivå), ${safeMinDays.toLocaleString()} dagar (lägstanivå)`;
     };
 
     const period1ExtraWeeks = plan1.weeks || 0;
@@ -818,6 +828,15 @@ export function renderGanttChart(
             }
             appendPeriod(period2Blocks);
         }
+
+        const usedLines = [
+            '<strong>Använda dagar:</strong>',
+            formatUsedDaysLine('Förälder 1', användaInkomstDagar1, användaMinDagar1)
+        ];
+        if (includePartner) {
+            usedLines.push(formatUsedDaysLine('Förälder 2', användaInkomstDagar2, användaMinDagar2));
+        }
+        sections.push(createSection(usedLines));
 
         const remainingLines = [
             '<strong>Återstående dagar:</strong>',

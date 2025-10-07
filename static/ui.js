@@ -156,18 +156,20 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
     ];
     const tooltipTitle = tooltipLines.join('&#10;');
     const tooltipAria = tooltipLines.join(' ');
-    const gemensamDetails = `
+    const reserveradeDagar = 90;
+    const delningsbaraDagar = Math.max(incomeDays - reserveradeDagar, 0);
+    const gemensamDetails = incomeDays > 0 ? `
         <div class="benefit-details">
             <div class="benefit-detail-line">
                 <span>Varav dagar som kan delas:</span>
-                <span class="benefit-detail-value">105</span>
+                <span class="benefit-detail-value">${delningsbaraDagar.toLocaleString()}</span>
             </div>
             <div class="benefit-detail-line">
                 <span>Varav reserverade dagar:</span>
-                <span class="benefit-detail-value">90</span>
+                <span class="benefit-detail-value">${reserveradeDagar.toLocaleString()}</span>
             </div>
         </div>
-    `;
+    ` : '';
     return `
         <div class="result-section">
             <h2>Förälder ${parentNum}</h2>
