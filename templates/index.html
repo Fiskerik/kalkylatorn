@@ -247,6 +247,27 @@
                     <span class="summary-label">Återstående dagar</span>
                     <span class="summary-value" id="sticky-days">–</span>
                 </div>
+                <div class="form-section">
+                    <label for="strategy">Välj strategi:</label>
+                    <div class="toggle-group" id="strategy-group">
+                        <div class="toggle-options">
+                            <button class="toggle-btn active" data-value="longer">Längre ledighet</button>
+                            <button class="toggle-btn" data-value="maximize">Maximera inkomst</button>
+                        </div>
+                        <input type="hidden" id="strategy" value="longer">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="wizard-step" id="step-summary">
+                <legend>Resultat</legend>
+                <p class="summary-intro">Sammanfatta dina uppgifter och visa resultatet när du är redo.</p>
+            </fieldset>
+
+            <div class="wizard-nav">
+                <button type="button" id="back-btn" class="hidden back-btn">&larr; Tillbaka</button>
+                <button type="button" id="next-btn">Nästa steg</button>
+                <button type="submit" id="calculate-btn" class="hidden">Visa resultat</button>
             </div>
             <button type="button" id="sticky-cta" class="primary-cta">Visa resultat</button>
         </div>

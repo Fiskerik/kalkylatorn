@@ -223,10 +223,26 @@ function handleFormSubmit(e) {
         preferensTotalLedigTid: totalPreferensLedigTid
     };
 
+    const includePartner = vårdnad === 'gemensam' && beräknaPartner === 'ja';
     const leaveContainer = document.getElementById('leave-slider-container');
     if (leaveContainer) {
         leaveContainer.style.display = includePartner ? 'block' : 'none';
     }
+
+    const hushallsBarnbidrag = vårdnad === 'ensam'
+        ? barnbidragResult.total
+        : barnbidragResult.total * 2;
+    const hushallsNetto = netto1 + (includePartner ? netto2 : 0) + hushallsBarnbidrag;
+    const totalRemainingDays = parent1IncomeDays + parent1LowDays +
+        (includePartner ? parent2IncomeDays + parent2LowDays : 0);
+
+    updateStickySummary(hushallsNetto, totalRemainingDays);
+    if (mobileSummaryEl) {
+        mobileSummaryEl.classList.add('is-visible');
+    }
+    document.body.dataset.resultsReady = 'true';
+    if (stickyCtaButton) stickyCtaButton.textContent = 'Optimera';
+    document.dispatchEvent(new Event('results-ready'));
 
     const hushallsBarnbidrag = vårdnad === 'ensam'
         ? barnbidragResult.total
