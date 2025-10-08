@@ -57,13 +57,49 @@ form {
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
-    position: relative;
+}
+
+form fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+form fieldset + fieldset {
+    margin-top: 2rem;
+}
+
+fieldset legend {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.summary-intro {
+    font-size: 1rem;
+    color: #475467;
+    margin: 0;
 }
 
 label {
     display: block;
     margin-top: 1rem;
     font-weight: 600;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    accent-color: #00796b;
 }
 
 input,
@@ -161,7 +197,8 @@ canvas {
     flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    gap: 1.5rem;
 }
 
 
@@ -225,24 +262,33 @@ button:hover {
     margin-bottom: 0.5rem;
 }
 
-#back-btn {
-    background: none;
-    border: none;
-    color: #00796b;
-    font-weight: bold;
-    cursor: pointer;
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
+.wizard-nav {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.wizard-nav button {
+    flex: 1;
     width: auto;
-    margin: 0;
+    margin-top: 0;
+}
+
+.wizard-nav #back-btn {
+    background: transparent;
+    border: 1px solid #00796b;
+    color: #00796b;
+}
+
+.wizard-nav #back-btn:hover,
+.wizard-nav #back-btn:focus-visible {
+    background: #e0f2f1;
 }
 
 #calculate-btn {
     width: auto;
-    max-width: 300px;
-    margin: 1.5rem auto 3rem;
-    display: block;
+    max-width: none;
+    margin: 0;
 }
 
 #calculate-btn.hidden {
@@ -1408,11 +1454,65 @@ canvas#gantt-canvas {
 }
 
 .wizard-step.visible {
-    display: flex;
+    display: block;
 }
 
 .hidden {
     display: none;
+}
+
+.inline-error {
+    color: #d92d20;
+    font-size: 0.95rem;
+    margin-top: 0.75rem;
+}
+
+.mobile-sticky {
+    position: sticky;
+    bottom: 0;
+    padding: 12px max(16px, env(safe-area-inset-left)) 12px max(16px, env(safe-area-inset-right));
+    background: var(--surface, #fff);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    display: none;
+    gap: 12px;
+    z-index: 50;
+}
+
+.mobile-summary-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.mobile-summary-item {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    color: #475467;
+}
+
+.summary-label {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.summary-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #101828;
+}
+
+.primary-cta {
+    width: 100%;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .mobile-sticky {
+        display: flex;
+        flex-direction: column;
+    }
 }
 
 /* Slider for distributing leave between parents */
