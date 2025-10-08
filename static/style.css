@@ -1423,6 +1423,18 @@ canvas#gantt-canvas {
     font-size: 1rem;
 }
 
+.total-income-display {
+    margin: 1rem auto 0.75rem;
+    padding: 0.75rem 1rem;
+    max-width: 420px;
+    background-color: #eef2ff;
+    border-radius: 10px;
+    font-weight: 600;
+    color: #1d2939;
+    text-align: center;
+    border: 1px solid #c7d2fe;
+}
+
 .optimization-assist-btn.loading {
     opacity: 0.7;
     cursor: wait;

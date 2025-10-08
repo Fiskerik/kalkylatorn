@@ -87,8 +87,8 @@ const createStrategySummary = (result, preferences, includePartner) => {
     const parent1Weeks = parent1Phases.reduce((sum, phase) => sum + phase.weeks, 0);
     const parent2Weeks = parent2Phases.reduce((sum, phase) => sum + phase.weeks, 0);
 
-    const parent1Months = roundToOneDecimal(weeksToMonths(parent1Weeks));
-    const parent2Months = roundToOneDecimal(weeksToMonths(parent2Weeks));
+    const parent1Months = Math.round(weeksToMonths(parent1Weeks));
+    const parent2Months = Math.round(weeksToMonths(parent2Weeks));
 
     const period1Average = computeWeightedAverage(parent1Phases);
     const period2Average = computeWeightedAverage(parent2Phases);
@@ -176,8 +176,8 @@ const formatCurrencyValue = (value, suffix = 'kr/månad') => {
 };
 
 const formatMonthsValue = (value) => {
-    const numeric = roundToOneDecimal(toFiniteNumber(value));
-    return `${numeric.toLocaleString('sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} månader`;
+    const numeric = Math.round(toFiniteNumber(value));
+    return `${numeric.toLocaleString('sv-SE')} månader`;
 };
 
 const formatDaysComparison = (currentDays, baselineDays) => {
@@ -1163,6 +1163,7 @@ export function renderGanttChart(
         if (!boxData?.result) {
             return;
         }
+        cachedSuggestions = null;
         const preferencesOverride = boxData.preferences ? { ...boxData.preferences } : {};
         const suggestedParent1Months = toNonNegative(preferencesOverride.ledigTid1);
         const suggestedParent2Months = includePartner
@@ -1355,7 +1356,7 @@ export function renderGanttChart(
                 'Förälder 1 ledig',
                 formatMonthsValue(summary.parent1Months),
                 parent1MonthsDiff,
-                { unit: 'mån', fractionDigits: 1, epsilon: 0.05 }
+                { unit: 'mån', fractionDigits: 0, epsilon: 0.5 }
             )
         );
 
@@ -1367,7 +1368,7 @@ export function renderGanttChart(
                 'Förälder 2 ledig',
                 formatMonthsValue(summary.parent2Months),
                 parent2MonthsDiff,
-                { unit: 'mån', fractionDigits: 1, epsilon: 0.05 }
+                { unit: 'mån', fractionDigits: 0, epsilon: 0.5 }
             )
         );
 
@@ -1588,7 +1589,9 @@ export function renderGanttChart(
             boxes.push({
                 title: 'Strategi – Fler dagar kvar',
                 summary: bestRemaining.summary,
-                description: 'Fokuserar på att frigöra fler dagar samtidigt som minimiinkomsten uppnås.'
+                description: 'Fokuserar på att frigöra fler dagar samtidigt som minimiinkomsten uppnås.',
+                preferences: bestRemaining.preferences,
+                result: bestRemaining.result
             });
         } else {
             boxes.push({
@@ -1601,7 +1604,9 @@ export function renderGanttChart(
             boxes.push({
                 title: 'Strategi – Maximera inkomst',
                 summary: bestIncome.summary,
-                description: 'Fokuserar på att maximera hushållets inkomst inom ramen för minimiinkomsten.'
+                description: 'Fokuserar på att maximera hushållets inkomst inom ramen för minimiinkomsten.',
+                preferences: bestIncome.preferences,
+                result: bestIncome.result
             });
         } else {
             boxes.push({
@@ -1642,7 +1647,15 @@ export function renderGanttChart(
     assistanceButton.addEventListener('click', handleOptimizationAssistance);
 
     messageDiv.innerHTML = buildFeasibilityHtml();
+    const totalIncomeDisplay = document.createElement('div');
+    totalIncomeDisplay.className = 'total-income-display';
+    if (baselineIncomeTotal != null && Number.isFinite(baselineIncomeTotal)) {
+        totalIncomeDisplay.textContent = `Total income: ${baselineIncomeTotal.toLocaleString('sv-SE')} sek`;
+    } else {
+        totalIncomeDisplay.textContent = 'Total income: –';
+    }
     ganttChart.appendChild(messageDiv);
+    ganttChart.appendChild(totalIncomeDisplay);
     ganttChart.appendChild(assistanceButton);
     ganttChart.appendChild(suggestionsContainer);
     ganttChart.appendChild(canvas);
