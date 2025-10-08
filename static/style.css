@@ -44,11 +44,13 @@ h3 {
     border: none;
     cursor: pointer;
     transition: background-color 0.3s;
+    margin-top: 0;
 }
 
 .button-group .toggle-btn {
     width: auto;
     padding: 10px 20px;
+    margin-top: 0;
 }
 
 form {
@@ -135,6 +137,15 @@ button, .toggle-btn {
     gap: 10px;
     margin-top: 0.5rem;
     text-align: justify
+}
+
+.button-group.barnval {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .result {
@@ -256,10 +267,43 @@ button:hover {
     color: white;
 }
 
+#avtal-group-1,
+#avtal-group-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#avtal-group-1 .toggle-btn,
+#avtal-group-2 .toggle-btn {
+    width: 100%;
+    min-width: 0;
+}
+
+#anstallningstid-group-1,
+#anstallningstid-group-2 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#anstallningstid-group-1 .toggle-btn,
+#anstallningstid-group-2 .toggle-btn {
+    width: 100%;
+    min-width: 0;
+    font-size: 0.9rem;
+    padding: 10px 8px;
+}
+
 .question-icon {
     font-size: 2rem;
     color: #00796b;
     margin-bottom: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
 }
 
 .wizard-nav {
@@ -532,6 +576,11 @@ input[type="number"] {
 .info-icon {
     color: #00796b;
     font-size: 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
 }
 
 .info-arrow {
@@ -577,6 +626,11 @@ input[type="number"] {
 .result-icon {
     color: #00796b;
     font-size: 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
 }
 
 .result-arrow {
@@ -863,12 +917,12 @@ input[type="number"] {
     }
 
     .form-section {
-        align-items: stretch;
-        text-align: left;
+        align-items: center;
+        text-align: center;
     }
 
     .form-section .question-icon {
-        margin-bottom: 0.75rem;
+        margin: 0 auto 0.75rem;
     }
 
     .button-group {
@@ -880,9 +934,13 @@ input[type="number"] {
         min-width: 150px;
     }
 
+    .button-group.barnval {
+        justify-content: flex-start;
+    }
+
     .button-group.barnval .toggle-btn {
-        flex: 1 1 calc(33% - 10px);
-        min-width: 60px;
+        flex: 0 0 auto;
+        min-width: 50px;
     }
 
     .dev-shortcuts {
@@ -899,18 +957,17 @@ input[type="number"] {
     }
 
     #progress-bar {
-        overflow-x: auto;
-        gap: 12px;
-        padding: 10px 12px;
-        --progress-circle-size: 36px;
+        gap: 8px;
+        padding: 8px 12px;
+        --progress-circle-size: 34px;
     }
 
     #progress-bar .step {
-        min-width: 120px;
+        min-width: 88px;
     }
 
     #progress-bar .step-label {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 }
 
@@ -981,7 +1038,7 @@ input[type="number"] {
     }
 
     #progress-bar .step {
-        min-width: 95px;
+        min-width: 88px;
     }
 
     #progress-bar .step-label {
@@ -997,12 +1054,13 @@ input[type="number"] {
     left: 0;
     width: 100%;
     background-color: #fff;
-    padding: 10px 20px;
+    padding: 8px 12px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     counter-reset: step;
-    min-height: 50px;
-    --progress-circle-size: 42px;
+    min-height: 44px;
+    --progress-circle-size: 38px;
+    box-sizing: border-box;
 }
 
 #progress-bar .step {
@@ -1013,7 +1071,7 @@ input[type="number"] {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 }
 
 #progress-bar .step::before {
@@ -1032,6 +1090,14 @@ input[type="number"] {
     color: inherit;
     font-size: 1.2rem;
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+#progress-bar .step-circle i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
 
 #progress-bar .step-label {
@@ -1104,7 +1170,7 @@ input[type="number"] {
 
 /* Adjust container padding */
 .container {
-    padding-top: 70px;
+    padding-top: 60px;
 }
 /*Månadsbox*/
 .duration-info {
@@ -1135,18 +1201,19 @@ input[type="number"] {
 
 
 .uttag-container {
-    flex: 0 0 260px;
-    width: 100%;
+    flex: 0 1 auto;
+    width: auto;
     display: flex;
     flex-direction: column; /* Stack children vertically */
-    align-items: flex-start;
-    gap: 10px;
-    padding: 20px;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px 16px;
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
-    max-width: 260px;
+    max-width: 280px;
     box-sizing: border-box;
+    align-self: flex-start;
 }
 canvas#gantt-canvas {
     height: 400px !important;
@@ -1257,15 +1324,26 @@ canvas#gantt-canvas {
     width: 100%;
 }
 
+#step-preferences label {
+    width: 100%;
+    text-align: center;
+}
+
+#step-preferences .date-picker-container {
+    display: flex;
+    justify-content: center;
+}
+
 .date-picker-container input[type="date"] {
     width: 100%;
     padding: 0.8rem 2.5rem 0.8rem 0.8rem; /* Space for the icon */
-    margin-top: 0.5rem;
+    margin: 0.5rem auto 0;
     border: 1px solid #ccc;
     border-radius: 6px;
     box-sizing: border-box;
     font-size: 16px;
     text-align: center;
+    max-width: 280px;
 }
 
 .date-picker-container .calendar-icon {
@@ -1508,8 +1586,12 @@ canvas#gantt-canvas {
     margin: 0;
 }
 
+.mobile-sticky.is-visible {
+    display: none;
+}
+
 @media (max-width: 768px) {
-    .mobile-sticky {
+    .mobile-sticky.is-visible {
         display: flex;
         flex-direction: column;
     }

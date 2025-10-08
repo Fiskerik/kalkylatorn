@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const backBtn = document.getElementById('back-btn');
     const nextBtn = document.getElementById('next-btn');
     const stickyCTA = document.getElementById('sticky-cta');
+    const mobileSummary = document.getElementById('mobile-summary');
     const partnerCheckbox = document.getElementById('beräkna-partner-checkbox');
     const partnerHidden = document.getElementById('beräkna-partner');
     const partnerFields = document.querySelectorAll('[data-partner-field]');
@@ -42,10 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateStickyCtaLabel() {
         if (!stickyCTA) return;
-        if (document.body.dataset.resultsReady === 'true') {
+        const resultsReady = document.body.dataset.resultsReady === 'true';
+        if (resultsReady) {
             stickyCTA.textContent = 'Optimera';
+            if (mobileSummary) {
+                mobileSummary.classList.add('is-visible');
+            }
         } else {
-            stickyCTA.textContent = currentIndex === idx.summary ? 'Visa resultat' : 'Nästa steg';
+            stickyCTA.textContent = 'Visa resultat';
+            if (mobileSummary) {
+                mobileSummary.classList.remove('is-visible');
+            }
         }
     }
 
