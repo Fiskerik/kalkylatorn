@@ -182,7 +182,7 @@ button {
 .info-text {
     font-size: 16px;
     margin-top: 0.5rem;
-    text-align: justify;
+    text-align: left;
 }
 
 table {
@@ -435,7 +435,7 @@ button:hover {
     font-size: 0.95rem;
     line-height: 1.5;
     white-space: pre-wrap;
-    text-align: justify;
+    text-align: left;
 }
 
 .mobile-tooltip-close {
@@ -669,12 +669,12 @@ input[type="number"] {
     padding: 0 1rem 1rem;
     font-size: 0.95rem;
     color: #333;
-    text-align: justify;
+    text-align: left;
 }
 
 .info-box.open .info-content {
     display: block;
-    text-align: justify;
+    text-align: left;
 }
 
 .result-box {
@@ -1466,6 +1466,11 @@ canvas#gantt-canvas {
     margin-bottom: 20px;
 }
 
+.strategy-spacer {
+    width: 100%;
+    height: 12px;
+}
+
 #strategy-group {
     display: flex;
     align-items: center;
@@ -1666,7 +1671,7 @@ canvas#gantt-canvas {
     background-color: white;
 }
 .day-cell.parent1-start, .day-cell.parent1-end, .day-cell.parent1-single {
-    background-color: #00796b !important; /* Dark green */
+    background-color: #2e7d32 !important; /* Green */
 }
 .day-cell.parent1-between {
     background-color: #81c784 !important; /* Lighter green */
@@ -1683,8 +1688,8 @@ canvas#gantt-canvas {
 .day-cell.combined-between {
     background-color: #ce93d8 !important; /* Lighter purple */
 }
-.parent1-start, .parent1-end, .parent1-single { background-color: #006400; color: white; } /* Dark Green */
-.parent1-between { background-color: #90ee90; } /* Light Green */
+.parent1-start, .parent1-end, .parent1-single { background-color: #2e7d32; color: white; } /* Green */
+.parent1-between { background-color: #a5d6a7; } /* Light Green */
 .parent2-start, .parent2-end, .parent2-single { background-color: #00008b; color: white; } /* Dark Blue */
 .parent2-between { background-color: #add8e6; } /* Light Blue */
 .combined-start, .combined-end, .combined-single { background-color: #800080; color: white; } /* Purple */
@@ -1828,7 +1833,7 @@ canvas#gantt-canvas {
     width: 100%;
     height: 14px;
     border-radius: 999px;
-    background: linear-gradient(to right, #00796b 50%, #007bff 50%);
+    background: linear-gradient(to right, #2e7d32 50%, #007bff 50%);
     border: 1px solid #d0d5dd;
     box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.15);
     outline: none;
@@ -2062,6 +2067,12 @@ canvas#gantt-canvas {
     border: 1px solid #c7d2fe;
 }
 
+.total-income-display .total-income-value {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 1.05rem;
+}
+
 .optimization-assist-btn.loading {
     opacity: 0.7;
     cursor: wait;
@@ -2160,6 +2171,23 @@ canvas#gantt-canvas {
 }
 
 .metric-diff.neutral {
+    color: #475467;
+}
+
+.summary-diff {
+    margin-left: 0.5rem;
+    font-weight: 600;
+}
+
+.summary-diff.positive {
+    color: #1b5e20;
+}
+
+.summary-diff.negative {
+    color: #c62828;
+}
+
+.summary-diff.neutral {
     color: #475467;
 }
 
@@ -2430,6 +2458,18 @@ canvas#gantt-canvas {
         max-width: 100%;
     }
 
+    #vårdnad-group {
+        width: 100%;
+        gap: 12px;
+    }
+
+    #vårdnad-group .toggle-btn {
+        flex: 1 1 calc(50% - 12px);
+        min-width: 0;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.95rem;
+    }
+
     #leave-slider {
         height: 12px;
     }
@@ -2450,6 +2490,20 @@ canvas#gantt-canvas {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
+    }
+
+    .monthly-row,
+    .monthly-total {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 0.35rem;
+    }
+
+    .monthly-row span,
+    .monthly-total span {
+        width: 100%;
     }
 
     .monthly-box,
