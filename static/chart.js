@@ -337,7 +337,7 @@ export function renderGanttChart(
 
     const baseLegendDefinitions = [
         { color: '#800080', text: 'Överlappande Ledighet' },
-        { color: '#2e7d32', text: 'Förälder 1 Ledig' },
+        { color: '#34c759', text: 'Förälder 1 Ledig' },
         { color: '#f28c38', text: 'Förälder 1 Ledig (Överförda dagar)' },
         { color: '#007bff', text: 'Förälder 2 Ledig' },
         { color: 'red', text: 'Efter Ledighet' }
@@ -668,7 +668,7 @@ export function renderGanttChart(
         if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
         if (x < period1TotalWeeks) {
             if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-            return '#2e7d32';
+            return '#34c759';
         }
         if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
         return 'red';
