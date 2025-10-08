@@ -1,9 +1,13 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background: #f2f2f2;
-    padding: 2rem;
     margin: 0; /* ingen auto */
-    
+    min-height: 100vh;
+    padding: 2rem;
 }
 .toggle-btn {
     display: flex;
@@ -711,6 +715,103 @@ input[type="number"] {
     font-size: 1.3em;
 }
 
+@media (max-width: 1024px) {
+    body {
+        padding: 1.5rem;
+    }
+
+    .container {
+        max-width: 100%;
+        padding: 2rem 1.5rem;
+    }
+
+    .wizard-first-step-layout {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .dev-shortcuts {
+        max-width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .dev-family-btn {
+        flex: 1 1 calc(50% - 0.75rem);
+        min-width: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    form,
+    .result,
+    .result-block,
+    .result-section {
+        padding: 1.5rem 1rem;
+    }
+
+    .form-section {
+        align-items: stretch;
+        text-align: left;
+    }
+
+    .form-section .question-icon {
+        margin-bottom: 0.75rem;
+    }
+
+    .button-group {
+        justify-content: center;
+    }
+
+    .button-group .toggle-btn {
+        flex: 1 1 calc(50% - 10px);
+        min-width: 150px;
+    }
+
+    .button-group.barnval .toggle-btn {
+        flex: 1 1 calc(33% - 10px);
+        min-width: 60px;
+    }
+
+    .dev-shortcuts {
+        overflow-x: auto;
+    }
+
+    .dev-family-btn {
+        min-width: 160px;
+    }
+
+    .container {
+        margin: 90px auto 0;
+        padding: 1.5rem 1rem;
+    }
+
+    #progress-bar {
+        overflow-x: auto;
+        gap: 12px;
+        padding: 10px 12px;
+        --progress-circle-size: 36px;
+    }
+
+    #progress-bar .step {
+        min-width: 120px;
+    }
+
+    #progress-bar .step-label {
+        font-size: 0.75rem;
+    }
+}
+
 /* Responsive Adjustments */
 @media (max-width: 600px) {
     .total-total-box {
@@ -736,6 +837,53 @@ input[type="number"] {
 
     .monthly-total .total-value {
         font-size: 1.2em;
+    }
+
+    .button-group .toggle-btn {
+        min-width: 130px;
+    }
+
+    .container {
+        padding: 1.5rem 0.75rem;
+    }
+
+    #progress-bar .step {
+        min-width: 110px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 0.75rem;
+    }
+
+    form,
+    .result,
+    .result-block,
+    .result-section {
+        padding: 1.25rem 0.9rem;
+    }
+
+    .button-group .toggle-btn {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .button-group.barnval .toggle-btn {
+        flex: 1 1 30%;
+        max-width: 70px;
+    }
+
+    #progress-bar {
+        --progress-circle-size: 32px;
+    }
+
+    #progress-bar .step {
+        min-width: 95px;
+    }
+
+    #progress-bar .step-label {
+        font-size: 0.7rem;
     }
 }
 #progress-bar {
@@ -1578,8 +1726,23 @@ canvas#gantt-canvas {
     font-size: 0.95rem;
 }
 
+.days-total {
+    font-weight: 600;
+}
+
+.days-breakdown {
+    color: #475467;
+    font-weight: 500;
+}
+
 .days-diff-wrapper {
     margin-left: 0.3rem;
+}
+
+.days-delta-label {
+    color: #475467;
+    font-weight: 500;
+    margin-right: 0.1rem;
 }
 
 .days-diff {

@@ -1447,7 +1447,16 @@ export function renderGanttChart(
             const incomeDays = Math.round(toNonNegative(currentData.income));
             const minDays = Math.round(toNonNegative(currentData.min));
             const totalDays = incomeDays + minDays;
-            line.textContent = `${label}: ${totalDays.toLocaleString('sv-SE')} dagar`;
+
+            const totalSpan = document.createElement('span');
+            totalSpan.className = 'days-total';
+            totalSpan.textContent = `${label}: ${totalDays.toLocaleString('sv-SE')} dagar`;
+            line.appendChild(totalSpan);
+
+            const breakdownSpan = document.createElement('span');
+            breakdownSpan.className = 'days-breakdown';
+            breakdownSpan.textContent = ` (${incomeDays.toLocaleString('sv-SE')}/${minDays.toLocaleString('sv-SE')} dagar)`;
+            line.appendChild(breakdownSpan);
 
             if (!options.forceNeutral && baselineData) {
                 const baselineIncome = Math.round(toNonNegative(baselineData.income));
@@ -1463,7 +1472,11 @@ export function renderGanttChart(
                 if (incomeDiff && minDiff) {
                     const wrapper = document.createElement('span');
                     wrapper.className = 'days-diff-wrapper';
-                    wrapper.appendChild(document.createTextNode(' ('));
+                    wrapper.appendChild(document.createTextNode(' '));
+                    const deltaLabel = document.createElement('span');
+                    deltaLabel.className = 'days-delta-label';
+                    deltaLabel.textContent = 'Δ ';
+                    wrapper.appendChild(deltaLabel);
                     const incomeSpan = document.createElement('span');
                     incomeSpan.className = `days-diff ${incomeDiff.className}`;
                     incomeSpan.textContent = incomeDiff.text;
@@ -1473,7 +1486,7 @@ export function renderGanttChart(
                     minSpan.className = `days-diff ${minDiff.className}`;
                     minSpan.textContent = minDiff.text;
                     wrapper.appendChild(minSpan);
-                    wrapper.appendChild(document.createTextNode(' dagar)'));
+                    wrapper.appendChild(document.createTextNode(' dagar'));
                     line.appendChild(wrapper);
                 }
             }
