@@ -262,10 +262,30 @@ document.addEventListener('DOMContentLoaded', () => {
             if (input) input.value = '';
         });
 
+        const birthDateInput = document.getElementById('barn-datum');
+        if (birthDateInput) birthDateInput.value = '';
+
+        const strategyInput = document.getElementById('strategy');
+        const strategyButtons = document.querySelectorAll('#strategy-group .toggle-btn');
+        strategyButtons.forEach((button, index) => {
+            const isDefault = index === 0;
+            button.classList.toggle('active', isDefault);
+            button.setAttribute('aria-pressed', isDefault ? 'true' : 'false');
+        });
+        if (strategyInput) strategyInput.value = 'longer';
+
         const container1 = document.getElementById('anstallningstid-container-1');
         if (container1) container1.style.display = 'none';
         const container2 = document.getElementById('anstallningstid-container-2');
         if (container2) container2.style.display = 'none';
+
+        const slider = document.getElementById('leave-slider');
+        if (slider) {
+            slider.value = 0;
+            slider.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        const leaveContainer = document.getElementById('leave-slider-container');
+        if (leaveContainer) leaveContainer.style.display = 'none';
 
         if (partnerCheckbox) {
             partnerCheckbox.disabled = false;
@@ -273,6 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         setPartnerFieldsVisible(true);
         document.body.dataset.resultsReady = 'false';
+        window.appState = undefined;
         document.dispatchEvent(new Event('results-reset'));
         history = [];
         displayStep(idx.household);
@@ -323,6 +344,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const parent1 = parents[0] || {};
         const parent2 = includePartner ? parents[1] || {} : null;
 
+        const preferences = family.preferenser || {};
+        const parseMonths = value => {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+        };
+        const normalizedStrategy = (() => {
+            const raw = (preferences.strategi || '').toString().toLowerCase();
+            if (raw === 'maximize' || raw === 'maximize_parental_salary') return 'maximize';
+            return 'longer';
+        })();
+
         const income1Input = document.getElementById('inkomst1');
         const income2Input = document.getElementById('inkomst2');
         if (income1Input) income1Input.value = parent1.salary_sek_per_month ?? '';
@@ -330,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const minIncomeInput = document.getElementById('min-inkomst');
         if (minIncomeInput) {
-            const minIncome = family.miniminkomst_sek_per_manad;
+            const minIncome = preferences.minimi_netto_sek_per_manad ?? family.miniminkomst_sek_per_manad;
             minIncomeInput.value = (minIncome ?? '').toString();
         }
 
@@ -361,6 +393,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 applyToggleValue('anstallningstid-group-2', null);
             }
         }
+
+        const birthDateInput = document.getElementById('barn-datum');
+        if (birthDateInput) {
+            if (preferences.beraknat_fodelsedatum) {
+                birthDateInput.value = preferences.beraknat_fodelsedatum;
+            } else {
+                const today = new Date();
+                const local = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+                birthDateInput.value = local.toISOString().split('T')[0];
+            }
+        }
+
+        const totalLeaveInput = document.getElementById('ledig-tid-5823');
+        const partnerLeaveInput = document.getElementById('ledig-tid-2');
+        const parentMonths = parseMonths(preferences.foralder1_manader);
+        const partnerMonths = parseMonths(preferences.foralder2_manader);
+        if (totalLeaveInput && parentMonths !== null) {
+            totalLeaveInput.value = parentMonths;
+        }
+        if (partnerLeaveInput) {
+            if (includePartner && partnerMonths !== null) {
+                partnerLeaveInput.value = partnerMonths;
+            } else {
+                partnerLeaveInput.value = '';
+            }
+        }
+
+        const strategyInput = document.getElementById('strategy');
+        const strategyButtons = document.querySelectorAll('#strategy-group .toggle-btn');
+        strategyButtons.forEach(button => {
+            const isActive = button.dataset.value === normalizedStrategy;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        if (strategyInput) strategyInput.value = normalizedStrategy;
+
+        totalLeaveInput?.dispatchEvent(new Event('input', { bubbles: true }));
+        partnerLeaveInput?.dispatchEvent(new Event('input', { bubbles: true }));
 
         history = [idx.household, idx.income, idx.preferences];
         displayStep(idx.summary, false);

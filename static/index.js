@@ -52,6 +52,17 @@ function resetStickySummary() {
 
 document.addEventListener('results-reset', resetStickySummary);
 
+function setBirthDateToToday(force = false) {
+    const birthDateInput = document.getElementById('barn-datum');
+    if (!birthDateInput) return;
+    if (!force && birthDateInput.value) return;
+    const today = new Date();
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+    birthDateInput.value = localDate.toISOString().split('T')[0];
+}
+
+document.addEventListener('results-reset', () => setBirthDateToToday(false));
+
 // Initialize on DOM content loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
@@ -73,12 +84,7 @@ function initializeForm() {
     setupInfoBoxToggle();
     setupHelpTooltips();
 
-    const birthDateInput = document.getElementById('barn-datum');
-    if (birthDateInput && !birthDateInput.value) {
-        const today = new Date();
-        const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
-        birthDateInput.value = localDate.toISOString().split('T')[0];
-    }
+    setBirthDateToToday(false);
 }
 
 /**
@@ -228,18 +234,6 @@ function handleFormSubmit(e) {
     if (leaveContainer) {
         leaveContainer.style.display = includePartner ? 'block' : 'none';
     }
-
-    const hushallsBarnbidrag = vårdnad === 'ensam'
-        ? barnbidragResult.total
-        : barnbidragResult.total * 2;
-    const hushallsNetto = netto1 + (includePartner ? netto2 : 0) + hushallsBarnbidrag;
-    const totalRemainingDays = parent1IncomeDays + parent1LowDays +
-        (includePartner ? parent2IncomeDays + parent2LowDays : 0);
-
-    updateStickySummary(hushallsNetto, totalRemainingDays);
-    if (mobileSummaryEl) {
-        mobileSummaryEl.classList.add('is-visible');
-    }
     document.body.dataset.resultsReady = 'true';
     if (stickyCtaButton) stickyCtaButton.textContent = 'Optimera';
     document.dispatchEvent(new Event('results-ready'));
@@ -329,6 +323,19 @@ function handleOptimize() {
     const ledigTid2Input = document.getElementById('ledig-tid-2');
     const minInkomstInput = document.getElementById('min-inkomst');
     const strategyInput = document.getElementById('strategy');
+
+    if (!window.appState || document.body.dataset.resultsReady !== 'true') {
+        if (leaveErr) {
+            leaveErr.style.display = 'block';
+            leaveErr.textContent = 'Beräkna resultat innan du optimerar.';
+        }
+        return;
+    }
+
+    if (leaveErr) {
+        leaveErr.style.display = 'none';
+        leaveErr.textContent = '';
+    }
 
     // Validate inputs
     const missingElements = [];

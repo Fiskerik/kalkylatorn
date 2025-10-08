@@ -217,8 +217,8 @@
                     <label for="strategy">Välj strategi:</label>
                     <div class="toggle-group" id="strategy-group">
                         <div class="toggle-options">
-                            <button class="toggle-btn active" data-value="longer">Längre ledighet</button>
-                            <button class="toggle-btn" data-value="maximize">Maximera inkomst</button>
+                            <button type="button" class="toggle-btn active" data-value="longer">Längre ledighet</button>
+                            <button type="button" class="toggle-btn" data-value="maximize">Maximera inkomst</button>
                         </div>
                         <input type="hidden" id="strategy" value="longer">
                     </div>
@@ -246,6 +246,29 @@
                 <div class="mobile-summary-item">
                     <span class="summary-label">Återstående dagar</span>
                     <span class="summary-value" id="sticky-days">–</span>
+                </div>
+            </fieldset>
+
+            <fieldset class="wizard-step" id="step-preferences">
+                <legend>Preferenser</legend>
+                <div class="form-section">
+                    <label>När är barnet beräknat?</label>
+                    <div class="date-picker-container">
+                        <input type="date" id="barn-datum" name="barn-datum" required>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <label>Hur länge vill du/ni vara lediga? (månader)</label>
+                    <input type="number" id="ledig-tid-5823" name="ledig-tid-1" min="0" placeholder="Ange antal månader">
+                </div>
+                <div class="form-section" id="parent-ledig-tid" data-partner-field>
+                    <label>Hur länge vill din partner vara ledig? (månader)</label>
+                    <input type="number" id="ledig-tid-2" name="ledig-tid-2" min="0" placeholder="Ange antal månader">
+                </div>
+                <div class="form-section">
+                    <label for="min-inkomst">Minimi-netto för hushållet (kr/månad)</label>
+                    <input type="number" id="min-inkomst" name="min-inkomst" min="0" placeholder="Ange belopp">
+                    <div id="min-income-error" class="inline-error" role="alert" aria-live="assertive" style="display: none;"></div>
                 </div>
                 <div class="form-section">
                     <label for="strategy">Välj strategi:</label>
