@@ -1416,12 +1416,23 @@ canvas#gantt-canvas {
 
 .optimization-assist-btn {
     width: auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
+    text-align: center;
     padding: 0.75rem 1.5rem;
     margin: 0 auto 1.5rem;
     font-size: 1rem;
+}
+
+.total-income-display {
+    margin: 1rem auto 0.75rem;
+    padding: 0.75rem 1rem;
+    max-width: 420px;
+    background-color: #eef2ff;
+    border-radius: 10px;
+    font-weight: 600;
+    color: #1d2939;
+    text-align: center;
+    border: 1px solid #c7d2fe;
 }
 
 .optimization-assist-btn.loading {
@@ -1432,10 +1443,14 @@ canvas#gantt-canvas {
 .optimization-suggestions {
     display: none;
     width: 100%;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
     margin-bottom: 1.5rem;
+}
+
+.strategy-box-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: center;
 }
 
 .strategy-box {
@@ -1508,6 +1523,104 @@ canvas#gantt-canvas {
     color: #475467;
 }
 
+.strategy-days-block {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e4e7ec;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.strategy-days-heading {
+    font-weight: 600;
+    color: #101828;
+    font-size: 0.95rem;
+}
+
+.strategy-days-line {
+    color: #344054;
+    font-size: 0.95rem;
+}
+
+.days-diff {
+    margin-left: 0.4rem;
+    font-weight: 600;
+}
+
+.days-diff.positive {
+    color: #1b5e20;
+}
+
+.days-diff.negative {
+    color: #c62828;
+}
+
+.days-diff.neutral {
+    color: #475467;
+}
+
+.strategy-income-note {
+    margin-top: 1rem;
+    padding: 0.75rem 0.85rem;
+    background-color: #f0f9f6;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #0f172a;
+    border: 1px solid #b6e2d8;
+}
+
+.income-diff {
+    font-weight: 600;
+}
+
+.income-diff.positive {
+    color: #1b5e20;
+}
+
+.income-diff.negative {
+    color: #c62828;
+}
+
+.strategy-use-btn {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.65rem 1rem;
+    background-color: #00796b;
+    color: #ffffff;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.strategy-use-btn:hover {
+    background-color: #005f56;
+}
+
+.strategy-best-note {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: #00796b;
+    text-align: center;
+}
+
+.summary-line-part {
+    margin-top: 0.35rem;
+    color: #344054;
+    font-size: 0.95rem;
+}
+
+.summary-line-part:first-child {
+    margin-top: 0.5rem;
+}
+
+.summary-line-part.combined-income-line {
+    font-weight: 600;
+    color: #101828;
+}
+
 
 @media (max-width: 600px) {
     .button-group {
@@ -1525,13 +1638,14 @@ canvas#gantt-canvas {
         padding: 1rem;
     }
 
-    .optimization-suggestions {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
     .strategy-box {
         flex: 1 1 100%;
+    }
+
+    .strategy-box-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
     }
 
 }
