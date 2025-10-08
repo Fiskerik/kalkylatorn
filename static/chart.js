@@ -87,8 +87,8 @@ const createStrategySummary = (result, preferences, includePartner) => {
     const parent1Weeks = parent1Phases.reduce((sum, phase) => sum + phase.weeks, 0);
     const parent2Weeks = parent2Phases.reduce((sum, phase) => sum + phase.weeks, 0);
 
-    const parent1Months = roundToOneDecimal(weeksToMonths(parent1Weeks));
-    const parent2Months = roundToOneDecimal(weeksToMonths(parent2Weeks));
+    const parent1Months = Math.round(weeksToMonths(parent1Weeks));
+    const parent2Months = Math.round(weeksToMonths(parent2Weeks));
 
     const period1Average = computeWeightedAverage(parent1Phases);
     const period2Average = computeWeightedAverage(parent2Phases);
@@ -107,6 +107,45 @@ const createStrategySummary = (result, preferences, includePartner) => {
     const totalRemainingDays = remainingIncomeDays1 + remainingMinDays1 +
         (includePartner ? remainingIncomeDays2 + remainingMinDays2 : 0);
 
+    const computePhaseIncomeTotal = phases => phases.reduce((sum, phase) => {
+        const weeks = toNonNegative(phase.weeks);
+        if (weeks <= 0) {
+            return sum;
+        }
+        const income = toFiniteNumber(phase.income);
+        return sum + ((weeks / WEEKS_PER_MONTH) * income);
+    }, 0);
+
+    const computeOverlapIncomeTotal = () => {
+        const overlapWeeks = toNonNegative(result.plan1Overlap?.weeks);
+        if (overlapWeeks <= 0) {
+            return 0;
+        }
+        const daysPerWeek = toNonNegative(result.plan1Overlap?.dagarPerVecka) || 5;
+        const parent1OverlapIncome = toFiniteNumber(result.plan1Overlap?.inkomst);
+        let parent2OverlapIncome = 0;
+        if (includePartner) {
+            parent2OverlapIncome = beräknaMånadsinkomst(
+                toFiniteNumber(result.dag2),
+                daysPerWeek,
+                toFiniteNumber(result.extra2),
+                toFiniteNumber(result.barnbidragPerPerson),
+                toFiniteNumber(result.tilläggPerPerson)
+            );
+        }
+        const combined = parent1OverlapIncome + parent2OverlapIncome;
+        if (combined <= 0) {
+            return 0;
+        }
+        return (overlapWeeks / WEEKS_PER_MONTH) * combined;
+    };
+
+    const totalIncome = Math.round(
+        computePhaseIncomeTotal(parent1Phases) +
+        computePhaseIncomeTotal(parent2Phases) +
+        computeOverlapIncomeTotal()
+    );
+
     return {
         minIncome,
         parent1Months,
@@ -123,6 +162,7 @@ const createStrategySummary = (result, preferences, includePartner) => {
         },
         totalRemainingDays,
         weightedAverageIncome: combinedAverage.value,
+        totalIncome,
         parent1Weeks,
         parent2Weeks,
         period1Weeks: period1Average.totalWeeks,
@@ -136,14 +176,26 @@ const formatCurrencyValue = (value, suffix = 'kr/månad') => {
 };
 
 const formatMonthsValue = (value) => {
-    const numeric = roundToOneDecimal(toFiniteNumber(value));
-    return `${numeric.toLocaleString('sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} månader`;
+    const numeric = Math.round(toFiniteNumber(value));
+    return `${numeric.toLocaleString('sv-SE')} månader`;
 };
 
-const formatDaysBreakdown = (incomeDays, minDays) => {
-    const incomeText = Math.round(toNonNegative(incomeDays)).toLocaleString('sv-SE');
-    const minText = Math.round(toNonNegative(minDays)).toLocaleString('sv-SE');
-    return `${incomeText} dagar (inkomstnivå) / ${minText} dagar (lägstanivå)`;
+const formatDayDifference = (diff, { includeParens = true, unit = 'dagar', neutralText = 'oförändrat' } = {}) => {
+    if (!Number.isFinite(diff)) {
+        return null;
+    }
+    const rounded = Math.round(diff);
+    if (rounded === 0) {
+        const text = includeParens ? `(${neutralText})` : neutralText;
+        return { text, className: 'neutral' };
+    }
+    const sign = rounded > 0 ? '+' : '−';
+    const suffix = unit ? ` ${unit}` : '';
+    const body = `${sign}${Math.abs(rounded).toLocaleString('sv-SE')}${suffix}`;
+    return {
+        text: includeParens ? `(${body})` : body,
+        className: rounded > 0 ? 'positive' : 'negative'
+    };
 };
 
 const formatDifference = (diff, { unit, fractionDigits = 0, epsilon = 0.05 } = {}) => {
@@ -346,7 +398,7 @@ export function renderGanttChart(
 
     const formatCombinedIncome = (label, income) => {
         const className = getIncomeHighlightClass(income);
-        return `<strong class="${className}">${label} ${income.toLocaleString()} kr/månad</strong>`;
+        return `<strong class="${className}">${label} ${income.toLocaleString('sv-SE')} kr/månad</strong>`;
     };
 
     const formatUsedDaysLine = (label, incomeDays, minDays) => {
@@ -564,8 +616,13 @@ export function renderGanttChart(
         beräknaMånadsinkomst(dag2, 5, extra2, barnbidragPerPerson, tilläggPerPerson) : 0;
     const dadLeaveFörälder1Inkomst = plan1Overlap.inkomst || period1Förälder1Inkomst;
 
+    const totalMonthsSelected = toFiniteNumber(optimizationContext?.totalMonths);
+    const shouldAggregatePoints = Number.isFinite(totalMonthsSelected) && totalMonthsSelected > 15;
+
     let inkomstData = [];
     let draggablePoints = [];
+    let pointDisplayData = [];
+    let displayDraggables = [];
     let highlightRanges = [];
 
     const computeHighlightRanges = () => {
@@ -607,14 +664,18 @@ export function renderGanttChart(
         return 'red';
     };
 
-    const getPointBorderColors = () => inkomstData.map(data => getPeriodColor(data.x));
+    const getPointBorderColors = () => pointDisplayData.map(data => {
+        const referenceWeek = Number.isFinite(data?.startWeekIndex) ? data.startWeekIndex : data.x;
+        return getPeriodColor(referenceWeek);
+    });
 
-    const getPointBackgroundColors = () => inkomstData.map(data => {
+    const getPointBackgroundColors = () => pointDisplayData.map(data => {
         const severity = getIncomeSeverity(data.y);
         if (severity && pointFillColors[severity]) {
             return pointFillColors[severity];
         }
-        return getPeriodColor(data.x);
+        const referenceWeek = Number.isFinite(data?.startWeekIndex) ? data.startWeekIndex : data.x;
+        return getPeriodColor(referenceWeek);
     });
 
     function generateInkomstData() {
@@ -721,7 +782,126 @@ export function renderGanttChart(
         computeHighlightRanges();
     }
 
+    const cloneComponents = (components) => {
+        if (!components || typeof components !== 'object') {
+            return {
+                fp: 0,
+                extra: 0,
+                barnbidrag: 0,
+                tillägg: 0,
+                lön: 0
+            };
+        }
+        return {
+            fp: toFiniteNumber(components.fp),
+            extra: toFiniteNumber(components.extra),
+            barnbidrag: toFiniteNumber(components.barnbidrag),
+            tillägg: toFiniteNumber(components.tillägg),
+            lön: toFiniteNumber(components.lön)
+        };
+    };
+
+    const formatDate = (date) => {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+            console.warn('Invalid date in formatDate, returning fallback:', date);
+            return new Date().toISOString().split('T')[0];
+        }
+        return date.toISOString().split('T')[0];
+    };
+
+    const formatRangeLabel = (startIndex, endIndex) => {
+        const safeStartIndex = Number.isFinite(startIndex) ? Math.max(0, Math.floor(startIndex)) : null;
+        const safeEndIndex = Number.isFinite(endIndex) ? Math.max(0, Math.floor(endIndex)) : safeStartIndex;
+        if (safeStartIndex == null || !weekStartDates[safeStartIndex]) {
+            return weekLabels[safeStartIndex ?? 0] || 'Okänd vecka';
+        }
+        const boundedEndIndex = Math.min(
+            safeEndIndex != null ? safeEndIndex : safeStartIndex,
+            weekStartDates.length - 1
+        );
+        const startDate = weekStartDates[safeStartIndex];
+        const endDateSource = weekStartDates[boundedEndIndex];
+        if (!startDate || !endDateSource) {
+            return weekLabels[safeStartIndex] || 'Okänd vecka';
+        }
+        const endDate = addDays(endDateSource, 6);
+        if (safeStartIndex === boundedEndIndex) {
+            return weekLabels[safeStartIndex] || `${formatDate(startDate)} till ${formatDate(endDate)}`;
+        }
+        return `${formatDate(startDate)} till ${formatDate(endDate)}`;
+    };
+
+    const buildDisplayData = () => {
+        if (!shouldAggregatePoints) {
+            pointDisplayData = inkomstData.map((entry, index) => ({
+                ...entry,
+                displayLabel: weekLabels[index] || 'Okänd vecka',
+                startWeekIndex: entry.x,
+                endWeekIndex: entry.x,
+                sourceIndices: [index],
+                förälder1Components: cloneComponents(entry.förälder1Components),
+                förälder2Components: cloneComponents(entry.förälder2Components)
+            }));
+            displayDraggables = draggablePoints.map(point => ({
+                ...point,
+                displayIndex: point.index,
+                sourceIndex: point.index
+            }));
+            return;
+        }
+
+        const aggregated = [];
+        const processGroup = (group) => {
+            for (let i = 0; i < group.length; i += 2) {
+                const chunk = group.slice(i, i + 2);
+                if (!chunk.length) {
+                    continue;
+                }
+                const start = chunk[0];
+                const end = chunk[chunk.length - 1];
+                const representative = start.data;
+                const midpoint = (representative.x + end.data.x) / 2;
+                const sourceIndices = chunk.map(entry => entry.index);
+                const averageValue = (key) => chunk.reduce(
+                    (sum, entry) => sum + toFiniteNumber(entry.data[key]),
+                    0
+                ) / chunk.length;
+
+                aggregated.push({
+                    x: midpoint,
+                    y: averageValue('y'),
+                    förälder1Inkomst: averageValue('förälder1Inkomst'),
+                    förälder2Inkomst: averageValue('förälder2Inkomst'),
+                    periodLabel: representative.periodLabel,
+                    förälder1Components: cloneComponents(representative.förälder1Components),
+                    förälder2Components: cloneComponents(representative.förälder2Components),
+                    displayLabel: formatRangeLabel(start.data.x, end.data.x),
+                    startWeekIndex: start.data.x,
+                    endWeekIndex: end.data.x,
+                    sourceIndices
+                });
+            }
+        };
+
+        let currentGroup = [];
+        inkomstData.forEach((entry, index) => {
+            if (!currentGroup.length || currentGroup[currentGroup.length - 1].data.periodLabel === entry.periodLabel) {
+                currentGroup.push({ data: entry, index });
+            } else {
+                processGroup(currentGroup);
+                currentGroup = [{ data: entry, index }];
+            }
+        });
+        if (currentGroup.length) {
+            processGroup(currentGroup);
+        }
+
+        pointDisplayData = aggregated;
+        displayDraggables = [];
+    };
+
     generateInkomstData();
+    buildDisplayData();
 
     usedPeriodColors = new Set(inkomstData.map(data => getPeriodColor(data.x)));
     usedSeverityLevels = new Set(
@@ -753,7 +933,9 @@ export function renderGanttChart(
         användaMinDagar1,
         användaMinDagar2,
         arbetsInkomst1,
-        arbetsInkomst2
+        arbetsInkomst2,
+        barnbidragPerPerson,
+        tilläggPerPerson
     };
 
     const baselineSummary = createStrategySummary(
@@ -761,14 +943,9 @@ export function renderGanttChart(
         optimizationContext?.preferences,
         includePartner
     );
-
-    const formatDate = (date) => {
-        if (!(date instanceof Date) || isNaN(date.getTime())) {
-            console.warn("Invalid date in formatDate, returning fallback:", date);
-            return new Date().toISOString().split('T')[0];
-        }
-        return date.toISOString().split('T')[0];
-    };
+    const baselineIncomeTotal = baselineSummary
+        ? Math.round(toFiniteNumber(baselineSummary.totalIncome))
+        : null;
 
     const statusFärger = {
         ok: { bakgrund: '#e6ffe6', kant: '#00cc00', titel: 'Planen är genomförbar' },
@@ -836,26 +1013,15 @@ export function renderGanttChart(
                 return '';
             }
 
-            const lines = [];
-            const currentLine = [];
-
-            filtered.forEach(part => {
-                if (part.includes('income-flag')) {
-                    if (currentLine.length) {
-                        lines.push(currentLine.join(' <span class="summary-separator">|</span> '));
-                        currentLine.length = 0;
-                    }
-                    lines.push(part);
-                } else {
-                    currentLine.push(part);
-                }
-            });
-
-            if (currentLine.length) {
-                lines.push(currentLine.join(' <span class="summary-separator">|</span> '));
-            }
-
-            return lines.join('<br>');
+            return filtered
+                .map(part => {
+                    const isCombined = part.includes('income-flag');
+                    const partClass = isCombined
+                        ? 'summary-line-part combined-income-line'
+                        : 'summary-line-part';
+                    return `<div class="${partClass}">${part}</div>`;
+                })
+                .join('');
         };
         const appendPeriod = blocks => {
             if (!blocks.length) {
@@ -1104,9 +1270,105 @@ export function renderGanttChart(
     const assistanceButton = document.createElement('button');
     assistanceButton.type = 'button';
     assistanceButton.className = 'optimization-assist-btn';
-    assistanceButton.textContent = 'Get help to optimize';
+    assistanceButton.textContent = 'Hjälp mig att optimera';
 
     let cachedSuggestions = null;
+
+    const applySuggestedPlan = (boxData) => {
+        if (!boxData?.result) {
+            return;
+        }
+        cachedSuggestions = null;
+        const preferencesOverride = boxData.preferences ? { ...boxData.preferences } : {};
+        const suggestedParent1Months = toNonNegative(preferencesOverride.ledigTid1);
+        const suggestedParent2Months = includePartner
+            ? toNonNegative(preferencesOverride.ledigTid2)
+            : 0;
+        const suggestedTotalMonths = suggestedParent1Months + suggestedParent2Months;
+
+        const syncFormControls = () => {
+            const totalInput = document.getElementById('ledig-tid-5823');
+            if (totalInput && Number.isFinite(suggestedTotalMonths)) {
+                totalInput.value = suggestedTotalMonths;
+                totalInput.dispatchEvent(new Event('input', { bubbles: true }));
+                totalInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const slider = document.getElementById('leave-slider');
+            if (slider && includePartner && Number.isFinite(suggestedParent1Months)) {
+                slider.value = suggestedParent1Months;
+                slider.dispatchEvent(new Event('input', { bubbles: true }));
+                slider.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const minIncomeInput = document.getElementById('min-inkomst');
+            if (minIncomeInput && Number.isFinite(preferencesOverride.minInkomst)) {
+                minIncomeInput.value = preferencesOverride.minInkomst;
+            }
+
+            const strategySelect = document.getElementById('strategy');
+            if (strategySelect && typeof preferencesOverride.strategy === 'string') {
+                strategySelect.value = preferencesOverride.strategy;
+            }
+        };
+
+        syncFormControls();
+        const nextContext = optimizationContext
+            ? {
+                ...optimizationContext,
+                preferences: {
+                    ...(optimizationContext.preferences || {}),
+                    ...preferencesOverride
+                }
+            }
+            : null;
+        if (nextContext) {
+            if (suggestedTotalMonths > 0) {
+                nextContext.totalMonths = suggestedTotalMonths;
+            }
+        }
+        const enrichedResult = {
+            ...boxData.result,
+            barnbidragPerPerson,
+            tilläggPerPerson
+        };
+        renderGanttChart(
+            enrichedResult.plan1,
+            enrichedResult.plan2,
+            enrichedResult.plan1NoExtra,
+            enrichedResult.plan2NoExtra,
+            enrichedResult.plan1MinDagar,
+            enrichedResult.plan2MinDagar,
+            enrichedResult.plan1Overlap,
+            inkomst1,
+            inkomst2,
+            vårdnad,
+            beräknaPartner,
+            enrichedResult.genomförbarhet,
+            enrichedResult.dag1,
+            enrichedResult.extra1,
+            enrichedResult.dag2,
+            enrichedResult.extra2,
+            enrichedResult.förälder1InkomstDagar,
+            enrichedResult.förälder2InkomstDagar,
+            enrichedResult.förälder1MinDagar,
+            enrichedResult.förälder2MinDagar,
+            barnDatum,
+            enrichedResult.arbetsInkomst1,
+            enrichedResult.arbetsInkomst2,
+            barnbidragPerPerson,
+            tilläggPerPerson,
+            enrichedResult.maxFöräldralönWeeks1,
+            enrichedResult.maxFöräldralönWeeks2,
+            enrichedResult.unusedFöräldralönWeeks1,
+            enrichedResult.unusedFöräldralönWeeks2,
+            enrichedResult.användaInkomstDagar1,
+            enrichedResult.användaMinDagar1,
+            enrichedResult.användaInkomstDagar2,
+            enrichedResult.användaMinDagar2,
+            nextContext
+        );
+    };
 
     const createMetricItem = (label, valueText, diffValue, diffOptions) => {
         const item = document.createElement('li');
@@ -1131,6 +1393,118 @@ export function renderGanttChart(
         return item;
     };
 
+    const createDaysBlock = (title, current, baseline, options = {}) => {
+        const block = document.createElement('div');
+        block.className = 'strategy-days-block';
+
+        const heading = document.createElement('div');
+        heading.className = 'strategy-days-heading';
+        heading.textContent = title;
+        block.appendChild(heading);
+
+        const renderUsedParent = (label, currentData = {}, baselineData = {}) => {
+            const parentWrapper = document.createElement('div');
+            parentWrapper.className = 'strategy-days-parent';
+
+            const parentLabel = document.createElement('div');
+            parentLabel.className = 'strategy-days-parent-label';
+            parentLabel.textContent = `${label}:`;
+            parentWrapper.appendChild(parentLabel);
+
+            const createDetailLine = (detailLabel, currentValue, baselineValue) => {
+                const detailLine = document.createElement('div');
+                detailLine.className = 'strategy-days-detail';
+                const currentNumeric = Math.round(toNonNegative(currentValue));
+                detailLine.innerHTML = `
+                    <span class="detail-label">${detailLabel}:</span>
+                    <span class="detail-value">${currentNumeric.toLocaleString('sv-SE')} dagar</span>
+                `;
+                if (!options.forceNeutral && baselineValue != null) {
+                    const baselineNumeric = Math.round(toNonNegative(baselineValue));
+                    const diffInfo = formatDayDifference(currentNumeric - baselineNumeric);
+                    if (diffInfo) {
+                        const diffSpan = document.createElement('span');
+                        diffSpan.className = `days-diff ${diffInfo.className}`;
+                        diffSpan.textContent = diffInfo.text;
+                        detailLine.appendChild(diffSpan);
+                    }
+                }
+                return detailLine;
+            };
+
+            parentWrapper.appendChild(
+                createDetailLine('Sjukpenningsnivå', currentData.income, baselineData?.income)
+            );
+            parentWrapper.appendChild(
+                createDetailLine('Lägstanivå', currentData.min, baselineData?.min)
+            );
+            return parentWrapper;
+        };
+
+        const renderRemainingLine = (label, currentData = {}, baselineData = {}) => {
+            const line = document.createElement('div');
+            line.className = 'strategy-days-line';
+            const incomeDays = Math.round(toNonNegative(currentData.income));
+            const minDays = Math.round(toNonNegative(currentData.min));
+            const totalDays = incomeDays + minDays;
+            line.textContent = `${label}: ${totalDays.toLocaleString('sv-SE')} dagar`;
+
+            if (!options.forceNeutral && baselineData) {
+                const baselineIncome = Math.round(toNonNegative(baselineData.income));
+                const baselineMin = Math.round(toNonNegative(baselineData.min));
+                const incomeDiff = formatDayDifference(
+                    incomeDays - baselineIncome,
+                    { includeParens: false, unit: '', neutralText: '0' }
+                );
+                const minDiff = formatDayDifference(
+                    minDays - baselineMin,
+                    { includeParens: false, unit: '', neutralText: '0' }
+                );
+                if (incomeDiff && minDiff) {
+                    const wrapper = document.createElement('span');
+                    wrapper.className = 'days-diff-wrapper';
+                    wrapper.appendChild(document.createTextNode(' ('));
+                    const incomeSpan = document.createElement('span');
+                    incomeSpan.className = `days-diff ${incomeDiff.className}`;
+                    incomeSpan.textContent = incomeDiff.text;
+                    wrapper.appendChild(incomeSpan);
+                    wrapper.appendChild(document.createTextNode('/'));
+                    const minSpan = document.createElement('span');
+                    minSpan.className = `days-diff ${minDiff.className}`;
+                    minSpan.textContent = minDiff.text;
+                    wrapper.appendChild(minSpan);
+                    wrapper.appendChild(document.createTextNode(' dagar)'));
+                    line.appendChild(wrapper);
+                }
+            }
+
+            return line;
+        };
+
+        if ((options.blockType || 'used') === 'remaining') {
+            block.appendChild(
+                renderRemainingLine('Förälder 1', current?.parent1, baseline?.parent1)
+            );
+            if (includePartner && current?.parent2) {
+                block.appendChild(
+                    renderRemainingLine('Förälder 2', current.parent2, baseline?.parent2)
+                );
+            }
+            return block;
+        }
+
+        block.appendChild(
+            renderUsedParent('Förälder 1', current?.parent1, baseline?.parent1)
+        );
+        if (includePartner && current?.parent2) {
+            block.appendChild(
+                renderUsedParent('Förälder 2', current.parent2, baseline?.parent2)
+            );
+        }
+
+        return block;
+    };
+
     const renderStrategyBox = (boxData) => {
         const box = document.createElement('div');
         box.className = 'strategy-box';
@@ -1148,140 +1522,207 @@ export function renderGanttChart(
         if (!boxData.summary) {
             const message = document.createElement('p');
             message.className = 'strategy-message';
-            message.textContent = boxData.message || 'No data available for this strategy.';
+            message.textContent = boxData.message || 'Inga uppgifter finns för den här strategin.';
             box.appendChild(message);
             return box;
         }
 
         const summary = boxData.summary;
+        let displaySummary = summary;
+        let useBaselineForDisplay = false;
+        let actionNoteText = '';
+
+        if (baselineSummary) {
+            if (boxData.type === 'remainingDays') {
+                const strategyRemaining = toFiniteNumber(summary.totalRemainingDays);
+                const baselineRemaining = toFiniteNumber(baselineSummary.totalRemainingDays);
+                if (strategyRemaining < baselineRemaining) {
+                    useBaselineForDisplay = true;
+                    actionNoteText = 'Detta är den bästa strategin för att spara flest antal dagar';
+                }
+            } else if (boxData.type === 'income') {
+                const strategyIncomeTotal = toFiniteNumber(summary.totalIncome);
+                const baselineIncome = toFiniteNumber(baselineSummary.totalIncome);
+                if (strategyIncomeTotal < baselineIncome) {
+                    useBaselineForDisplay = true;
+                    actionNoteText = 'Detta är den bästa strategin för att maximera inkomsten under föräldraledigheten';
+                }
+            }
+        }
+
+        if (useBaselineForDisplay && baselineSummary) {
+            displaySummary = baselineSummary;
+        }
+
         const list = document.createElement('ul');
         list.className = 'strategy-metrics';
 
-        const minIncomeDiff = baselineSummary
+        const minIncomeDiff = baselineSummary != null && !useBaselineForDisplay
             ? summary.minIncome - baselineSummary.minIncome
             : undefined;
         list.appendChild(
             createMetricItem(
-                'Minimum household income',
-                formatCurrencyValue(summary.minIncome),
+                'Lägsta hushållsinkomst',
+                formatCurrencyValue(displaySummary.minIncome),
                 minIncomeDiff,
                 { unit: 'kr', epsilon: 0.5 }
             )
         );
 
-        const parent1MonthsDiff = baselineSummary
+        const parent1MonthsDiff = baselineSummary != null && !useBaselineForDisplay
             ? summary.parent1Months - baselineSummary.parent1Months
             : undefined;
         list.appendChild(
             createMetricItem(
-                'Parent 1 home',
-                formatMonthsValue(summary.parent1Months),
+                'Förälder 1 ledig',
+                formatMonthsValue(displaySummary.parent1Months),
                 parent1MonthsDiff,
-                { unit: 'mån', fractionDigits: 1, epsilon: 0.05 }
+                { unit: 'mån', fractionDigits: 0, epsilon: 0.5 }
             )
         );
 
-        const parent2MonthsDiff = baselineSummary
+        const parent2MonthsDiff = baselineSummary != null && !useBaselineForDisplay
             ? summary.parent2Months - baselineSummary.parent2Months
             : undefined;
         list.appendChild(
             createMetricItem(
-                'Parent 2 home',
-                formatMonthsValue(summary.parent2Months),
+                'Förälder 2 ledig',
+                formatMonthsValue(displaySummary.parent2Months),
                 parent2MonthsDiff,
-                { unit: 'mån', fractionDigits: 1, epsilon: 0.05 }
+                { unit: 'mån', fractionDigits: 0, epsilon: 0.5 }
             )
         );
 
-        const period1IncomeDiff = baselineSummary
+        const period1IncomeDiff = baselineSummary != null && !useBaselineForDisplay
             ? summary.period1Income - baselineSummary.period1Income
             : undefined;
         list.appendChild(
             createMetricItem(
-                'Period 1 household income',
-                formatCurrencyValue(summary.period1Income),
+                'Period 1 – hushållsinkomst',
+                formatCurrencyValue(displaySummary.period1Income),
                 period1IncomeDiff,
                 { unit: 'kr', epsilon: 0.5 }
             )
         );
 
-        const period2IncomeDiff = baselineSummary
+        const period2IncomeDiff = baselineSummary != null && !useBaselineForDisplay
             ? summary.period2Income - baselineSummary.period2Income
             : undefined;
         list.appendChild(
             createMetricItem(
-                'Period 2 household income',
-                formatCurrencyValue(summary.period2Income),
+                'Period 2 – hushållsinkomst',
+                formatCurrencyValue(displaySummary.period2Income),
                 period2IncomeDiff,
                 { unit: 'kr', epsilon: 0.5 }
             )
         );
 
-        const summaryUsedParent1 = summary.usedDays.parent1;
-        const summaryUsedParent2 = summary.usedDays.parent2;
-        const baselineUsedParent1 = baselineSummary
-            ? baselineSummary.usedDays.parent1
-            : { income: 0, min: 0 };
-        const baselineUsedParent2 = baselineSummary
-            ? baselineSummary.usedDays.parent2
-            : { income: 0, min: 0 };
-        const usedParent1Total = summaryUsedParent1.income + summaryUsedParent1.min;
-        const usedParent2Total = summaryUsedParent2.income + summaryUsedParent2.min;
-        const baselineUsedParent1Total = baselineUsedParent1.income + baselineUsedParent1.min;
-        const baselineUsedParent2Total = baselineUsedParent2.income + baselineUsedParent2.min;
-
-        list.appendChild(
-            createMetricItem(
-                'Used days Parent 1',
-                formatDaysBreakdown(summaryUsedParent1.income, summaryUsedParent1.min),
-                baselineSummary ? usedParent1Total - baselineUsedParent1Total : undefined,
-                { unit: 'dagar', epsilon: 0.5 }
-            )
-        );
-
-        list.appendChild(
-            createMetricItem(
-                'Used days Parent 2',
-                formatDaysBreakdown(summaryUsedParent2.income, summaryUsedParent2.min),
-                baselineSummary ? usedParent2Total - baselineUsedParent2Total : undefined,
-                { unit: 'dagar', epsilon: 0.5 }
-            )
-        );
-
-        const remainingParent1 = summary.remainingDays.parent1;
-        const remainingParent2 = summary.remainingDays.parent2;
-        const baselineRemainingParent1 = baselineSummary
-            ? baselineSummary.remainingDays.parent1
-            : { income: 0, min: 0 };
-        const baselineRemainingParent2 = baselineSummary
-            ? baselineSummary.remainingDays.parent2
-            : { income: 0, min: 0 };
-        const remainingParent1Total = remainingParent1.income + remainingParent1.min;
-        const remainingParent2Total = remainingParent2.income + remainingParent2.min;
-        const baselineRemainingParent1Total =
-            baselineRemainingParent1.income + baselineRemainingParent1.min;
-        const baselineRemainingParent2Total =
-            baselineRemainingParent2.income + baselineRemainingParent2.min;
-
-        list.appendChild(
-            createMetricItem(
-                'Remaining days Parent 1',
-                formatDaysBreakdown(remainingParent1.income, remainingParent1.min),
-                baselineSummary ? remainingParent1Total - baselineRemainingParent1Total : undefined,
-                { unit: 'dagar', epsilon: 0.5 }
-            )
-        );
-
-        list.appendChild(
-            createMetricItem(
-                'Remaining days Parent 2',
-                formatDaysBreakdown(remainingParent2.income, remainingParent2.min),
-                baselineSummary ? remainingParent2Total - baselineRemainingParent2Total : undefined,
-                { unit: 'dagar', epsilon: 0.5 }
-            )
-        );
-
         box.appendChild(list);
+        box.appendChild(
+            createDaysBlock(
+                'Använda dagar',
+                displaySummary.usedDays,
+                baselineSummary ? baselineSummary.usedDays : null,
+                { forceNeutral: useBaselineForDisplay, blockType: 'used' }
+            )
+        );
+        box.appendChild(
+            createDaysBlock(
+                'Återstående dagar',
+                displaySummary.remainingDays,
+                baselineSummary ? baselineSummary.remainingDays : null,
+                { forceNeutral: useBaselineForDisplay, blockType: 'remaining' }
+            )
+        );
+
+        if (baselineIncomeTotal != null) {
+            const strategyIncomeTotal = useBaselineForDisplay
+                ? baselineIncomeTotal
+                : Math.round(toFiniteNumber(summary.totalIncome));
+            if (Number.isFinite(strategyIncomeTotal)) {
+                const incomeNote = document.createElement('div');
+                incomeNote.className = 'strategy-income-note';
+
+                let dayDiffSegment = '';
+                if (baselineSummary) {
+                    const baselineRemainingTotal = Math.round(toFiniteNumber(baselineSummary.totalRemainingDays));
+                    const strategyRemainingTotal = useBaselineForDisplay
+                        ? baselineRemainingTotal
+                        : Math.round(toFiniteNumber(summary.totalRemainingDays));
+                    if (
+                        Number.isFinite(baselineRemainingTotal) &&
+                        Number.isFinite(strategyRemainingTotal)
+                    ) {
+                        const diffDays = useBaselineForDisplay
+                            ? 0
+                            : strategyRemainingTotal - baselineRemainingTotal;
+                        let diffClass = 'neutral';
+                        let diffLabel = '0 dagar';
+                        if (diffDays > 0) {
+                            diffClass = 'positive';
+                            diffLabel = `+${Math.abs(diffDays).toLocaleString('sv-SE')} dagar`;
+                        } else if (diffDays < 0) {
+                            diffClass = 'negative';
+                            diffLabel = `−${Math.abs(diffDays).toLocaleString('sv-SE')} dagar`;
+                        }
+                        dayDiffSegment = ` Antalet dagar förändras med <span class="days-diff ${diffClass}">${diffLabel}</span>.`;
+                    }
+                }
+
+                const formattedIncomeTotal = strategyIncomeTotal.toLocaleString('sv-SE');
+                let messageHtml = '';
+
+                if (useBaselineForDisplay) {
+                    if (boxData.type === 'remainingDays') {
+                        const parent1Remaining = Math.round(
+                            toNonNegative(displaySummary?.remainingDays?.parent1?.income)
+                        );
+                        const parent2Remaining = Math.round(
+                            toNonNegative(displaySummary?.remainingDays?.parent2?.income)
+                        );
+                        const totalSavedDays = parent1Remaining + parent2Remaining;
+                        const savedLabel = `${totalSavedDays.toLocaleString('sv-SE')} dagar`;
+                        messageHtml = `Denna strategi ger <span class="income-diff positive">den totala nettoinkomsten ${formattedIncomeTotal} sek</span>.<br>Med detta upplägg <span class="days-diff positive">sparar du ${savedLabel}</span>.`;
+                    } else {
+                        messageHtml = `Denna strategi ger <span class="income-diff positive">den totala nettoinkomsten ${formattedIncomeTotal} sek</span>.`;
+                    }
+                    dayDiffSegment = '';
+                } else if (strategyIncomeTotal === baselineIncomeTotal) {
+                    messageHtml = `Denna strategi ger samma totala inkomst (${formattedIncomeTotal} sek) som ditt nuvarande val.`;
+                } else {
+                    const diffValue = strategyIncomeTotal - baselineIncomeTotal;
+                    const signClass = diffValue > 0 ? 'positive' : 'negative';
+                    const signLabel = diffValue > 0 ? '+' : '−';
+                    const diffText = `${signLabel}${Math.abs(diffValue).toLocaleString('sv-SE')} sek`;
+                    messageHtml = `Totala hushållsinkomsten blir <strong>${formattedIncomeTotal} sek</strong> med den här strategin, vilket är <span class="income-diff ${signClass}">${diffText}</span> jämfört med ditt nuvarande val.`;
+                }
+
+                incomeNote.innerHTML = dayDiffSegment
+                    ? `${messageHtml}${dayDiffSegment}`
+                    : messageHtml;
+                box.appendChild(incomeNote);
+            }
+        }
+
+        let actionElement = null;
+        if (actionNoteText) {
+            const note = document.createElement('p');
+            note.className = 'strategy-best-note';
+            note.textContent = actionNoteText;
+            actionElement = note;
+        }
+
+        if (!actionElement) {
+            const applyButton = document.createElement('button');
+            applyButton.type = 'button';
+            applyButton.className = 'strategy-use-btn';
+            applyButton.textContent = 'Använd';
+            applyButton.addEventListener('click', () => applySuggestedPlan(boxData));
+            actionElement = applyButton;
+        }
+
+        box.appendChild(actionElement);
+
         return box;
     };
 
@@ -1299,27 +1740,35 @@ export function renderGanttChart(
         if (!boxes.length) {
             const message = document.createElement('p');
             message.className = 'strategy-message';
-            message.textContent = 'No alternative strategies could be generated.';
+            message.textContent = 'Inga alternativa strategier kunde tas fram.';
             suggestionsContainer.appendChild(message);
             suggestionsContainer.style.display = 'block';
             return;
         }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'strategy-box-wrapper';
+
         boxes.forEach(boxData => {
-            suggestionsContainer.appendChild(renderStrategyBox(boxData));
+            const element = renderStrategyBox(boxData);
+            wrapper.appendChild(element);
         });
-        suggestionsContainer.style.display = 'flex';
+
+        suggestionsContainer.appendChild(wrapper);
+
+        suggestionsContainer.style.display = 'block';
     };
 
     const evaluateOptimizationAlternatives = () => {
         if (!optimizationContext?.preferences || !optimizationContext?.inputs) {
-            return { message: 'Optimization data is missing. Please run a calculation first.' };
+            return { message: 'Optimeringsdata saknas. Kör en beräkning först.' };
         }
         if (!includePartner) {
-            return { message: 'Alternative suggestions require calculations for both parents.' };
+            return { message: 'Alternativa förslag kräver beräkningar för båda föräldrarna.' };
         }
         const totalMonths = toNonNegative(optimizationContext.totalMonths);
         if (!Number.isFinite(totalMonths) || totalMonths <= 0) {
-            return { message: 'Enter the total number of months to generate suggestions.' };
+            return { message: 'Ange totalt antal månader för att ta fram förslag.' };
         }
         const stepValue = Number(optimizationContext.step);
         const stepSize = Number.isFinite(stepValue) && stepValue > 0
@@ -1353,6 +1802,8 @@ export function renderGanttChart(
                 if (!candidateResult?.genomförbarhet) {
                     continue;
                 }
+                candidateResult.barnbidragPerPerson = baseInputs.barnbidragPerPerson;
+                candidateResult.tilläggPerPerson = baseInputs.tilläggPerPerson;
                 const shortfall = Number(candidateResult.genomförbarhet.maxShortfallRatio);
                 if (Number.isFinite(shortfall) && shortfall > 0.0001) {
                     continue;
@@ -1373,6 +1824,16 @@ export function renderGanttChart(
                     if (parent1Diff <= monthTolerance && parent2Diff <= monthTolerance) {
                         continue;
                     }
+                    const incomeGain = Math.round(
+                        toFiniteNumber(summary.totalIncome) - toFiniteNumber(baselineSummary.totalIncome)
+                    );
+                    const remainingGain = Math.round(
+                        toFiniteNumber(summary.totalRemainingDays) - toFiniteNumber(baselineSummary.totalRemainingDays)
+                    );
+                    const incomeTolerance = 1;
+                    if (incomeGain <= incomeTolerance && remainingGain <= 0) {
+                        continue;
+                    }
                 }
                 results.push({
                     id: key,
@@ -1386,7 +1847,7 @@ export function renderGanttChart(
         }
 
         if (!results.length) {
-            return { message: 'No alternative strategies that meet the minimum income were found.' };
+            return { message: 'Inga alternativa strategier som uppfyller minimiinkomsten hittades.' };
         }
 
         const byRemaining = [...results].sort((a, b) => {
@@ -1398,10 +1859,17 @@ export function renderGanttChart(
         const bestRemaining = byRemaining[0] || null;
 
         const byIncome = [...results].sort((a, b) => {
-            if (b.summary.weightedAverageIncome !== a.summary.weightedAverageIncome) {
-                return b.summary.weightedAverageIncome - a.summary.weightedAverageIncome;
+            const incomeA = Math.round(toFiniteNumber(a.summary.totalIncome));
+            const incomeB = Math.round(toFiniteNumber(b.summary.totalIncome));
+            if (incomeB !== incomeA) {
+                return incomeB - incomeA;
             }
-            return b.summary.totalRemainingDays - a.summary.totalRemainingDays;
+            const avgIncomeA = toFiniteNumber(a.summary.weightedAverageIncome);
+            const avgIncomeB = toFiniteNumber(b.summary.weightedAverageIncome);
+            if (avgIncomeB !== avgIncomeA) {
+                return avgIncomeB - avgIncomeA;
+            }
+            return toFiniteNumber(b.summary.totalRemainingDays) - toFiniteNumber(a.summary.totalRemainingDays);
         });
         let bestIncome = byIncome[0] || null;
         if (bestIncome && bestRemaining && bestIncome.id === bestRemaining.id) {
@@ -1412,27 +1880,33 @@ export function renderGanttChart(
 
         if (bestRemaining) {
             boxes.push({
-                title: 'Strategy – More days left',
+                title: 'Strategi – Fler dagar kvar',
+                type: 'remainingDays',
                 summary: bestRemaining.summary,
-                description: 'Focus on freeing up additional days while meeting the minimum income requirement.'
+                description: 'Fokuserar på att frigöra fler dagar samtidigt som minimiinkomsten uppnås.',
+                preferences: bestRemaining.preferences,
+                result: bestRemaining.result
             });
         } else {
             boxes.push({
-                title: 'Strategy – More days left',
-                message: 'No alternative distribution with more days left over was found.'
+                title: 'Strategi – Fler dagar kvar',
+                message: 'Ingen alternativ fördelning med fler dagar kvar hittades.'
             });
         }
 
         if (bestIncome) {
             boxes.push({
-                title: 'Strategy – Maximize income',
+                title: 'Strategi – Maximera inkomst',
+                type: 'income',
                 summary: bestIncome.summary,
-                description: 'Focus on maximizing household income while meeting the minimum income requirement.'
+                description: 'Fokuserar på att maximera hushållets inkomst inom ramen för minimiinkomsten.',
+                preferences: bestIncome.preferences,
+                result: bestIncome.result
             });
         } else {
             boxes.push({
-                title: 'Strategy – Maximize income',
-                message: 'No alternative distribution with higher income was found.'
+                title: 'Strategi – Maximera inkomst',
+                message: 'Ingen alternativ fördelning med högre inkomst hittades.'
             });
         }
 
@@ -1444,8 +1918,8 @@ export function renderGanttChart(
             renderSuggestions(cachedSuggestions);
             return;
         }
-        const defaultLabel = 'Get help to optimize';
-        const loadingLabel = 'Calculating suggestions...';
+        const defaultLabel = 'Hjälp mig att optimera';
+        const loadingLabel = 'Beräknar förslag...';
         assistanceButton.disabled = true;
         assistanceButton.classList.add('loading');
         assistanceButton.textContent = loadingLabel;
@@ -1455,7 +1929,7 @@ export function renderGanttChart(
                 data = evaluateOptimizationAlternatives();
             } catch (error) {
                 console.error('Failed to build optimization suggestions', error);
-                data = { message: 'Unable to build optimization suggestions. Please try again.' };
+                data = { message: 'Det gick inte att ta fram optimeringsförslag. Försök igen.' };
             }
             cachedSuggestions = data;
             renderSuggestions(data);
@@ -1468,7 +1942,15 @@ export function renderGanttChart(
     assistanceButton.addEventListener('click', handleOptimizationAssistance);
 
     messageDiv.innerHTML = buildFeasibilityHtml();
+    const totalIncomeDisplay = document.createElement('div');
+    totalIncomeDisplay.className = 'total-income-display';
+    if (baselineIncomeTotal != null && Number.isFinite(baselineIncomeTotal)) {
+        totalIncomeDisplay.textContent = `Total income: ${baselineIncomeTotal.toLocaleString('sv-SE')} sek`;
+    } else {
+        totalIncomeDisplay.textContent = 'Total income: –';
+    }
     ganttChart.appendChild(messageDiv);
+    ganttChart.appendChild(totalIncomeDisplay);
     ganttChart.appendChild(assistanceButton);
     ganttChart.appendChild(suggestionsContainer);
     ganttChart.appendChild(canvas);
@@ -1548,14 +2030,17 @@ export function renderGanttChart(
     const dragPlugin = {
         id: 'dragPlugin',
         afterInit: (chart) => {
+            if (shouldAggregatePoints) {
+                return;
+            }
             chart.canvas.addEventListener('mousedown', (e) => {
                 const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
                 if (points.length) {
                     const point = points[0];
                     const dataIndex = point.index;
-                    const draggablePoint = draggablePoints.find(p => p.index === dataIndex);
+                    const draggablePoint = displayDraggables.find(p => p.displayIndex === dataIndex);
                     if (draggablePoint) {
-                        chart.dragging = { point: draggablePoint, index: dataIndex };
+                        chart.dragging = { point: draggablePoint, displayIndex: dataIndex };
                         chart.dragStartX = e.clientX;
                     }
                 }
@@ -1564,7 +2049,8 @@ export function renderGanttChart(
             chart.canvas.addEventListener('mousemove', (e) => {
                 if (chart.dragging) {
                     const deltaX = (e.clientX - chart.dragStartX) / chart.scales.x.width * (chart.scales.x.max - chart.scales.x.min);
-                    const newX = Math.round(inkomstData[chart.dragging.index].x + deltaX);
+                    const sourceIndex = chart.dragging.point.sourceIndex;
+                    const newX = Math.round(inkomstData[sourceIndex].x + deltaX);
                     const minX = dadLeaveDurationWeeks;
                     const maxX = totalaWeeks - period2TotalWeeks - 1;
 
@@ -1594,9 +2080,12 @@ export function renderGanttChart(
                         const period2MinAdjustedWeeks = period2TotalDays > period2IncomeDaysUsed ? Math.round((period2TotalDays - period2IncomeDaysUsed) / safeDagarPerVecka(plan2.dagarPerVecka)) : 0;
 
                         generateInkomstData();
-                        chart.data.datasets[0].data = inkomstData;
+                        buildDisplayData();
+                        chart.data.datasets[0].data = pointDisplayData;
                         chart.data.datasets[0].pointBackgroundColor = getPointBackgroundColors();
                         chart.data.datasets[0].pointBorderColor = getPointBorderColors();
+                        chart.data.datasets[0].pointRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 6 : 4);
+                        chart.data.datasets[0].pointHoverRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 8 : 6);
                         chart.update();
                         updateMessage();
                     }
@@ -1625,11 +2114,14 @@ export function renderGanttChart(
 
     // Reusable function to format tooltip/summary data
     function formatSummaryData(index) {
-        if (index == null || !inkomstData[index]) {
+        if (index == null || !pointDisplayData[index]) {
             return '<p>Hovra över en punkt för att se detaljer.</p>';
         }
-        const data = inkomstData[index];
-        const weekLabel = weekLabels[index] || 'Okänd vecka';
+        const data = pointDisplayData[index];
+        const fallbackIndex = Number.isFinite(data?.startWeekIndex)
+            ? Math.max(0, Math.round(data.startWeekIndex))
+            : index;
+        const weekLabel = data.displayLabel || weekLabels[fallbackIndex] || 'Okänd vecka';
         let requiresFootnote = false;
         const formatIncomeLine = (label, value, applyAsterisk = false) => {
             const needsAsterisk = applyAsterisk && value > 0;
@@ -1702,11 +2194,11 @@ export function renderGanttChart(
         data: {
             datasets: [{
                 label: includePartner ? 'Kombinerad Inkomst (kr/månad)' : 'Inkomst (kr/månad)',
-                data: inkomstData,
+                data: pointDisplayData,
                 borderWidth: 2,
                 fill: false,
-                pointRadius: inkomstData.map((_, index) => draggablePoints.some(p => p.index === index) ? 6 : 4),
-                pointHoverRadius: inkomstData.map((_, index) => draggablePoints.some(p => p.index === index) ? 8 : 6),
+                pointRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 6 : 4),
+                pointHoverRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 8 : 6),
                 segment: {
                     borderColor: ctx => getPeriodColor(ctx.p0.parsed.x),
                     backgroundColor: ctx => getPeriodColor(ctx.p0.parsed.x)
@@ -1726,13 +2218,15 @@ export function renderGanttChart(
                         autoSkip: false,
                         maxTicksLimit: 60,
                         callback: function(value) {
-                            return monthLabels[value] || '';
+                            const index = Math.round(value);
+                            return monthLabels[index] || '';
                         },
                         font: function(context) {
                             const value = context?.tick?.value;
+                            const index = Math.round(typeof value === 'number' ? value : 0);
                             return {
                                 size: 12,
-                                weight: typeof value === 'number' && value >= 0 && value < monthLabels.length && monthLabels[value] ? 'bold' : 'normal'
+                                weight: index >= 0 && index < monthLabels.length && monthLabels[index] ? 'bold' : 'normal'
                             };
                         }
                     },
