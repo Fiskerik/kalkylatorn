@@ -2021,9 +2021,9 @@ export function renderGanttChart(
     const totalIncomeDisplay = document.createElement('div');
     totalIncomeDisplay.className = 'total-income-display';
     if (baselineIncomeTotal != null && Number.isFinite(baselineIncomeTotal)) {
-        totalIncomeDisplay.textContent = `Total income: ${baselineIncomeTotal.toLocaleString('sv-SE')} sek`;
+        totalIncomeDisplay.textContent = `Total inkomst under perioden: ${baselineIncomeTotal.toLocaleString('sv-SE')} sek`;
     } else {
-        totalIncomeDisplay.textContent = 'Total income: –';
+        totalIncomeDisplay.textContent = 'Total inkomst under perioden: –';
     }
     ganttChart.appendChild(messageDiv);
     ganttChart.appendChild(totalIncomeDisplay);
