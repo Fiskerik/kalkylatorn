@@ -604,6 +604,7 @@ input[type="number"] {
 }
 
 .benefit-bar {
+    flex: 1;
     height: 10px;
     background: #d7e1df;
     border-radius: 5px;
