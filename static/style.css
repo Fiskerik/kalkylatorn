@@ -1802,6 +1802,28 @@ canvas#gantt-canvas {
     flex-shrink: 0;
 }
 
+#calendar-container .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+#calendar-container .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 140px;
+}
+
+#calendar-container .legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
 /* Slider for distributing leave between parents */
 #leave-slider {
     -webkit-appearance: none;
