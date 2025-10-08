@@ -676,5 +676,5 @@ function updateLeaveDisplay(slider, total) {
     if (p1Elem) p1Elem.textContent = format(p1);
     if (p2Elem) p2Elem.textContent = format(p2);
     const percent = total > 0 ? (p1 / total) * 100 : 0;
-    slider.style.background = `linear-gradient(to right, #00796b 0%, #00796b ${percent}%, #007bff ${percent}%, #007bff 100%)`;
+    slider.style.background = `linear-gradient(to right, #34c759 0%, #34c759 ${percent}%, #007bff ${percent}%, #007bff 100%)`;
 }
