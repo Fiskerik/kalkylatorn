@@ -253,13 +253,69 @@ button:hover {
     display: inline-block;
     margin-left: 0.25rem;
     color: #00796b;
-    cursor: help;
+    cursor: pointer;
     border-bottom: 1px dotted #00796b;
+    touch-action: manipulation;
 }
 
 .help-tooltip:focus {
     outline: 2px solid #005f56;
     border-radius: 50%;
+}
+
+.mobile-tooltip-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 24, 40, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 1200;
+}
+
+.mobile-tooltip-modal.open {
+    display: flex;
+}
+
+.mobile-tooltip-content {
+    background: #ffffff;
+    border-radius: 12px;
+    width: min(90vw, 420px);
+    max-width: 420px;
+    padding: 1.5rem;
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    text-align: left;
+}
+
+.mobile-tooltip-text {
+    color: #344054;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.mobile-tooltip-close {
+    align-self: center;
+    background: #00796b;
+    color: #ffffff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.5rem 1.75rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.mobile-tooltip-close:hover,
+.mobile-tooltip-close:focus-visible {
+    background-color: #005f56;
+    outline: none;
+    transform: translateY(-1px);
 }
 
 input[type="number"] {
@@ -1008,22 +1064,33 @@ input[type="number"] {
 .duration-info {
     font-size: 14px;
     color: #333;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .duration-info p {
     margin: 0;
 }
 
+.duration-label {
+    font-weight: 600;
+}
+
+.duration-text {
+    font-weight: 600;
+    color: #00796b;
+    font-size: 22px;
+}
+
 .duration-info .duration-value {
-    font-weight: bold;
-    color: #00796b; /* Match your color scheme */
-    font-size: 24px;
-    text-align: left;
+    font-weight: 700;
 }
 
 
 .uttag-container {
-    flex: 0 0 auto;
+    flex: 0 0 260px;
+    width: 100%;
     display: flex;
     flex-direction: column; /* Stack children vertically */
     align-items: flex-start;
@@ -1032,15 +1099,8 @@ input[type="number"] {
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
-    max-width: 250px;
-}
-
-
-p.duration-text {
-    font-weight: bold;
-    color: #00796b; /* Match your color scheme */
-    font-size: 24px;
-    text-align: left;
+    max-width: 260px;
+    box-sizing: border-box;
 }
 canvas#gantt-canvas {
     height: 400px !important;
@@ -1428,13 +1488,15 @@ canvas#gantt-canvas {
     border-color: #0f172a;
 }
 #leave-slider-container {
-    margin-top: 16px;
+    margin: 16px auto 0;
     padding: 16px;
     border: 1px solid #e4e7ec;
     border-radius: 12px;
     background: #ffffff;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     transition: box-shadow 0.2s ease;
+    width: 100%;
+    max-width: 640px;
 }
 #leave-slider-container:hover {
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
@@ -1696,7 +1758,7 @@ canvas#gantt-canvas {
 .strategy-days-parent {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.25rem;
     color: #344054;
 }
 
@@ -1706,11 +1768,12 @@ canvas#gantt-canvas {
 }
 
 .strategy-days-detail {
-    font-size: 0.92rem;
+    font-size: clamp(0.78rem, 2.4vw, 0.9rem);
     padding-left: 0.75rem;
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
+    white-space: nowrap;
 }
 
 .strategy-days-detail .detail-label {
@@ -1723,7 +1786,8 @@ canvas#gantt-canvas {
 
 .strategy-days-line {
     color: #344054;
-    font-size: 0.95rem;
+    font-size: clamp(0.8rem, 2.6vw, 0.95rem);
+    white-space: nowrap;
 }
 
 .days-total {
@@ -1895,6 +1959,7 @@ canvas#gantt-canvas {
     .strategy-box {
         flex: 1 1 100%;
         padding: 1rem;
+        text-align: center;
     }
 
     .strategy-box h4 {
@@ -1918,6 +1983,7 @@ canvas#gantt-canvas {
 
     #leave-slider-container {
         padding: 12px;
+        max-width: 100%;
     }
 
     #leave-slider {
@@ -1926,13 +1992,64 @@ canvas#gantt-canvas {
 
     .slider-values {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
+        text-align: center;
         gap: 6px;
         font-size: 0.9rem;
     }
 
     .slider-labels span {
         font-size: 0.85rem;
+    }
+
+    .monthly-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .monthly-box,
+    .uttag-container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .uttag-container {
+        align-items: center;
+        text-align: center;
+        padding: 16px;
+    }
+
+    .duration-info,
+    .duration-text {
+        text-align: center;
+    }
+
+    .duration-text {
+        font-size: 20px;
+    }
+
+    .monthly-row,
+    .monthly-total {
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        text-align: center;
+        white-space: normal;
+    }
+
+    .result-section,
+    .result-section h2,
+    .result-section h4,
+    .monthly-box h3,
+    .benefit-title,
+    .strategy-days-heading {
+        text-align: center;
+    }
+
+    .strategy-days-detail,
+    .strategy-days-line {
+        justify-content: center;
     }
 
     #strategy-group .toggle-options {

@@ -367,7 +367,7 @@ export function renderGanttChart(
                 });
             }
             entries.push({
-                text: 'Minimum household income',
+                text: 'Lägsta hushållsinkomst',
                 fillStyle: 'rgba(220, 0, 0, 0.8)',
                 strokeStyle: 'rgba(220, 0, 0, 0.8)',
                 lineWidth: 2,

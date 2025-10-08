@@ -83,6 +83,84 @@ export function setupInfoBoxToggle() {
     });
 }
 
+let tooltipModal;
+let tooltipModalContent;
+let tooltipModalCloseButton;
+let activeTooltipTrigger;
+
+function hideTooltipModal() {
+    if (!tooltipModal) return;
+    tooltipModal.classList.remove('open');
+    if (activeTooltipTrigger) {
+        activeTooltipTrigger.focus({ preventScroll: true });
+        activeTooltipTrigger = null;
+    }
+}
+
+function ensureTooltipModal() {
+    if (tooltipModal) return;
+    tooltipModal = document.createElement('div');
+    tooltipModal.className = 'mobile-tooltip-modal';
+    tooltipModal.innerHTML = `
+        <div class="mobile-tooltip-content" role="dialog" aria-modal="true" aria-label="Information">
+            <div class="mobile-tooltip-text"></div>
+            <button type="button" class="mobile-tooltip-close">Stäng</button>
+        </div>
+    `;
+    document.body.appendChild(tooltipModal);
+
+    tooltipModalContent = tooltipModal.querySelector('.mobile-tooltip-text');
+    tooltipModalCloseButton = tooltipModal.querySelector('.mobile-tooltip-close');
+
+    tooltipModalCloseButton.addEventListener('click', hideTooltipModal);
+    tooltipModal.addEventListener('click', event => {
+        if (event.target === tooltipModal) hideTooltipModal();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && tooltipModal.classList.contains('open')) {
+            hideTooltipModal();
+        }
+    });
+}
+
+function showTooltipModal(text, trigger) {
+    ensureTooltipModal();
+    if (!tooltipModal || !tooltipModalContent || !tooltipModalCloseButton) {
+        return;
+    }
+    tooltipModalContent.textContent = text;
+    tooltipModal.classList.add('open');
+    activeTooltipTrigger = trigger || null;
+    tooltipModalCloseButton.focus({ preventScroll: true });
+}
+
+export function setupHelpTooltips() {
+    ensureTooltipModal();
+    const tooltipElements = document.querySelectorAll('.help-tooltip');
+    tooltipElements.forEach(element => {
+        if (element.dataset.tooltipBound === 'true') return;
+        const tooltipText =
+            element.getAttribute('data-help') ||
+            element.getAttribute('aria-label') ||
+            element.getAttribute('title') ||
+            element.textContent.trim();
+        element.setAttribute('data-help', tooltipText);
+        element.setAttribute('role', 'button');
+        element.dataset.tooltipBound = 'true';
+
+        element.addEventListener('click', event => {
+            event.preventDefault();
+            showTooltipModal(tooltipText, element);
+        });
+        element.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                showTooltipModal(tooltipText, element);
+            }
+        });
+    });
+}
+
 /**
  * Generate a table showing benefit details
  * @param {number} dailyRate - Daily benefit rate
@@ -145,8 +223,8 @@ export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, till
 */
 export function generateParentSection(parentNum, dag, extra, månadsinkomst,
     inkomstDagar, lagstanivådagar, avtal, barnbidrag, tillägg, ärEnsam, inkomst) {
-    const incomeDays = Number.isFinite(inkomstDagar) ? inkomstDagar : 0;
-    const lowDays = Number.isFinite(lagstanivådagar) ? lagstanivådagar : 0;
+    const incomeDays = Number.isFinite(inkomstDagar) ? Math.max(inkomstDagar, 0) : 0;
+    const lowDays = Number.isFinite(lagstanivådagar) ? Math.max(lagstanivådagar, 0) : 0;
     const fpNet = beräknaNetto(månadsinkomst);
     const tooltipLines = [
         'Föräldrapenning uppgår till 480 föräldradagar för ett barn.',
@@ -158,6 +236,12 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
     const tooltipAria = tooltipLines.join(' ');
     const reserveradeDagar = 90;
     const delningsbaraDagar = Math.max(incomeDays - reserveradeDagar, 0);
+    const defaultWeeks = Math.floor(incomeDays / 7);
+    const defaultMonthsValue = defaultWeeks > 0 ? defaultWeeks / 4.3 : 0;
+    const defaultMonthsText = defaultMonthsValue.toLocaleString('sv-SE', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+    });
     const gemensamDetails = incomeDays > 0 ? `
         <div class="benefit-details">
             <div class="benefit-detail-line">
@@ -214,6 +298,7 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                 <span class="help-tooltip"
                       title="${tooltipTitle}"
                       aria-label="${tooltipAria}"
+                      data-help="${tooltipTitle}"
                       tabindex="0">?</span>
             </h4>
             <div class="benefit-grid">
@@ -280,8 +365,9 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                             <option value="7" selected>7 dagar</option>
                         </select>
                     </div>
-                    <div class="duration-info">
-                        <p>I denna takt kan du vara ledig i:</p><br><p class="duration-text" align="left"><span class="duration-value"></span> månader</p>
+                    <div class="duration-info" data-total-dagar="${incomeDays}">
+                        <p class="duration-label">I denna takt kan du vara ledig i:</p>
+                        <p class="duration-text"><span class="duration-value">${defaultMonthsText}</span> månader</p>
                     </div>
                 </div>
             </div>
