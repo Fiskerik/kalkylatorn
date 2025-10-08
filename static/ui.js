@@ -226,6 +226,11 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
     const incomeDays = Number.isFinite(inkomstDagar) ? Math.max(inkomstDagar, 0) : 0;
     const lowDays = Number.isFinite(lagstanivådagar) ? Math.max(lagstanivådagar, 0) : 0;
     const fpNet = beräknaNetto(månadsinkomst);
+    const normalizedDailyRate = Number.isFinite(dag) ? dag : 0;
+    const benefitBarWidth = Math.min(
+        100,
+        Math.max(0, ((normalizedDailyRate - 250) / (1250 - 250)) * 100)
+    );
     const tooltipLines = [
         'Föräldrapenning uppgår till 480 föräldradagar för ett barn.',
         'Du som har ensam vårdnad om ditt barn har rätt att ta ut samtliga 480 dagar, medan två föräldrar får 240 dagar var.',
@@ -265,7 +270,7 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                         <span>${dag.toLocaleString()}</span><span class="unit">kr/dag</span>
                     </div>
                     <div class="benefit-bar">
-                        <div class="benefit-bar-fill" style="width: ${(dag - 250) / (1250 - 250) * 100}%;"></div>
+                        <div class="benefit-bar-fill" style="width: ${benefitBarWidth}%;"></div>
                     </div>
                     <div class="benefit-bar-labels">
                         <span>250 kr</span><span>1 250 kr</span>
