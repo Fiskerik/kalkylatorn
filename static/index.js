@@ -417,6 +417,15 @@ function handleOptimize() {
 
         // Render Gantt chart
         document.getElementById('optimization-result').style.display = 'block';
+        const stepFromSlider = slider ? parseFloat(slider.step) : NaN;
+        const chartContext = {
+            preferences: { ...preferences },
+            inputs: { ...inputs },
+            totalMonths,
+            step: Number.isFinite(stepFromSlider) && stepFromSlider > 0
+                ? stepFromSlider
+                : (totalMonths > 2 ? 1 : 0.5)
+        };
         renderGanttChart(
             result.plan1,
             result.plan2,
@@ -450,7 +459,8 @@ function handleOptimize() {
             result.användaInkomstDagar1,
             result.användaMinDagar1,
             result.användaInkomstDagar2,
-            result.användaMinDagar2
+            result.användaMinDagar2,
+            chartContext
         );
 
 
