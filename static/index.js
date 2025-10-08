@@ -15,7 +15,7 @@ import {
     calculateParentalLeaveDays
 } from './calculations.js';
 import {
-    updateProgress, setupInfoBoxToggle,
+    updateProgress, setupInfoBoxToggle, setupHelpTooltips,
     generateParentSection, setupStrategyToggle, updateMonthlyBox
 } from './ui.js';
 import { renderGanttChart } from './chart.js';
@@ -36,6 +36,7 @@ function initializeForm() {
     // Setup strategy and info boxes
     setupStrategyToggle();
     setupInfoBoxToggle();
+    setupHelpTooltips();
 
     const birthDateInput = document.getElementById('barn-datum');
     if (birthDateInput && !birthDateInput.value) {
@@ -60,6 +61,7 @@ function setupEventListeners() {
 
     // Dropdown listeners for uttag
     setupDropdownListeners();
+    setupHelpTooltips();
 
     // Leave distribution slider
     setupLeaveSlider();
@@ -142,6 +144,7 @@ function handleFormSubmit(e) {
 
     // Reinitialize info box toggles for dynamically added content
     setupInfoBoxToggle();
+    setupHelpTooltips();
 
     // Store global state for optimization
     window.appState = {
@@ -196,6 +199,9 @@ function setupDropdownListeners() {
                 parent1Days
             );
         };
+        if (window.appState) {
+            dropdown1.dispatchEvent(new Event('change'));
+        }
     }
 
     if (dropdown2) {
@@ -209,6 +215,9 @@ function setupDropdownListeners() {
                 parent2Days
             );
         };
+        if (window.appState) {
+            dropdown2.dispatchEvent(new Event('change'));
+        }
     }
 }
 
