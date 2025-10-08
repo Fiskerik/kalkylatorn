@@ -158,6 +158,12 @@ button {
     justify-content: center;
 }
 
+#vårdnad-group .toggle-btn {
+    flex: 1 1 140px;
+    min-width: clamp(120px, 42vw, 160px);
+    padding-inline: 1.4rem;
+}
+
 .button-group.barnval {
     flex-wrap: wrap;
     justify-content: center;
@@ -176,6 +182,7 @@ button {
 .info-text {
     font-size: 16px;
     margin-top: 0.5rem;
+    text-align: justify;
 }
 
 table {
@@ -428,6 +435,7 @@ button:hover {
     font-size: 0.95rem;
     line-height: 1.5;
     white-space: pre-wrap;
+    text-align: justify;
 }
 
 .mobile-tooltip-close {
@@ -535,6 +543,11 @@ input[type="number"] {
     padding: 1.2rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 0.65rem;
 }
 
 
@@ -598,6 +611,8 @@ input[type="number"] {
 .benefit-detail-line {
     display: flex;
     justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
     padding: 0.2rem 0;
 }
 
@@ -654,11 +669,12 @@ input[type="number"] {
     padding: 0 1rem 1rem;
     font-size: 0.95rem;
     color: #333;
+    text-align: justify;
 }
 
 .info-box.open .info-content {
     display: block;
-    text-align: left;
+    text-align: justify;
 }
 
 .result-box {
@@ -769,7 +785,8 @@ input[type="number"] {
     padding: 4px 0;
     border-bottom: 1px dashed #ddd;
     font-size: 15px;
-    white-space: nowrap; /* Prevents text wrapping */
+    flex-wrap: wrap;
+    gap: 0.25rem;
 }
 
 .monthly-total {
@@ -875,6 +892,8 @@ input[type="number"] {
 .monthly-row span:last-child {
     color: #333;
     font-weight: 600;
+    margin-left: auto;
+    text-align: right;
 }
 
 .fp-brutto {
@@ -1524,16 +1543,16 @@ canvas#gantt-canvas {
     color: white;
 }
 .daypilot-scheduler .scheduler_default_event.p1 {
-    background-color: #28a745;
-    border-color: #28a745;
+    background-color: #00796b;
+    border-color: #00796b;
 }
 .daypilot-scheduler .scheduler_default_event.p2 {
     background-color: #007bff;
     border-color: #007bff;
 }
 .daypilot-scheduler .scheduler_default_event.lagstaniva.p1 {
-    background-color: #2ecc71;
-    border-color: #2ecc71;
+    background-color: #33b5a6;
+    border-color: #33b5a6;
 }
 .daypilot-scheduler .scheduler_default_event.lagstaniva.p2 {
     background-color: #66b3ff;
@@ -1636,10 +1655,10 @@ canvas#gantt-canvas {
     background-color: #c82333;
 }
 .transfer-button {
-    background-color: #28a745;
+    background-color: #00796b;
 }
 .transfer-button:hover {
-    background-color: #218838;
+    background-color: #005f56;
 }
 
 /* Day cell default */
@@ -1647,7 +1666,7 @@ canvas#gantt-canvas {
     background-color: white;
 }
 .day-cell.parent1-start, .day-cell.parent1-end, .day-cell.parent1-single {
-    background-color: #2e7d32 !important; /* Dark green */
+    background-color: #00796b !important; /* Dark green */
 }
 .day-cell.parent1-between {
     background-color: #81c784 !important; /* Lighter green */
@@ -1782,9 +1801,9 @@ canvas#gantt-canvas {
 
 #calendar-container .legend {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.75rem;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 1rem;
 }
 
@@ -1792,29 +1811,8 @@ canvas#gantt-canvas {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    min-width: 140px;
-}
-
-#calendar-container .legend-color {
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
-    flex-shrink: 0;
-}
-
-#calendar-container .legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-#calendar-container .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 140px;
+    width: 100%;
+    justify-content: flex-start;
 }
 
 #calendar-container .legend-color {
@@ -1830,7 +1828,7 @@ canvas#gantt-canvas {
     width: 100%;
     height: 14px;
     border-radius: 999px;
-    background: linear-gradient(to right, #28a745 50%, #007bff 50%);
+    background: linear-gradient(to right, #00796b 50%, #007bff 50%);
     border: 1px solid #d0d5dd;
     box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.15);
     outline: none;
@@ -1927,7 +1925,7 @@ canvas#gantt-canvas {
 }
 
 .p1-value {
-    color: #28a745;
+    color: #00796b;
 }
 
 .p2-value {
@@ -2015,8 +2013,8 @@ canvas#gantt-canvas {
 }
 
 .working-parent.parent1 {
-    border-color: #28a745;
-    color: #28a745;
+    border-color: #00796b;
+    color: #00796b;
 }
 
 .working-parent.parent2 {
@@ -2028,11 +2026,14 @@ canvas#gantt-canvas {
     border-left: 4px solid transparent;
     padding-left: 4px;
     display: inline-block;
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.4;
 }
 
 .leave-parent.parent1 {
-    border-color: #28a745;
-    color: #28a745;
+    border-color: #00796b;
+    color: #00796b;
 }
 
 .leave-parent.parent2 {
@@ -2087,6 +2088,9 @@ canvas#gantt-canvas {
     padding: 1.25rem;
     box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
     text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .strategy-box h4 {
@@ -2212,7 +2216,8 @@ canvas#gantt-canvas {
 .strategy-days-line {
     color: #344054;
     font-size: clamp(0.8rem, 2.6vw, 0.95rem);
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
 }
 
 .days-total {
@@ -2281,7 +2286,7 @@ canvas#gantt-canvas {
 }
 
 .strategy-details-toggle {
-    margin-top: 0.75rem;
+    margin-top: auto;
     width: 100%;
     padding: 0.6rem 1rem;
     background-color: #f2f4f7;
@@ -2291,6 +2296,7 @@ canvas#gantt-canvas {
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
+    align-self: stretch;
 }
 
 .strategy-details-toggle:hover {

@@ -318,6 +318,10 @@ export function renderGanttChart(
         ? window.matchMedia('(max-width: 720px)').matches
         : false;
 
+    const basePointRadius = isMobileView ? 6 : 4;
+    const activePointRadius = isMobileView ? 8 : 6;
+    const hoverPointRadius = isMobileView ? 10 : 8;
+
     const minIncomeRequirement = Number(genomförbarhet?.minInkomst) || 0;
     const highlightColors = {
         warning: 'rgba(255, 223, 94, 0.25)',
@@ -664,7 +668,7 @@ export function renderGanttChart(
         if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
         if (x < period1TotalWeeks) {
             if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-            return '#28a745';
+            return '#00796b';
         }
         if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
         return 'red';
@@ -1742,7 +1746,7 @@ export function renderGanttChart(
             detailsContainer.classList.toggle('collapsed', !expanded);
         };
 
-        const shouldExpandInitially = isMobileView;
+        const shouldExpandInitially = false;
         updateToggleState(shouldExpandInitially);
 
         toggleButton.addEventListener('click', () => {
@@ -2114,8 +2118,8 @@ export function renderGanttChart(
                         chart.data.datasets[0].data = pointDisplayData;
                         chart.data.datasets[0].pointBackgroundColor = getPointBackgroundColors();
                         chart.data.datasets[0].pointBorderColor = getPointBorderColors();
-                        chart.data.datasets[0].pointRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 6 : 4);
-                        chart.data.datasets[0].pointHoverRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 8 : 6);
+                        chart.data.datasets[0].pointRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? activePointRadius : basePointRadius);
+                        chart.data.datasets[0].pointHoverRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? hoverPointRadius : activePointRadius);
                         chart.update();
                         updateMessage();
                     }
@@ -2227,8 +2231,8 @@ export function renderGanttChart(
                 data: pointDisplayData,
                 borderWidth: 2,
                 fill: false,
-                pointRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 6 : 4),
-                pointHoverRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 8 : 6),
+                pointRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? activePointRadius : basePointRadius),
+                pointHoverRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? hoverPointRadius : activePointRadius),
                 segment: {
                     borderColor: ctx => getPeriodColor(ctx.p0.parsed.x),
                     backgroundColor: ctx => getPeriodColor(ctx.p0.parsed.x)
