@@ -20,6 +20,38 @@ import {
 } from './ui.js';
 import { renderGanttChart } from './chart.js';
 
+const stickyNettoEl = document.getElementById('sticky-netto');
+const stickyDaysEl = document.getElementById('sticky-days');
+const stickyCtaButton = document.getElementById('sticky-cta');
+const mobileSummaryEl = document.getElementById('mobile-summary');
+
+function formatCurrency(value) {
+    if (!Number.isFinite(value)) return '–';
+    return `${Math.round(value).toLocaleString('sv-SE')} kr`;
+}
+
+function formatDays(value) {
+    if (!Number.isFinite(value)) return '–';
+    return value.toLocaleString('sv-SE');
+}
+
+function updateStickySummary(netValue, daysValue) {
+    if (stickyNettoEl) stickyNettoEl.textContent = formatCurrency(netValue);
+    if (stickyDaysEl) stickyDaysEl.textContent = formatDays(daysValue);
+}
+
+function resetStickySummary() {
+    updateStickySummary(Number.NaN, Number.NaN);
+    if (mobileSummaryEl) {
+        mobileSummaryEl.classList.remove('is-visible');
+    }
+    if (stickyCtaButton) {
+        stickyCtaButton.textContent = 'Visa resultat';
+    }
+}
+
+document.addEventListener('results-reset', resetStickySummary);
+
 // Initialize on DOM content loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
@@ -32,6 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeForm() {
     // Initialize progress bar
     updateProgress(1);
+    document.body.dataset.resultsReady = 'false';
+    resetStickySummary();
+    document.dispatchEvent(new Event('results-reset'));
 
     // Setup strategy and info boxes
     setupStrategyToggle();
@@ -137,10 +172,8 @@ function handleFormSubmit(e) {
     }
 
     resultBlock.innerHTML = resultHtml;
-    document.getElementById('strategy-group').style.display = 'block';
-    document.getElementById('preferences-section').style.display = 'block';
     document.getElementById('optimize-btn').style.display = 'block';
-    updateProgress(7);
+    updateProgress(4);
 
     // Reinitialize info box toggles for dynamically added content
     setupInfoBoxToggle();
@@ -171,10 +204,26 @@ function handleFormSubmit(e) {
         planeradeBarn: plannedChildren
     };
 
+    const includePartner = vårdnad === 'gemensam' && beräknaPartner === 'ja';
     const leaveContainer = document.getElementById('leave-slider-container');
-    if (leaveContainer && (vårdnad === 'ensam' || beräknaPartner === 'nej')) {
-        leaveContainer.style.display = 'none';
+    if (leaveContainer) {
+        leaveContainer.style.display = includePartner ? 'block' : 'none';
     }
+
+    const hushallsBarnbidrag = vårdnad === 'ensam'
+        ? barnbidragResult.total
+        : barnbidragResult.total * 2;
+    const hushallsNetto = netto1 + (includePartner ? netto2 : 0) + hushallsBarnbidrag;
+    const totalRemainingDays = parent1IncomeDays + parent1LowDays +
+        (includePartner ? parent2IncomeDays + parent2LowDays : 0);
+
+    updateStickySummary(hushallsNetto, totalRemainingDays);
+    if (mobileSummaryEl) {
+        mobileSummaryEl.classList.add('is-visible');
+    }
+    document.body.dataset.resultsReady = 'true';
+    if (stickyCtaButton) stickyCtaButton.textContent = 'Optimera';
+    document.dispatchEvent(new Event('results-ready'));
 
     // Update dropdown listeners for monthly boxes
     setupDropdownListeners();
@@ -226,6 +275,8 @@ function setupDropdownListeners() {
  */
 function handleOptimize() {
     updateProgress(8);
+    const leaveErr = document.getElementById('leave-duration-error');
+    const minIncomeErr = document.getElementById('min-income-error');
     const barnDatumInput = document.getElementById('barn-datum');
     const ledigTid1Input = document.getElementById('ledig-tid-5823');
     const minInkomstInput = document.getElementById('min-inkomst');
@@ -234,23 +285,25 @@ function handleOptimize() {
     // Validate inputs
     if (!barnDatumInput || !ledigTid1Input || !minInkomstInput || !strategyInput) {
         console.error('Required input elements not found');
-        document.getElementById('leave-duration-error').style.display = 'block';
-        document.getElementById('leave-duration-error').textContent = 'Formulärfel: Kontrollera att alla fält är korrekt ifyllda.';
+        if (leaveErr) {
+            leaveErr.style.display = 'block';
+            leaveErr.textContent = 'Formulärfel: Kunde inte hitta obligatoriska fält (beräknat födelsedatum, ledighetstid, miniminetto eller strategi). Ladda om sidan och försök igen.';
+        }
         return;
     }
 
     const barnDatum = barnDatumInput.value || '2025-05-01';
     const totalMonths = parseFloat(ledigTid1Input.value);
     const minInkomstValue = minInkomstInput.value;
-    const leaveErr = document.getElementById('leave-duration-error');
-    const minIncomeErr = document.getElementById('min-income-error');
     if (!totalMonths) {
-        leaveErr.textContent = 'Ange hur länge du vill vara ledig.';
-        leaveErr.style.display = 'block';
+        if (leaveErr) {
+            leaveErr.textContent = 'Ange hur länge du vill vara ledig.';
+            leaveErr.style.display = 'block';
+        }
         if (minIncomeErr) minIncomeErr.style.display = 'none';
         return;
     }
-    leaveErr.style.display = 'none';
+    if (leaveErr) leaveErr.style.display = 'none';
     if (!minInkomstValue) {
         if (minIncomeErr) minIncomeErr.style.display = 'block';
         return;
@@ -308,7 +361,7 @@ function handleOptimize() {
 
         // Validate leave duration and show message but continue rendering chart
         const err = document.getElementById('leave-duration-error');
-        err.style.display = 'none';
+        if (err) err.style.display = 'none';
 
         const toNumber = (value) => (Number.isFinite(value) ? value : 0);
         const computeDaysFromPlan = (plan, fallbackDaysPerWeek = 0) => {
