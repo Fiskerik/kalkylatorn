@@ -44,12 +44,13 @@ h3 {
 }
 /* Behåll denna för barnantal */
 .button-group.barnval .toggle-btn {
-    flex: 0 0 40px;
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
+    flex: 0 1 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
     padding: 0;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     text-align: center;
     border-radius: 8px;
     font-weight: 700;
@@ -137,7 +138,7 @@ button {
 .toggle-btn:focus-visible {
     background-color: #e0f2f1;
     border-color: #00796b;
-    color: #0f766e;
+    color: #00796b;
 }
 
 .toggle-btn.active {
@@ -158,18 +159,11 @@ button {
 }
 
 .button-group.barnval {
-    flex-wrap: nowrap;
-    justify-content: center;
-    gap: 6px;
-    padding-bottom: 0;
-    overflow-x: auto;
-}
-
-.button-group.barnval {
     flex-wrap: wrap;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     padding-bottom: 4px;
+    overflow-x: visible;
 }
 
 .result {
@@ -264,6 +258,15 @@ canvas {
     white-space: normal;
 }
 
+.dev-family-btn .family-label-text {
+    display: inline;
+}
+
+.dev-family-btn::after {
+    content: attr(data-short-label);
+    display: none;
+}
+
 .dev-family-btn:hover {
     background-color: #263238;
 }
@@ -282,12 +285,12 @@ button:hover {
 }
 
 .button-group.barnval .toggle-btn {
-    flex: 0 0 40px;
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
+    flex: 0 1 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
     padding: 0;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     line-height: 1;
     border-radius: 8px;
     font-weight: 700;
@@ -296,46 +299,13 @@ button:hover {
 .button-group.barnval .toggle-btn:hover,
 .button-group.barnval .toggle-btn:focus-visible {
     background-color: #e5f4f2;
-    border-color: #0f766e;
-    color: #0f766e;
+    border-color: #00796b;
+    color: #00796b;
 }
 
 .button-group.barnval .toggle-btn.active {
-    background-color: #145847;
-    border-color: #0f3d33;
-    color: #ffffff;
-}
-
-#avtal-group-1,
-#avtal-group-2 {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-}
-
-#avtal-group-1 .toggle-btn,
-#avtal-group-2 .toggle-btn {
-    width: 100%;
-    min-width: 0;
-}
-
-#anstallningstid-group-1,
-#anstallningstid-group-2 {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-}
-
-#anstallningstid-group-1 .toggle-btn,
-#anstallningstid-group-2 .toggle-btn {
-    width: 100%;
-    min-width: 0;
-    font-size: 0.9rem;
-    padding: 10px 8px;
-}
-
-.button-group.barnval .toggle-btn.active {
-    background-color: #1f5a58;
+    background-color: #00796b;
+    border-color: #005f56;
     color: #ffffff;
 }
 
@@ -528,6 +498,21 @@ input[type="number"] {
     padding: 1.5rem;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.result-section > h2,
+.result-section > h3,
+.result-section > h4 {
+    text-align: center;
+}
+
+.result-section .benefit-card,
+.result-section .info-box,
+.result-section .monthly-box,
+.result-section .monthly-row,
+.result-section .monthly-total,
+.result-section .duration-info {
+    text-align: left;
 }
 
 .container {
@@ -736,7 +721,7 @@ input[type="number"] {
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: 600;
-    color: #2e7d32;
+    color: #00796b;
     background-color: transparent;
 }
 
@@ -963,11 +948,12 @@ input[type="number"] {
         flex-direction: row;
         flex-wrap: wrap;
         gap: 0.75rem;
+        justify-content: center;
     }
 
     .dev-family-btn {
         flex: 1 1 calc(50% - 0.75rem);
-        min-width: 200px;
+        min-width: 150px;
     }
 }
 
@@ -1054,11 +1040,12 @@ input[type="number"] {
     }
 
     .dev-shortcuts {
-        overflow-x: auto;
+        justify-content: center;
     }
 
     .dev-family-btn {
-        min-width: 160px;
+        flex: 1 1 calc(50% - 0.75rem);
+        min-width: 120px;
     }
 
     .container {
@@ -1115,6 +1102,46 @@ input[type="number"] {
     #progress-bar .step {
         min-width: 110px;
     }
+
+    .dev-shortcuts {
+        gap: 0.5rem;
+    }
+
+    .dev-family-btn {
+        flex: 0 1 calc(25% - 0.5rem);
+        min-width: 48px;
+        padding: 0.5rem;
+    }
+
+    .dev-family-btn .family-label-text {
+        display: none;
+    }
+
+    .dev-family-btn::after {
+        display: inline;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .monthly-box .monthly-info {
+        font-size: 0.8rem;
+    }
+
+    .info-box .info-content table,
+    .info-box .info-content th,
+    .info-box .info-content td {
+        font-size: 0.5rem;
+    }
+
+    #calendar-container .legend {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #calendar-container .legend-item {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1135,8 +1162,9 @@ input[type="number"] {
     }
 
     .button-group.barnval .toggle-btn {
-        flex: 0 0 36px;
-        max-width: 36px;
+        flex: 0 0 32px;
+        max-width: 32px;
+        min-width: 32px;
     }
 
     #progress-bar {
@@ -1169,6 +1197,16 @@ input[type="number"] {
     box-sizing: border-box;
     gap: 8px;
     transition: padding 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (min-width: 992px) {
+    #progress-bar {
+        width: min(880px, 90vw);
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        padding: 10px 20px;
+    }
 }
 
 #progress-bar .step {
@@ -1284,19 +1322,21 @@ input[type="number"] {
     padding-top: 60px;
 }
 
-#progress-bar.compact {
-    padding: 4px 6px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-    --progress-circle-size: 26px;
-    min-height: 36px;
-}
+@media (max-width: 768px) {
+    #progress-bar.compact {
+        padding: 4px 6px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        --progress-circle-size: 26px;
+        min-height: 36px;
+    }
 
-#progress-bar.compact .step-circle {
-    transform: scale(0.92);
-}
+    #progress-bar.compact .step-circle {
+        transform: scale(0.92);
+    }
 
-#progress-bar.compact .step-label {
-    font-size: 0.7rem;
+    #progress-bar.compact .step-label {
+        font-size: 0.7rem;
+    }
 }
 /*Månadsbox*/
 .duration-info {
@@ -1430,16 +1470,6 @@ canvas#gantt-canvas {
 
 #strategy-group .toggle-btn {
     width: auto;
-}
-.toggle-btn {
-    padding: 10px 20px;
-    margin-right: 10px;
-    border: 1px solid #ccc;
-    cursor: pointer;
-}
-.toggle-btn.active {
-    background-color: #4CAF50;
-    color: white;
 }
 .gantt-bar.transferred {
     background: #f28c38;
@@ -1686,6 +1716,11 @@ canvas#gantt-canvas {
     align-items: center;
 }
 
+.mobile-sticky,
+.mobile-sticky.is-visible {
+    display: none !important;
+}
+
 .mobile-summary-content {
     display: flex;
     justify-content: space-between;
@@ -1733,6 +1768,38 @@ canvas#gantt-canvas {
     .mobile-summary-content {
         flex: 1;
     }
+
+    #calendar-container .legend {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #calendar-container .legend-item {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+#calendar-container .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+#calendar-container .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 140px;
+}
+
+#calendar-container .legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
 }
 
 /* Slider for distributing leave between parents */
@@ -2006,10 +2073,26 @@ canvas#gantt-canvas {
     color: #101828;
 }
 
+@media (min-width: 1024px) {
+    .strategy-box-wrapper {
+        justify-content: space-between;
+    }
+
+    .strategy-box {
+        flex: 1 1 calc(50% - 0.75rem);
+        max-width: calc(50% - 0.75rem);
+    }
+}
+
 .strategy-description {
     margin: 0 0 1rem;
     color: #475467;
     font-size: 0.95rem;
+}
+
+.strategy-highlight {
+    color: #00796b;
+    font-weight: 700;
 }
 
 .strategy-metrics {
@@ -2245,7 +2328,7 @@ canvas#gantt-canvas {
 
 
 @media (max-width: 600px) {
-    .button-group {
+    .button-group:not(.barnval) {
         flex-direction: column;
         align-items: stretch;
     }
@@ -2254,6 +2337,19 @@ canvas#gantt-canvas {
     .toggle-btn {
         width: 100%;
         font-size: 0.9rem;
+    }
+
+    .button-group.barnval {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        overflow-x: visible;
+    }
+
+    .button-group.barnval .toggle-btn {
+        flex: 0 0 32px;
+        min-width: 32px;
+        width: 32px;
     }
 
     form,
