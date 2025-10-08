@@ -94,6 +94,11 @@ def _parse_families_without_yaml(text: str) -> List[Dict[str, Any]]:
             current_family['barn'] = {}
             current_parent = None
             continue
+        if stripped == "preferenser:":
+            current_section = 'preferenser'
+            current_family['preferenser'] = {}
+            current_parent = None
+            continue
         if current_section == 'parents' and stripped.startswith('- role:'):
             current_parent = {'role': _parse_value(stripped.split(':', 1)[1])}
             parents.append(current_parent)
@@ -109,6 +114,8 @@ def _parse_families_without_yaml(text: str) -> List[Dict[str, Any]]:
             current_family.setdefault('custody', {})[key] = parsed_value
         elif current_section == 'barn':
             current_family.setdefault('barn', {})[key] = parsed_value
+        elif current_section == 'preferenser':
+            current_family.setdefault('preferenser', {})[key] = parsed_value
         else:
             current_family[key] = parsed_value
 
@@ -116,6 +123,7 @@ def _parse_families_without_yaml(text: str) -> List[Dict[str, Any]]:
         current_family['parents'] = parents
         current_family.setdefault('custody', {})
         current_family.setdefault('barn', {})
+        current_family.setdefault('preferenser', {})
         families.append(current_family)
 
     return families

@@ -15,46 +15,28 @@
     <div class="container">
         <div id="progress-bar">
             <div class="step step-1 active">
-                <div class="step-circle"><i class="fa-solid fa-people-roof"></i></div>
-                <span class="step-label">Vårdnad</span>
+                <div class="step-circle"><i class="fa-solid fa-house-chimney"></i></div>
+                <span class="step-label">Hushåll &amp; barn</span>
             </div>
             <div class="step step-2">
-                <div class="step-circle"><i class="fa-solid fa-user-plus"></i></div>
-                <span class="step-label">Beräkna för partner?</span>
+                <div class="step-circle"><i class="fa-solid fa-coins"></i></div>
+                <span class="step-label">Inkomster &amp; avtal</span>
             </div>
             <div class="step step-3">
-                <div class="step-circle"><i class="fa-solid fa-children"></i></div>
-                <span class="step-label">Antal barn idag</span>
+                <div class="step-circle"><i class="fa-solid fa-sliders"></i></div>
+                <span class="step-label">Preferenser</span>
             </div>
             <div class="step step-4">
-                <div class="step-circle"><i class="fa-solid fa-baby-carriage"></i></div>
-                <span class="step-label">Antal barn planerade</span>
-            </div>
-            <div class="step step-5">
-                <div class="step-circle"><i class="fa-solid fa-sack-dollar"></i></div>
-                <span class="step-label">Inkomst förälder 1</span>
-            </div>
-            <div class="step step-6">
-                <div class="step-circle"><i class="fa-solid fa-hand-holding-dollar"></i></div>
-                <span class="step-label">Inkomst förälder 2</span>
-            </div>
-            <div class="step step-7">
-                <div class="step-circle"><i class="fa-solid fa-calculator"></i></div>
-                <span class="step-label">Beräkna</span>
-            </div>
-            <div class="step step-8">
                 <div class="step-circle"><i class="fa-solid fa-chart-line"></i></div>
-                <span class="step-label">Optimera</span>
+                <span class="step-label">Resultat</span>
             </div>
         </div>
         
         <h1>Föräldrapenningkalkylator</h1>
         
         <form id="calc-form">
-            <button type="button" id="back-btn" class="hidden back-btn">&larr; Tillbaka</button>
-
-            <div class="form-section wizard-step" id="custody-step">
-                <!-- Development shortcuts: remove this block when no longer needed -->
+            <fieldset class="wizard-step visible" id="step-household">
+                <legend>Hushåll &amp; barn</legend>
                 <div class="wizard-first-step-layout">
                     <div class="dev-shortcuts" aria-hidden="true">
                         <button type="button" class="dev-family-btn" data-family-index="0">2 parents, 3 kids, medium income</button>
@@ -67,224 +49,229 @@
                         <button type="button" class="dev-family-btn" data-family-index="7">2 parents, twins on the way, mixed income</button>
                     </div>
                     <div class="wizard-first-step-content">
-                        <div class="question-icon"><i class="fa-solid fa-people-roof"></i></div>
-                        <label for="vårdnad">Har du Gemensam eller Ensam vårdnad?</label>
-                        <div class="button-group" id="vårdnad-group">
-                            <button type="button" class="vårdnad-btn toggle-btn" data-value="gemensam">Gemensam vårdnad</button>
-                            <button type="button" class="vårdnad-btn toggle-btn" data-value="ensam">Ensam vårdnad</button>
+                        <div class="form-section">
+                            <div class="question-icon"><i class="fa-solid fa-people-roof"></i></div>
+                            <label for="vårdnad">Har du Gemensam eller Ensam vårdnad?</label>
+                            <div class="button-group" id="vårdnad-group">
+                                <button type="button" class="vårdnad-btn toggle-btn" data-value="gemensam">Gemensan</button>
+                                <button type="button" class="vårdnad-btn toggle-btn" data-value="ensam">Ensam</button>
+                            </div>
+                            <input type="hidden" name="vårdnad" id="vårdnad" value="">
+                            <p id="vårdnad-info" class="info-text"></p>
                         </div>
-                        <input type="hidden" name="vårdnad" id="vårdnad" value="">
-                        <p id="vårdnad-info" class="info-text"></p>
+                        <div class="form-section">
+                            <div class="question-icon"><i class="fa-solid fa-user-plus"></i></div>
+                            <label for="beräkna-partner-checkbox" class="checkbox-label">
+                                <input type="checkbox" id="beräkna-partner-checkbox" checked>
+                                Beräkna föräldrapenning för partner
+                            </label>
+                            <input type="hidden" name="beräkna_partner" id="beräkna-partner" value="ja">
+                        </div>
+                        <div class="form-section">
+                            <div class="question-icon"><i class="fa-solid fa-children"></i></div>
+                            <label>Hur många barn har du/ni sedan tidigare?</label>
+                            <div class="button-group barnval" id="barn-tidigare-group">
+                                <button type="button" class="toggle-btn" data-value="0">0</button>
+                                <button type="button" class="toggle-btn" data-value="1">1</button>
+                                <button type="button" class="toggle-btn" data-value="2">2</button>
+                                <button type="button" class="toggle-btn" data-value="3">3</button>
+                                <button type="button" class="toggle-btn" data-value="4">4</button>
+                                <button type="button" class="toggle-btn" data-value="5">5</button>
+                                <button type="button" class="toggle-btn" data-value="6">6</button>
+                            </div>
+                            <input type="hidden" id="barn-tidigare" value="0">
+                        </div>
+                        <div class="form-section">
+                            <div class="question-icon"><i class="fa-solid fa-baby-carriage"></i></div>
+                            <label>Hur många fler barn planerar du/ni att få?</label>
+                            <div class="button-group barnval" id="barn-planerade-group">
+                                <button type="button" class="toggle-btn" data-value="1">1</button>
+                                <button type="button" class="toggle-btn" data-value="2">2</button>
+                                <button type="button" class="toggle-btn" data-value="3">3</button>
+                                <button type="button" class="toggle-btn" data-value="4">4</button>
+                                <button type="button" class="toggle-btn" data-value="5">5</button>
+                                <button type="button" class="toggle-btn" data-value="6">6</button>
+                            </div>
+                            <input type="hidden" id="barn-planerade" value="0">
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div id="partner-question" class="form-section wizard-step">
-                <div class="question-icon"><i class="fa-solid fa-user-plus"></i></div>
-                <label for="beräkna-partner">Vill du beräkna föräldrapenning för din partner också?</label>
-                <div class="button-group" id="partner-group">
-                    <button type="button" class="toggle-btn" data-value="ja">Ja</button>
-                    <button type="button" class="toggle-btn" data-value="nej">Nej</button>
+                <div id="barn-selection-error" class="inline-error" role="alert" aria-live="assertive" style="display: none;">
+                    Vänligen välj både antal barn idag och antal planerade barn.
                 </div>
-                <input type="hidden" name="beräkna_partner" id="beräkna-partner" value="">
-            </div>
+            </fieldset>
 
-            <div class="form-section wizard-step">
-                <div class="question-icon"><i class="fa-solid fa-children"></i></div>
-                <label>Hur många barn har du/ni sedan tidigare?</label>
-                <div class="button-group barnval" id="barn-tidigare-group">
-                    <button type="button" class="toggle-btn" data-value="0">0</button>
-                    <button type="button" class="toggle-btn" data-value="1">1</button>
-                    <button type="button" class="toggle-btn" data-value="2">2</button>
-                    <button type="button" class="toggle-btn" data-value="3">3</button>
-                    <button type="button" class="toggle-btn" data-value="4">4</button>
-                    <button type="button" class="toggle-btn" data-value="5">5</button>
-                    <button type="button" class="toggle-btn" data-value="6">6</button>
-                </div>
-                <input type="hidden" id="barn-tidigare" value="0">
-            </div>
-
-            <div class="form-section wizard-step">
-                <div class="question-icon"><i class="fa-solid fa-baby-carriage"></i></div>
-                <label>Hur många fler barn planerar du/ni att få?</label>
-                <div class="button-group barnval" id="barn-planerade-group">
-                    <button type="button" class="toggle-btn" data-value="1">1</button>
-                    <button type="button" class="toggle-btn" data-value="2">2</button>
-                    <button type="button" class="toggle-btn" data-value="3">3</button>
-                    <button type="button" class="toggle-btn" data-value="4">4</button>
-                    <button type="button" class="toggle-btn" data-value="5">5</button>
-                    <button type="button" class="toggle-btn" data-value="6">6</button>
-                </div>
-                <input type="hidden" id="barn-planerade" value="0">
-            </div>
-            <div id="barn-selection-error" style="color: red; display: none; margin-top: 10px;">
-                Vänligen välj både antal barn idag och antal barn du planerar att ha.
-            </div>
-
-            <div class="form-section wizard-step" id="inkomst-avtal-1">
-                <div class="question-icon"><i class="fa-solid fa-sack-dollar"></i></div>
-                <label for="inkomst1">
-                    Vad är din månadsinkomst före skatt?
-                    <span class="help-tooltip"
-                          title="Ange din bruttolön innan skatt"
-                          aria-label="Ange din bruttolön innan skatt"
-                          data-help="Ange din bruttolön innan skatt"
-                          tabindex="0">?</span>
-                </label>
-                <input type="number" name="inkomst1" id="inkomst1"
-                       placeholder="30000 kr" required>
-                <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
-                <label for="har-avtal-1">
-                    Har du kollektivavtal?
-                    <span class="help-tooltip"
-                          title="Kollektivavtal kan ge extra föräldralön"
-                          aria-label="Kollektivavtal kan ge extra föräldralön"
-                          data-help="Kollektivavtal kan ge extra föräldralön"
-                          tabindex="0">?</span>
-                </label>
-                <div class="button-group" id="avtal-group-1">
-                    <button type="button" class="toggle-btn" data-value="ja">Ja</button>
-                    <button type="button" class="toggle-btn" data-value="nej">Nej</button>
-                </div>
-                <input type="hidden" name="har_avtal_1" id="har-avtal-1" value="">
-                <div id="anstallningstid-container-1" style="display: none;">
-                    <label for="anstallningstid-1">
-                        Hur länge har du varit anställd på din nuvarande arbetsplats?
+            <fieldset class="wizard-step" id="step-income">
+                <legend>Inkomster &amp; avtal</legend>
+                <div class="form-section" id="inkomst-avtal-1">
+                    <div class="question-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+                    <label for="inkomst1">
+                        Vad är din månadsinkomst före skatt?
                         <span class="help-tooltip"
-                              title="Påverkar rätten till föräldralön"
-                              aria-label="Påverkar rätten till föräldralön"
-                              data-help="Påverkar rätten till föräldralön"
+                              title="Ange din bruttolön innan skatt"
+                              aria-label="Ange din bruttolön innan skatt"
+                              data-help="Ange din bruttolön innan skatt"
                               tabindex="0">?</span>
                     </label>
-                    <div class="button-group" id="anstallningstid-group-1">
-                        <button type="button" class="toggle-btn" data-value="0-5">0-5 månader</button>
-                        <button type="button" class="toggle-btn" data-value="6-12">6 månader - 1 år</button>
-                        <button type="button" class="toggle-btn" data-value=">1">&gt; 1 år</button>
-                    </div>
-                    <input type="hidden" name="anstallningstid_1" id="anstallningstid-1" value="">
-                </div>
-            </div>
-
-            <div id="inkomst-block-2" class="form-section wizard-step">
-                <div class="question-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
-                <label for="inkomst2">
-                    Månadsinkomst förälder 2 (före skatt):
-                    <span class="help-tooltip"
-                          title="Ange din partners bruttolön innan skatt"
-                          aria-label="Ange din partners bruttolön innan skatt"
-                          data-help="Ange din partners bruttolön innan skatt"
-                          tabindex="0">?</span>
-                </label>
-                <input type="number" name="inkomst2" id="inkomst2"
-                       placeholder="30000 kr">
-                <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
-                <label for="har-avtal-2">
-                    Har din partner kollektivavtal?
-                    <span class="help-tooltip"
-                          title="Kollektivavtal kan ge extra föräldralön"
-                          aria-label="Kollektivavtal kan ge extra föräldralön"
-                          data-help="Kollektivavtal kan ge extra föräldralön"
-                          tabindex="0">?</span>
-                </label>
-                <div class="button-group" id="avtal-group-2">
-                    <button type="button" class="toggle-btn" data-value="ja">Ja</button>
-                    <button type="button" class="toggle-btn" data-value="nej">Nej</button>
-                </div>
-                <input type="hidden" name="har_avtal_2" id="har-avtal-2" value="">
-                <div id="anstallningstid-container-2" style="display: none;">
-                    <label for="anstallningstid-2">
-                        Hur länge har du varit anställd på din nuvarande arbetsplats?
+                    <input type="number" name="inkomst1" id="inkomst1"
+                           placeholder="30000 kr" required>
+                    <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
+                    <label for="har-avtal-1">
+                        Har du kollektivavtal?
                         <span class="help-tooltip"
-                              title="Påverkar rätten till föräldralön"
-                              aria-label="Påverkar rätten till föräldralön"
-                              data-help="Påverkar rätten till föräldralön"
+                              title="Kollektivavtal kan ge extra föräldralön"
+                              aria-label="Kollektivavtal kan ge extra föräldralön"
+                              data-help="Kollektivavtal kan ge extra föräldralön"
                               tabindex="0">?</span>
                     </label>
-                    <div class="button-group" id="anstallningstid-group-2">
-                        <button type="button" class="toggle-btn" data-value="0-5">0-5 månader</button>
-                        <button type="button" class="toggle-btn" data-value="6-12">6 månader - 1 år</button>
-                        <button type="button" class="toggle-btn" data-value=">1">&gt; 1 år</button>
+                    <div class="button-group" id="avtal-group-1">
+                        <button type="button" class="toggle-btn" data-value="ja">Ja</button>
+                        <button type="button" class="toggle-btn" data-value="nej">Nej</button>
                     </div>
-                    <input type="hidden" name="anstallningstid_2" id="anstallningstid-2" value="">
+                    <input type="hidden" name="har_avtal_1" id="har-avtal-1" value="">
+                    <div id="anstallningstid-container-1" style="display: none;">
+                        <label for="anstallningstid-1">
+                            Hur länge har du varit anställd på din nuvarande arbetsplats?
+                            <span class="help-tooltip"
+                                  title="Påverkar rätten till föräldralön"
+                                  aria-label="Påverkar rätten till föräldralön"
+                                  data-help="Påverkar rätten till föräldralön"
+                                  tabindex="0">?</span>
+                        </label>
+                        <div class="button-group" id="anstallningstid-group-1">
+                            <button type="button" class="toggle-btn" data-value="0-5">0-5 månader</button>
+                            <button type="button" class="toggle-btn" data-value="6-12">6 månader - 1 år</button>
+                            <button type="button" class="toggle-btn" data-value=">1">&gt; 1 år</button>
+                        </div>
+                        <input type="hidden" name="anstallningstid_1" id="anstallningstid-1" value="">
+                    </div>
                 </div>
-            </div>
 
-            <button type="submit" id="calculate-btn" class="hidden">Visa resultat</button>
+                <div id="inkomst-block-2" class="form-section" data-partner-field>
+                    <div class="question-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                    <label for="inkomst2">
+                        Månadsinkomst förälder 2 (före skatt):
+                        <span class="help-tooltip"
+                              title="Ange din partners bruttolön innan skatt"
+                              aria-label="Ange din partners bruttolön innan skatt"
+                              data-help="Ange din partners bruttolön innan skatt"
+                              tabindex="0">?</span>
+                    </label>
+                    <input type="number" name="inkomst2" id="inkomst2"
+                           placeholder="30000 kr">
+                    <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
+                    <label for="har-avtal-2">
+                        Har din partner kollektivavtal?
+                        <span class="help-tooltip"
+                              title="Kollektivavtal kan ge extra föräldralön"
+                              aria-label="Kollektivavtal kan ge extra föräldralön"
+                              data-help="Kollektivavtal kan ge extra föräldralön"
+                              tabindex="0">?</span>
+                    </label>
+                    <div class="button-group" id="avtal-group-2">
+                        <button type="button" class="toggle-btn" data-value="ja">Ja</button>
+                        <button type="button" class="toggle-btn" data-value="nej">Nej</button>
+                    </div>
+                    <input type="hidden" name="har_avtal_2" id="har-avtal-2" value="">
+                    <div id="anstallningstid-container-2" style="display: none;">
+                        <label for="anstallningstid-2">
+                            Hur länge har din partner varit anställd?
+                            <span class="help-tooltip"
+                                  title="Påverkar rätten till föräldralön"
+                                  aria-label="Påverkar rätten till föräldralön"
+                                  data-help="Påverkar rätten till föräldralön"
+                                  tabindex="0">?</span>
+                        </label>
+                        <div class="button-group" id="anstallningstid-group-2">
+                            <button type="button" class="toggle-btn" data-value="0-5">0-5 månader</button>
+                            <button type="button" class="toggle-btn" data-value="6-12">6 månader - 1 år</button>
+                            <button type="button" class="toggle-btn" data-value=">1">&gt; 1 år</button>
+                        </div>
+                        <input type="hidden" name="anstallningstid_2" id="anstallningstid-2" value="">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="wizard-step" id="step-preferences">
+                <legend>Preferenser</legend>
+                <div class="form-section">
+                    <label>När är barnet beräknat?</label>
+                    <div class="date-picker-container">
+                        <input type="date" id="barn-datum" name="barn-datum" required>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <label>Hur länge vill du/ni vara lediga? (månader)</label>
+                    <input type="number" id="ledig-tid-5823" name="ledig-tid-1" min="0" placeholder="Ange antal månader">
+                </div>
+                <div class="form-section" id="parent-ledig-tid" data-partner-field>
+                    <label>Hur länge vill din partner vara ledig? (månader)</label>
+                    <input type="number" id="ledig-tid-2" name="ledig-tid-2" min="0" placeholder="Ange antal månader">
+                </div>
+                <div class="form-section">
+                    <label for="min-inkomst">Minimi-netto för hushållet (kr/månad)</label>
+                    <input type="number" id="min-inkomst" name="min-inkomst" min="0" placeholder="Ange belopp">
+                    <div id="min-income-error" class="inline-error" role="alert" aria-live="assertive" style="display: none;"></div>
+                </div>
+                <div class="form-section">
+                    <label for="strategy">Välj strategi:</label>
+                    <div class="toggle-group" id="strategy-group">
+                        <div class="toggle-options">
+                            <button type="button" class="toggle-btn active" data-value="longer">Längre ledighet</button>
+                            <button type="button" class="toggle-btn" data-value="maximize">Maximera inkomst</button>
+                        </div>
+                        <input type="hidden" id="strategy" value="longer">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="wizard-step" id="step-summary">
+                <legend>Resultat</legend>
+                <p class="summary-intro">Sammanfatta dina uppgifter och visa resultatet när du är redo.</p>
+            </fieldset>
+
+            <div class="wizard-nav">
+                <button type="button" id="back-btn" class="hidden back-btn">&larr; Tillbaka</button>
+                <button type="button" id="next-btn">Nästa steg</button>
+                <button type="submit" id="calculate-btn" class="hidden">Visa resultat</button>
+            </div>
         </form>
 
+        <div class="mobile-sticky" id="mobile-summary" aria-live="polite">
+            <div class="mobile-summary-content">
+                <div class="mobile-summary-item">
+                    <span class="summary-label">Prognos hushållsnetto / månad</span>
+                    <span class="summary-value" id="sticky-netto">–</span>
+                </div>
+                <div class="mobile-summary-item">
+                    <span class="summary-label">Återstående dagar</span>
+                    <span class="summary-value" id="sticky-days">–</span>
+                </div>
+            </div>
+            <button type="button" id="sticky-cta" class="primary-cta">Visa resultat</button>
+        </div>
+
         <div id="result-block"></div>
-        <div class="toggle-group" id="strategy-group" style="display: none;">
-            <label for="strategy">Välj strategi:</label>
-            <div class="toggle-options">
-                <button class="toggle-btn active" data-value="longer">Längre ledighet</button>
-                <button class="toggle-btn" data-value="maximize">Maximera inkomst</button>
+        <div class="preference-group" id="leave-slider-container" style="display: none;">
+            <input type="range" id="leave-slider" min="0" max="0" value="0" step="1" list="leave-ticks">
+            <datalist id="leave-ticks"></datalist>
+            <div class="slider-labels">
+                <span id="slider-start">0</span>
+                <span id="slider-end">0</span>
             </div>
-            <input type="hidden" id="strategy" value="longer">
+            <div class="slider-values">
+                <span class="slider-value p1-value"><strong>Förälder 1:</strong> <span id="p1-months">0</span> månader</span>
+                <span class="slider-value p2-value"><strong>Förälder 2:</strong> <span id="p2-months">0</span> månader</span>
+            </div>
         </div>
-        
-        <div class="form-section" id="preferences-section" style="display: none;">
-            <h3>Preferenser för föräldraledighet</h3>
-            <div class="form-section">
-                <label>När är barnet beräknat?</label>
-                <div class="date-picker-container">
-                    <input type="date" id="barn-datum" name="barn-datum" required>
-                </div>
-            </div>
-            <div class="preference-group">
-                <label>Hur länge vill du/ni vara lediga? (månader)</label>
-                <input type="number" id="ledig-tid-5823" name="ledig-tid-1" min="0" placeholder="Ange antal månader">
-            </div>
-            <div class="preference-group" id="leave-slider-container" style="display: none;">
-                <input type="range" id="leave-slider" min="0" max="0" value="0" step="1" list="leave-ticks">
-                <datalist id="leave-ticks"></datalist>
-                <div class="slider-labels">
-                    <span id="slider-start">0</span>
-                    <span id="slider-end">0</span>
-                </div>
-                <div class="slider-values">
-                    <span class="slider-value p1-value"><strong>Förälder 1:</strong> <span id="p1-months">0</span> månader</span>
-                    <span class="slider-value p2-value"><strong>Förälder 2:</strong> <span id="p2-months">0</span> månader</span>
-                </div>
-            </div>
-            <div class="preference-group" id="parent-ledig-tid" style="display: none;">
-                <label>Hur länge vill din partner vara ledig? (månader)</label>
-                <input type="number" id="ledig-tid-2" name="ledig-tid-2" min="0" placeholder="Ange antal månader">
-            </div>
-            <div class="preference-group">
-                <label>Vad är minimigränsen för hushållets månadsinkomst (netto)? (kr/månad)</label>
-                <input type="number" id="min-inkomst" name="min-inkomst" min="0" placeholder="Ange belopp">
-                <div id="min-income-error" style="color: red; display: none; margin-top: 10px;">
-                    Vänligen ange minimigräns för din månadsinkomst.
-                </div>
-                <div class="info-box">
-                    <div class="info-header">
-                        <span class="info-icon"><i class="fa-solid fa-circle-info"></i></span>
-                        <span><strong>Typiska hushållsutgifter i Sverige</strong></span>
-                        <span class="info-arrow">▾</span>
-                    </div>
-                <div class="info-content">
-                    <p>För att hjälpa dig sätta en realistisk minimigräns, här är genomsnittliga månatliga utgifter för ett hushåll (SCB 2024, justerat för 2025):</p>
-                    <ul>
-                        <li><strong>Bostad (hyra/lån)</strong>: 8,000–12,000 kr (1–3 rum, varierar per stad)</li>
-                        <li><strong>El, vatten, värme, internet</strong>: 2,000–3,000 kr</li>
-                        <li><strong>Förskola (dagis)</strong>: Upp till 1,400 kr per barn (inkomstbaserat)</li>
-                        <li><strong>Mat</strong>: 4,000–6,000 kr (1–2 barn)</li>
-                        <li><strong>Transport</strong>: 1,500–3,000 kr (kollektivtrafik eller bil)</li>
-                        <li><strong>Övrigt (försäkring, kläder, fritid)</strong>: 2,000–4,000 kr</li>
-                    </ul>
-                    <p><strong>Totalt</strong>: ~18,000–29,000 kr/månad för en familj med 1–2 barn. Anpassa efter din situation, t.ex. Stockholm är dyrare än mindre orter.</p>
-                </div>
-            </div>
-            </div>
-            <div id="leave-duration-error" style="color: red; display: none; margin-top: 10px;">
-                Ogiltig ledighetslängd. Kontrollera antalet dagar och försök igen.
-            </div>
-            <button type="button" id="optimize-btn" style="display: none;">Optimera föräldraledighet</button>
+        <div id="leave-duration-error" style="color: red; display: none; margin-top: 10px;">
+            Ogiltig ledighetslängd. Kontrollera antalet dagar och försök igen.
         </div>
+        <button type="button" id="optimize-btn" style="display: none;">Optimera föräldraledighet</button>
         <div id="optimization-result" style="display: none;">
             <h3>Optimerat schema för föräldraledighet</h3>
             <div id="gantt-chart"></div>
-        <div id="calendar-container"  style="display: none;">
+            <div id="calendar-container"  style="display: none;">
 
                 <div class="blocks-container">
                     <h3>Disponibla Veckoblock</h3>

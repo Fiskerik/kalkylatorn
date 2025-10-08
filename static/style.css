@@ -10,10 +10,22 @@ body {
     padding: 2rem;
 }
 .toggle-btn {
-    display: flex;
-    justify-content: center;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
+    background-color: #f0f2f5;
+    color: #1f2937;
+    border: 1px solid #d0d5dd;
+    border-radius: 999px;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+    width: auto;
+    min-height: 40px;
+    line-height: 1.2;
     text-align: center;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 h1 {
@@ -32,23 +44,16 @@ h3 {
 }
 /* Behåll denna för barnantal */
 .button-group.barnval .toggle-btn {
-    width: 50px;
-    height: 50px;
+    flex: 0 0 40px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
     padding: 0;
-    font-size: 18px;
+    font-size: 0.9rem;
     text-align: center;
     border-radius: 8px;
-    background-color: #e3e3e3;
-    color: #333;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.button-group .toggle-btn {
-    width: auto;
-    padding: 10px 20px;
+    font-weight: 700;
+    margin-top: 0;
 }
 
 form {
@@ -57,13 +62,50 @@ form {
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
-    position: relative;
+}
+
+form fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+form fieldset + fieldset {
+    margin-top: 2rem;
+}
+
+fieldset legend {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.summary-intro {
+    font-size: 1rem;
+    color: #475467;
+    margin: 0;
 }
 
 label {
     display: block;
     margin-top: 1rem;
     font-weight: 600;
+    text-align: center;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    accent-color: #00796b;
 }
 
 input,
@@ -79,7 +121,7 @@ button {
     text-align: center;
 }
 
-button, .toggle-btn {
+button {
     background-color: #00796b;
     color: white;
     font-weight: bold;
@@ -91,6 +133,20 @@ button, .toggle-btn {
     border-radius: 6px;
 }
 
+.toggle-btn:hover,
+.toggle-btn:focus-visible {
+    background-color: #e0f2f1;
+    border-color: #00796b;
+    color: #0f766e;
+}
+
+.toggle-btn.active {
+    background-color: #00796b;
+    border-color: #0f766e;
+    color: #ffffff;
+}
+
+
 
 
 .button-group {
@@ -98,7 +154,15 @@ button, .toggle-btn {
     flex-wrap: wrap;
     gap: 10px;
     margin-top: 0.5rem;
-    text-align: justify
+    justify-content: center;
+}
+
+.button-group.barnval {
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 6px;
+    padding-bottom: 0;
+    overflow-x: auto;
 }
 
 .result {
@@ -161,7 +225,8 @@ canvas {
     flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    gap: 1.5rem;
 }
 
 
@@ -205,44 +270,101 @@ canvas {
 }
 
 
-.button-group:not(.barnval) .toggle-btn:hover,
 button:hover {
     background-color: #005f56;
 }
 
-.button-group.barnval .toggle-btn:hover {
-    background-color: #d0d0d0;
+.button-group.barnval .toggle-btn {
+    flex: 0 0 40px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0;
+    font-size: 0.9rem;
+    line-height: 1;
+    border-radius: 8px;
+    font-weight: 700;
 }
 
-.button-group .toggle-btn.active {
-    background-color: #00796b;
-    color: white;
+.button-group.barnval .toggle-btn:hover,
+.button-group.barnval .toggle-btn:focus-visible {
+    background-color: #e5f4f2;
+    border-color: #0f766e;
+    color: #0f766e;
+}
+
+.button-group.barnval .toggle-btn.active {
+    background-color: #145847;
+    border-color: #0f3d33;
+    color: #ffffff;
+}
+
+#avtal-group-1,
+#avtal-group-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#avtal-group-1 .toggle-btn,
+#avtal-group-2 .toggle-btn {
+    width: 100%;
+    min-width: 0;
+}
+
+#anstallningstid-group-1,
+#anstallningstid-group-2 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#anstallningstid-group-1 .toggle-btn,
+#anstallningstid-group-2 .toggle-btn {
+    width: 100%;
+    min-width: 0;
+    font-size: 0.9rem;
+    padding: 10px 8px;
 }
 
 .question-icon {
     font-size: 2rem;
     color: #00796b;
     margin-bottom: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
 }
 
-#back-btn {
-    background: none;
-    border: none;
-    color: #00796b;
-    font-weight: bold;
-    cursor: pointer;
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
+.wizard-nav {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.wizard-nav button {
+    flex: 1;
     width: auto;
-    margin: 0;
+    margin-top: 0;
+}
+
+.wizard-nav #back-btn {
+    background: transparent;
+    border: 1px solid #00796b;
+    color: #00796b;
+}
+
+.wizard-nav #back-btn:hover,
+.wizard-nav #back-btn:focus-visible {
+    background: #e0f2f1;
 }
 
 #calculate-btn {
     width: auto;
-    max-width: 300px;
-    margin: 1.5rem auto 3rem;
-    display: block;
+    max-width: none;
+    margin: 0;
 }
 
 #calculate-btn.hidden {
@@ -486,6 +608,11 @@ input[type="number"] {
 .info-icon {
     color: #00796b;
     font-size: 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
 }
 
 .info-arrow {
@@ -531,6 +658,11 @@ input[type="number"] {
 .result-icon {
     color: #00796b;
     font-size: 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
 }
 
 .result-arrow {
@@ -802,6 +934,7 @@ input[type="number"] {
 @media (max-width: 768px) {
     body {
         padding: 1rem;
+        padding-bottom: 4.5rem;
     }
 
     h1 {
@@ -817,26 +950,67 @@ input[type="number"] {
     }
 
     .form-section {
-        align-items: stretch;
-        text-align: left;
+        align-items: center;
+        text-align: center;
     }
 
     .form-section .question-icon {
-        margin-bottom: 0.75rem;
+        margin: 0 auto 0.75rem;
     }
 
     .button-group {
         justify-content: center;
     }
 
-    .button-group .toggle-btn {
+    .button-group:not(.barnval) .toggle-btn {
         flex: 1 1 calc(50% - 10px);
         min-width: 150px;
     }
 
-    .button-group.barnval .toggle-btn {
-        flex: 1 1 calc(33% - 10px);
-        min-width: 60px;
+    .button-group.barnval {
+        justify-content: center;
+    }
+
+    .result-block,
+    .result-section,
+    .monthly-box,
+    .benefit-card {
+        font-size: 0.9rem;
+    }
+
+    .monthly-box h3,
+    .benefit-title {
+        font-size: 1rem;
+    }
+
+    .benefit-value-large {
+        font-size: 1.35rem;
+    }
+
+    .benefit-value-medium {
+        font-size: 0.95rem;
+    }
+
+    .monthly-row {
+        font-size: 0.85rem;
+    }
+
+    .monthly-total {
+        font-size: 1rem;
+    }
+
+    .monthly-total .total-value {
+        font-size: 1.05rem;
+    }
+
+    .duration-text {
+        font-size: 1.1rem;
+    }
+
+    .summary-intro,
+    .info-text,
+    .monthly-info {
+        font-size: 0.9rem;
     }
 
     .dev-shortcuts {
@@ -853,18 +1027,17 @@ input[type="number"] {
     }
 
     #progress-bar {
-        overflow-x: auto;
-        gap: 12px;
-        padding: 10px 12px;
-        --progress-circle-size: 36px;
+        gap: 6px;
+        padding: 6px 8px;
+        --progress-circle-size: 30px;
     }
 
     #progress-bar .step {
-        min-width: 120px;
+        min-width: 70px;
     }
 
     #progress-bar .step-label {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
     }
 }
 
@@ -895,10 +1068,6 @@ input[type="number"] {
         font-size: 1.2em;
     }
 
-    .button-group .toggle-btn {
-        min-width: 130px;
-    }
-
     .container {
         padding: 1.5rem 0.75rem;
     }
@@ -920,14 +1089,14 @@ input[type="number"] {
         padding: 1.25rem 0.9rem;
     }
 
-    .button-group .toggle-btn {
+    .button-group:not(.barnval) .toggle-btn {
         flex: 1 1 100%;
         min-width: 0;
     }
 
     .button-group.barnval .toggle-btn {
-        flex: 1 1 30%;
-        max-width: 70px;
+        flex: 0 0 36px;
+        max-width: 36px;
     }
 
     #progress-bar {
@@ -935,7 +1104,7 @@ input[type="number"] {
     }
 
     #progress-bar .step {
-        min-width: 95px;
+        min-width: 70px;
     }
 
     #progress-bar .step-label {
@@ -951,12 +1120,15 @@ input[type="number"] {
     left: 0;
     width: 100%;
     background-color: #fff;
-    padding: 10px 20px;
+    padding: 8px 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     counter-reset: step;
-    min-height: 50px;
-    --progress-circle-size: 42px;
+    min-height: 42px;
+    --progress-circle-size: 34px;
+    box-sizing: border-box;
+    gap: 8px;
+    transition: padding 0.2s ease, box-shadow 0.2s ease;
 }
 
 #progress-bar .step {
@@ -967,7 +1139,8 @@ input[type="number"] {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
+    min-width: 72px;
 }
 
 #progress-bar .step::before {
@@ -985,12 +1158,22 @@ input[type="number"] {
     background-color: white;
     color: inherit;
     font-size: 1.2rem;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+#progress-bar .step-circle i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
 
 #progress-bar .step-label {
-    font-size: 0.85rem;
-    line-height: 1.1;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    max-width: 90px;
+    white-space: normal;
 }
 
 /* Completed steps (darker color) */
@@ -1058,7 +1241,22 @@ input[type="number"] {
 
 /* Adjust container padding */
 .container {
-    padding-top: 70px;
+    padding-top: 60px;
+}
+
+#progress-bar.compact {
+    padding: 4px 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --progress-circle-size: 26px;
+    min-height: 36px;
+}
+
+#progress-bar.compact .step-circle {
+    transform: scale(0.92);
+}
+
+#progress-bar.compact .step-label {
+    font-size: 0.7rem;
 }
 /*Månadsbox*/
 .duration-info {
@@ -1089,18 +1287,19 @@ input[type="number"] {
 
 
 .uttag-container {
-    flex: 0 0 260px;
-    width: 100%;
+    flex: 0 0 auto;
+    width: min(240px, 100%);
     display: flex;
     flex-direction: column; /* Stack children vertically */
-    align-items: flex-start;
-    gap: 10px;
-    padding: 20px;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
-    max-width: 260px;
+    max-width: 240px;
     box-sizing: border-box;
+    align-self: flex-start;
 }
 canvas#gantt-canvas {
     height: 400px !important;
@@ -1211,15 +1410,26 @@ canvas#gantt-canvas {
     width: 100%;
 }
 
+#step-preferences label {
+    width: 100%;
+    text-align: center;
+}
+
+#step-preferences .date-picker-container {
+    display: flex;
+    justify-content: center;
+}
+
 .date-picker-container input[type="date"] {
     width: 100%;
     padding: 0.8rem 2.5rem 0.8rem 0.8rem; /* Space for the icon */
-    margin-top: 0.5rem;
+    margin: 0.5rem auto 0;
     border: 1px solid #ccc;
     border-radius: 6px;
     box-sizing: border-box;
     font-size: 16px;
     text-align: center;
+    max-width: 280px;
 }
 
 .date-picker-container .calendar-icon {
@@ -1408,11 +1618,81 @@ canvas#gantt-canvas {
 }
 
 .wizard-step.visible {
-    display: flex;
+    display: block;
 }
 
 .hidden {
     display: none;
+}
+
+.inline-error {
+    color: #d92d20;
+    font-size: 0.95rem;
+    margin-top: 0.75rem;
+}
+
+.mobile-sticky {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px max(16px, env(safe-area-inset-left)) 10px max(16px, env(safe-area-inset-right));
+    background: var(--surface, #fff);
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.12);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    display: none;
+    gap: 12px;
+    z-index: 1050;
+    align-items: center;
+}
+
+.mobile-summary-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.mobile-summary-item {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.75rem;
+    color: #475467;
+}
+
+.summary-label {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.summary-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #101828;
+}
+
+.primary-cta {
+    width: auto;
+    margin: 0;
+}
+
+.mobile-sticky.is-visible {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-sticky.is-visible {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .primary-cta {
+        flex-shrink: 0;
+    }
+
+    .mobile-summary-content {
+        flex: 1;
+    }
 }
 
 /* Slider for distributing leave between parents */
