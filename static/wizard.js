@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentIndex = idx.household;
     let history = [];
     let partnerActive = true;
+    let hasDisplayedInitially = false;
 
     const calculateBtn = document.getElementById('calculate-btn');
     const backBtn = document.getElementById('back-btn');
@@ -29,16 +30,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const barnError = document.getElementById('barn-selection-error');
     const progressSteps = document.querySelectorAll('#progress-bar .step');
     const progressBar = document.getElementById('progress-bar');
+    const wizardForm = document.getElementById('calc-form');
 
     const COMPACT_SCROLL_THRESHOLD = 120;
+    const mobileQuery = window.matchMedia('(max-width: 768px)');
 
     const handleScroll = () => {
         if (!progressBar) return;
+        if (!mobileQuery.matches) {
+            progressBar.classList.remove('compact');
+            return;
+        }
         const shouldCompact = window.scrollY > COMPACT_SCROLL_THRESHOLD;
         progressBar.classList.toggle('compact', shouldCompact);
     };
 
+    const scrollToWizardTop = () => {
+        const target = wizardForm || document.querySelector('.container');
+        if (!target) return;
+        const rect = target.getBoundingClientRect();
+        const offset = Math.max(0, window.scrollY + rect.top - 32);
+        window.scrollTo({ top: offset, behavior: 'smooth' });
+    };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
+    if (typeof mobileQuery.addEventListener === 'function') {
+        mobileQuery.addEventListener('change', handleScroll);
+    } else if (typeof mobileQuery.addListener === 'function') {
+        mobileQuery.addListener(handleScroll);
+    }
 
     function setPartnerFieldsVisible(visible) {
         partnerActive = visible;
@@ -86,6 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
         currentIndex = index;
         updateProgress(index + 1);
         updateNavigation();
+        if (hasDisplayedInitially) {
+            scrollToWizardTop();
+        } else {
+            hasDisplayedInitially = true;
+        }
     }
 
     function validateStep(index) {
@@ -296,6 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.appState = undefined;
         document.dispatchEvent(new Event('results-reset'));
         history = [];
+        hasDisplayedInitially = false;
         displayStep(idx.household);
     }
 

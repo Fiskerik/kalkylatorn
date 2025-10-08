@@ -318,6 +318,10 @@ export function renderGanttChart(
         ? window.matchMedia('(max-width: 720px)').matches
         : false;
 
+    const basePointRadius = isMobileView ? 6 : 4;
+    const activePointRadius = isMobileView ? 8 : 6;
+    const hoverPointRadius = isMobileView ? 10 : 8;
+
     const minIncomeRequirement = Number(genomförbarhet?.minInkomst) || 0;
     const highlightColors = {
         warning: 'rgba(255, 223, 94, 0.25)',
@@ -333,7 +337,7 @@ export function renderGanttChart(
 
     const baseLegendDefinitions = [
         { color: '#800080', text: 'Överlappande Ledighet' },
-        { color: '#28a745', text: 'Förälder 1 Ledig' },
+        { color: '#00796b', text: 'Förälder 1 Ledig' },
         { color: '#f28c38', text: 'Förälder 1 Ledig (Överförda dagar)' },
         { color: '#007bff', text: 'Förälder 2 Ledig' },
         { color: 'red', text: 'Efter Ledighet' }
@@ -664,7 +668,7 @@ export function renderGanttChart(
         if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
         if (x < period1TotalWeeks) {
             if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-            return '#28a745';
+            return '#00796b';
         }
         if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
         return 'red';
@@ -1593,75 +1597,28 @@ export function renderGanttChart(
         }
 
         let summaryMessageHtml = '';
-        if (baselineIncomeTotal != null) {
-            const strategyIncomeTotal = useBaselineForDisplay
-                ? baselineIncomeTotal
-                : Math.round(toFiniteNumber(summary.totalIncome));
-            if (Number.isFinite(strategyIncomeTotal)) {
-                let dayDiffSegment = '';
-                if (baselineSummary) {
-                    const baselineRemainingTotal = Math.round(toFiniteNumber(baselineSummary.totalRemainingDays));
-                    const strategyRemainingTotal = useBaselineForDisplay
-                        ? baselineRemainingTotal
-                        : Math.round(toFiniteNumber(summary.totalRemainingDays));
-                    if (
-                        Number.isFinite(baselineRemainingTotal) &&
-                        Number.isFinite(strategyRemainingTotal)
-                    ) {
-                        const diffDays = useBaselineForDisplay
-                            ? 0
-                            : strategyRemainingTotal - baselineRemainingTotal;
-                        let diffClass = 'neutral';
-                        let diffLabel = '0 dagar';
-                        if (diffDays > 0) {
-                            diffClass = 'positive';
-                            diffLabel = `+${Math.abs(diffDays).toLocaleString('sv-SE')} dagar`;
-                        } else if (diffDays < 0) {
-                            diffClass = 'negative';
-                            diffLabel = `−${Math.abs(diffDays).toLocaleString('sv-SE')} dagar`;
-                        }
-                        dayDiffSegment = ` Antalet dagar förändras med <span class="days-diff ${diffClass}">${diffLabel}</span>.`;
-                    }
-                }
+        const resolvedIncomeTotal = Math.round(toFiniteNumber(displaySummary?.totalIncome));
+        let resolvedRemainingTotal = Math.round(toFiniteNumber(displaySummary?.totalRemainingDays));
+        if (!Number.isFinite(resolvedRemainingTotal) && displaySummary?.remainingDays) {
+            const parent1Remaining = displaySummary.remainingDays.parent1 || {};
+            const parent2Remaining = displaySummary.remainingDays.parent2 || {};
+            const parent1Total = toNonNegative(parent1Remaining.income) + toNonNegative(parent1Remaining.min);
+            const parent2Total = toNonNegative(parent2Remaining.income) + toNonNegative(parent2Remaining.min);
+            resolvedRemainingTotal = Math.round(parent1Total + parent2Total);
+        }
+        const formattedIncomeTotal = Number.isFinite(resolvedIncomeTotal)
+            ? resolvedIncomeTotal.toLocaleString('sv-SE')
+            : null;
+        const formattedRemainingTotal = Number.isFinite(resolvedRemainingTotal)
+            ? resolvedRemainingTotal.toLocaleString('sv-SE')
+            : null;
 
-                const formattedIncomeTotal = strategyIncomeTotal.toLocaleString('sv-SE');
-                let messageHtml = '';
-
-                if (useBaselineForDisplay) {
-                    if (boxData.type === 'remainingDays') {
-                        const parent1Remaining = Math.round(
-                            toNonNegative(displaySummary?.remainingDays?.parent1?.income)
-                        );
-                        const parent2Remaining = Math.round(
-                            toNonNegative(displaySummary?.remainingDays?.parent2?.income)
-                        );
-                        const totalSavedDays = parent1Remaining + parent2Remaining;
-                        const savedLabel = `${totalSavedDays.toLocaleString('sv-SE')} dagar`;
-                        messageHtml = `Denna strategi ger <span class="income-diff positive">den totala nettoinkomsten ${formattedIncomeTotal} sek</span>.<br>Med detta upplägg <span class="days-diff positive">sparar du ${savedLabel}</span>.`;
-                    } else {
-                        messageHtml = `Denna strategi ger <span class="income-diff positive">den totala nettoinkomsten ${formattedIncomeTotal} sek</span>.`;
-                    }
-                    dayDiffSegment = '';
-                } else if (strategyIncomeTotal === baselineIncomeTotal) {
-                    messageHtml = `Denna strategi ger samma totala inkomst (${formattedIncomeTotal} sek) som ditt nuvarande val.`;
-                } else {
-                    const diffValue = strategyIncomeTotal - baselineIncomeTotal;
-                    const signClass = diffValue > 0 ? 'positive' : 'negative';
-                    const signLabel = diffValue > 0 ? '+' : '−';
-                    const diffText = `${signLabel}${Math.abs(diffValue).toLocaleString('sv-SE')} sek`;
-                    messageHtml = `Totala hushållsinkomsten blir <strong>${formattedIncomeTotal} sek</strong> med den här strategin, vilket är <span class="income-diff ${signClass}">${diffText}</span> jämfört med ditt nuvarande val.`;
-                }
-
-                summaryMessageHtml = dayDiffSegment
-                    ? `${messageHtml}${dayDiffSegment}`
-                    : messageHtml;
-            }
-        } else {
-            const fallbackIncome = Math.round(toFiniteNumber(displaySummary?.totalIncome));
-            if (Number.isFinite(fallbackIncome)) {
-                const formattedFallback = fallbackIncome.toLocaleString('sv-SE');
-                summaryMessageHtml = `Totala hushållsinkomsten blir <strong>${formattedFallback} sek</strong>.`;
-            }
+        if (formattedIncomeTotal && formattedRemainingTotal) {
+            summaryMessageHtml = `Denna strategi ger den totala nettoinkomsten <span class="strategy-highlight">${formattedIncomeTotal} sek</span>.<br>Med detta upplägg kommer du att ha <span class="strategy-highlight">${formattedRemainingTotal} dagar</span> kvar efter ledigheten.`;
+        } else if (formattedIncomeTotal) {
+            summaryMessageHtml = `Denna strategi ger den totala nettoinkomsten <span class="strategy-highlight">${formattedIncomeTotal} sek</span>.`;
+        } else if (formattedRemainingTotal) {
+            summaryMessageHtml = `Med detta upplägg kommer du att ha <span class="strategy-highlight">${formattedRemainingTotal} dagar</span> kvar efter ledigheten.`;
         }
 
         if (summaryMessageHtml) {
@@ -1789,7 +1746,8 @@ export function renderGanttChart(
             detailsContainer.classList.toggle('collapsed', !expanded);
         };
 
-        updateToggleState(!isMobileView);
+        const shouldExpandInitially = false;
+        updateToggleState(shouldExpandInitially);
 
         toggleButton.addEventListener('click', () => {
             const isExpanded = !detailsContainer.classList.contains('collapsed');
@@ -2021,9 +1979,9 @@ export function renderGanttChart(
     const totalIncomeDisplay = document.createElement('div');
     totalIncomeDisplay.className = 'total-income-display';
     if (baselineIncomeTotal != null && Number.isFinite(baselineIncomeTotal)) {
-        totalIncomeDisplay.textContent = `Total income: ${baselineIncomeTotal.toLocaleString('sv-SE')} sek`;
+        totalIncomeDisplay.textContent = `Total inkomst under perioden: ${baselineIncomeTotal.toLocaleString('sv-SE')} sek`;
     } else {
-        totalIncomeDisplay.textContent = 'Total income: –';
+        totalIncomeDisplay.textContent = 'Total inkomst under perioden: –';
     }
     ganttChart.appendChild(messageDiv);
     ganttChart.appendChild(totalIncomeDisplay);
@@ -2160,8 +2118,8 @@ export function renderGanttChart(
                         chart.data.datasets[0].data = pointDisplayData;
                         chart.data.datasets[0].pointBackgroundColor = getPointBackgroundColors();
                         chart.data.datasets[0].pointBorderColor = getPointBorderColors();
-                        chart.data.datasets[0].pointRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 6 : 4);
-                        chart.data.datasets[0].pointHoverRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 8 : 6);
+                        chart.data.datasets[0].pointRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? activePointRadius : basePointRadius);
+                        chart.data.datasets[0].pointHoverRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? hoverPointRadius : activePointRadius);
                         chart.update();
                         updateMessage();
                     }
@@ -2273,8 +2231,8 @@ export function renderGanttChart(
                 data: pointDisplayData,
                 borderWidth: 2,
                 fill: false,
-                pointRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 6 : 4),
-                pointHoverRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? 8 : 6),
+                pointRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? activePointRadius : basePointRadius),
+                pointHoverRadius: pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? hoverPointRadius : activePointRadius),
                 segment: {
                     borderColor: ctx => getPeriodColor(ctx.p0.parsed.x),
                     backgroundColor: ctx => getPeriodColor(ctx.p0.parsed.x)

@@ -58,7 +58,9 @@ function setBirthDateToToday(force = false) {
     if (!force && birthDateInput.value) return;
     const today = new Date();
     const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
-    birthDateInput.value = localDate.toISOString().split('T')[0];
+    const isoDate = localDate.toISOString().split('T')[0];
+    birthDateInput.value = isoDate;
+    birthDateInput.setAttribute('value', isoDate);
 }
 
 document.addEventListener('results-reset', () => setBirthDateToToday(false));
@@ -229,7 +231,6 @@ function handleFormSubmit(e) {
         preferensTotalLedigTid: totalPreferensLedigTid
     };
 
-    const includePartner = vårdnad === 'gemensam' && beräknaPartner === 'ja';
     const leaveContainer = document.getElementById('leave-slider-container');
     if (leaveContainer) {
         leaveContainer.style.display = includePartner ? 'block' : 'none';
@@ -675,5 +676,5 @@ function updateLeaveDisplay(slider, total) {
     if (p1Elem) p1Elem.textContent = format(p1);
     if (p2Elem) p2Elem.textContent = format(p2);
     const percent = total > 0 ? (p1 / total) * 100 : 0;
-    slider.style.background = `linear-gradient(to right, #28a745 0%, #28a745 ${percent}%, #007bff ${percent}%, #007bff 100%)`;
+    slider.style.background = `linear-gradient(to right, #00796b 0%, #00796b ${percent}%, #007bff ${percent}%, #007bff 100%)`;
 }
