@@ -180,31 +180,22 @@ const formatMonthsValue = (value) => {
     return `${numeric.toLocaleString('sv-SE')} månader`;
 };
 
-const formatDaysComparison = (currentDays, baselineDays, { forceNeutral = false } = {}) => {
-    const currentIncome = Math.round(toNonNegative(currentDays?.income));
-    const baselineIncome = baselineDays != null
-        ? Math.round(toNonNegative(baselineDays.income))
-        : null;
-
-    const formatted = {
-        valueText: `${currentIncome.toLocaleString('sv-SE')} dagar`,
-        diff: null
+const formatDayDifference = (diff, { includeParens = true, unit = 'dagar', neutralText = 'oförändrat' } = {}) => {
+    if (!Number.isFinite(diff)) {
+        return null;
+    }
+    const rounded = Math.round(diff);
+    if (rounded === 0) {
+        const text = includeParens ? `(${neutralText})` : neutralText;
+        return { text, className: 'neutral' };
+    }
+    const sign = rounded > 0 ? '+' : '−';
+    const suffix = unit ? ` ${unit}` : '';
+    const body = `${sign}${Math.abs(rounded).toLocaleString('sv-SE')}${suffix}`;
+    return {
+        text: includeParens ? `(${body})` : body,
+        className: rounded > 0 ? 'positive' : 'negative'
     };
-
-    if (forceNeutral && baselineIncome != null) {
-        return formatted;
-    }
-
-    if (baselineIncome != null && currentIncome !== baselineIncome) {
-        const diffValue = currentIncome - baselineIncome;
-        const sign = diffValue > 0 ? '+' : '−';
-        formatted.diff = {
-            text: `${sign}${Math.abs(diffValue).toLocaleString('sv-SE')} dagar`,
-            className: diffValue > 0 ? 'positive' : 'negative'
-        };
-    }
-
-    return formatted;
 };
 
 const formatDifference = (diff, { unit, fractionDigits = 0, epsilon = 0.05 } = {}) => {
@@ -1411,24 +1402,104 @@ export function renderGanttChart(
         heading.textContent = title;
         block.appendChild(heading);
 
-        const parent1Line = document.createElement('div');
-        parent1Line.className = 'strategy-days-line';
-        const parent1Formatted = formatDaysComparison(current?.parent1, baseline?.parent1, options);
-        parent1Line.innerHTML = `Förälder 1: ${parent1Formatted.valueText}`;
-        if (parent1Formatted.diff) {
-            parent1Line.innerHTML += ` <span class="days-diff ${parent1Formatted.diff.className}">(${parent1Formatted.diff.text})</span>`;
-        }
-        block.appendChild(parent1Line);
+        const renderUsedParent = (label, currentData = {}, baselineData = {}) => {
+            const parentWrapper = document.createElement('div');
+            parentWrapper.className = 'strategy-days-parent';
 
-        if (includePartner && current?.parent2) {
-            const parent2Line = document.createElement('div');
-            parent2Line.className = 'strategy-days-line';
-            const parent2Formatted = formatDaysComparison(current.parent2, baseline?.parent2, options);
-            parent2Line.innerHTML = `Förälder 2: ${parent2Formatted.valueText}`;
-            if (parent2Formatted.diff) {
-                parent2Line.innerHTML += ` <span class="days-diff ${parent2Formatted.diff.className}">(${parent2Formatted.diff.text})</span>`;
+            const parentLabel = document.createElement('div');
+            parentLabel.className = 'strategy-days-parent-label';
+            parentLabel.textContent = `${label}:`;
+            parentWrapper.appendChild(parentLabel);
+
+            const createDetailLine = (detailLabel, currentValue, baselineValue) => {
+                const detailLine = document.createElement('div');
+                detailLine.className = 'strategy-days-detail';
+                const currentNumeric = Math.round(toNonNegative(currentValue));
+                detailLine.innerHTML = `
+                    <span class="detail-label">${detailLabel}:</span>
+                    <span class="detail-value">${currentNumeric.toLocaleString('sv-SE')} dagar</span>
+                `;
+                if (!options.forceNeutral && baselineValue != null) {
+                    const baselineNumeric = Math.round(toNonNegative(baselineValue));
+                    const diffInfo = formatDayDifference(currentNumeric - baselineNumeric);
+                    if (diffInfo) {
+                        const diffSpan = document.createElement('span');
+                        diffSpan.className = `days-diff ${diffInfo.className}`;
+                        diffSpan.textContent = diffInfo.text;
+                        detailLine.appendChild(diffSpan);
+                    }
+                }
+                return detailLine;
+            };
+
+            parentWrapper.appendChild(
+                createDetailLine('Sjukpenningsnivå', currentData.income, baselineData?.income)
+            );
+            parentWrapper.appendChild(
+                createDetailLine('Lägstanivå', currentData.min, baselineData?.min)
+            );
+            return parentWrapper;
+        };
+
+        const renderRemainingLine = (label, currentData = {}, baselineData = {}) => {
+            const line = document.createElement('div');
+            line.className = 'strategy-days-line';
+            const incomeDays = Math.round(toNonNegative(currentData.income));
+            const minDays = Math.round(toNonNegative(currentData.min));
+            const totalDays = incomeDays + minDays;
+            line.textContent = `${label}: ${totalDays.toLocaleString('sv-SE')} dagar`;
+
+            if (!options.forceNeutral && baselineData) {
+                const baselineIncome = Math.round(toNonNegative(baselineData.income));
+                const baselineMin = Math.round(toNonNegative(baselineData.min));
+                const incomeDiff = formatDayDifference(
+                    incomeDays - baselineIncome,
+                    { includeParens: false, unit: '', neutralText: '0' }
+                );
+                const minDiff = formatDayDifference(
+                    minDays - baselineMin,
+                    { includeParens: false, unit: '', neutralText: '0' }
+                );
+                if (incomeDiff && minDiff) {
+                    const wrapper = document.createElement('span');
+                    wrapper.className = 'days-diff-wrapper';
+                    wrapper.appendChild(document.createTextNode(' ('));
+                    const incomeSpan = document.createElement('span');
+                    incomeSpan.className = `days-diff ${incomeDiff.className}`;
+                    incomeSpan.textContent = incomeDiff.text;
+                    wrapper.appendChild(incomeSpan);
+                    wrapper.appendChild(document.createTextNode('/'));
+                    const minSpan = document.createElement('span');
+                    minSpan.className = `days-diff ${minDiff.className}`;
+                    minSpan.textContent = minDiff.text;
+                    wrapper.appendChild(minSpan);
+                    wrapper.appendChild(document.createTextNode(' dagar)'));
+                    line.appendChild(wrapper);
+                }
             }
-            block.appendChild(parent2Line);
+
+            return line;
+        };
+
+        if ((options.blockType || 'used') === 'remaining') {
+            block.appendChild(
+                renderRemainingLine('Förälder 1', current?.parent1, baseline?.parent1)
+            );
+            if (includePartner && current?.parent2) {
+                block.appendChild(
+                    renderRemainingLine('Förälder 2', current.parent2, baseline?.parent2)
+                );
+            }
+            return block;
+        }
+
+        block.appendChild(
+            renderUsedParent('Förälder 1', current?.parent1, baseline?.parent1)
+        );
+        if (includePartner && current?.parent2) {
+            block.appendChild(
+                renderUsedParent('Förälder 2', current.parent2, baseline?.parent2)
+            );
         }
 
         return block;
@@ -1552,7 +1623,7 @@ export function renderGanttChart(
                 'Använda dagar',
                 displaySummary.usedDays,
                 baselineSummary ? baselineSummary.usedDays : null,
-                { forceNeutral: useBaselineForDisplay }
+                { forceNeutral: useBaselineForDisplay, blockType: 'used' }
             )
         );
         box.appendChild(
@@ -1560,7 +1631,7 @@ export function renderGanttChart(
                 'Återstående dagar',
                 displaySummary.remainingDays,
                 baselineSummary ? baselineSummary.remainingDays : null,
-                { forceNeutral: useBaselineForDisplay }
+                { forceNeutral: useBaselineForDisplay, blockType: 'remaining' }
             )
         );
 
