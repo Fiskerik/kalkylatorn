@@ -182,7 +182,7 @@ button {
 .info-text {
     font-size: 16px;
     margin-top: 0.5rem;
-    text-align: justify;
+    text-align: left;
 }
 
 table {
@@ -435,7 +435,7 @@ button:hover {
     font-size: 0.95rem;
     line-height: 1.5;
     white-space: pre-wrap;
-    text-align: justify;
+    text-align: left;
 }
 
 .mobile-tooltip-close {
@@ -550,6 +550,12 @@ input[type="number"] {
     gap: 0.65rem;
 }
 
+.benefit-grid .info-box {
+    flex: 1 1 100%;
+    width: 100%;
+    align-self: stretch;
+}
+
 
 .benefit-title {
     font-weight: 600;
@@ -580,27 +586,43 @@ input[type="number"] {
     color: #666;
 }
 
+.benefit-bar-wrapper {
+    position: relative;
+    padding-top: 1.25rem;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.benefit-bar-labels {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .benefit-bar {
     height: 10px;
-    background: #ddd;
+    background: #d7e1df;
     border-radius: 5px;
-    margin-top: 1rem;
     position: relative;
+    width: 100%;
+    overflow: hidden;
 }
 
 .benefit-bar-fill {
     height: 100%;
-    background: #00796b;
+    background: #0f766e;
     border-radius: 5px;
     transition: width 0.3s ease-in-out;
 }
 
-.benefit-bar-labels {
-    display: flex;
-    justify-content: space-between;
+.benefit-bar-label {
     font-size: 0.85rem;
-    margin-top: 0.5rem;
     color: #777;
+    white-space: nowrap;
 }
 .benefit-details {
     margin-top: 0.5rem;
@@ -669,12 +691,27 @@ input[type="number"] {
     padding: 0 1rem 1rem;
     font-size: 0.95rem;
     color: #333;
-    text-align: justify;
+    text-align: left;
 }
 
 .info-box.open .info-content {
     display: block;
-    text-align: justify;
+    text-align: left;
+}
+
+.household-income-info .info-content ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.household-income-info .info-content li {
+    margin-bottom: 0.35rem;
+}
+
+.household-income-info .info-note {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: #475467;
 }
 
 .result-box {
@@ -1466,6 +1503,11 @@ canvas#gantt-canvas {
     margin-bottom: 20px;
 }
 
+.strategy-spacer {
+    width: 100%;
+    height: 12px;
+}
+
 #strategy-group {
     display: flex;
     align-items: center;
@@ -1666,7 +1708,7 @@ canvas#gantt-canvas {
     background-color: white;
 }
 .day-cell.parent1-start, .day-cell.parent1-end, .day-cell.parent1-single {
-    background-color: #00796b !important; /* Dark green */
+    background-color: #39d98a !important; /* Green */
 }
 .day-cell.parent1-between {
     background-color: #81c784 !important; /* Lighter green */
@@ -1683,8 +1725,8 @@ canvas#gantt-canvas {
 .day-cell.combined-between {
     background-color: #ce93d8 !important; /* Lighter purple */
 }
-.parent1-start, .parent1-end, .parent1-single { background-color: #006400; color: white; } /* Dark Green */
-.parent1-between { background-color: #90ee90; } /* Light Green */
+.parent1-start, .parent1-end, .parent1-single { background-color: #39d98a; color: white; } /* Green */
+.parent1-between { background-color: #a5d6a7; } /* Light Green */
 .parent2-start, .parent2-end, .parent2-single { background-color: #00008b; color: white; } /* Dark Blue */
 .parent2-between { background-color: #add8e6; } /* Light Blue */
 .combined-start, .combined-end, .combined-single { background-color: #800080; color: white; } /* Purple */
@@ -1828,7 +1870,7 @@ canvas#gantt-canvas {
     width: 100%;
     height: 14px;
     border-radius: 999px;
-    background: linear-gradient(to right, #00796b 50%, #007bff 50%);
+    background: linear-gradient(to right, #39d98a 50%, #007bff 50%);
     border: 1px solid #d0d5dd;
     box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.15);
     outline: none;
@@ -1930,6 +1972,25 @@ canvas#gantt-canvas {
 
 .p2-value {
     color: #007bff;
+}
+
+.slider-min-income {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.slider-min-income label {
+    margin-top: 0;
+    font-weight: 600;
+    text-align: center;
+}
+
+.slider-min-income input {
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
 }
 
 .summary-section {
@@ -2062,6 +2123,12 @@ canvas#gantt-canvas {
     border: 1px solid #c7d2fe;
 }
 
+.total-income-display .total-income-value {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 1.05rem;
+}
+
 .optimization-assist-btn.loading {
     opacity: 0.7;
     cursor: wait;
@@ -2117,7 +2184,7 @@ canvas#gantt-canvas {
 }
 
 .strategy-highlight {
-    color: #00796b;
+    color: #1f2937;
     font-weight: 700;
 }
 
@@ -2152,7 +2219,7 @@ canvas#gantt-canvas {
 }
 
 .metric-diff.positive {
-    color: #1b5e20;
+    color: #39d98a;
 }
 
 .metric-diff.negative {
@@ -2160,6 +2227,23 @@ canvas#gantt-canvas {
 }
 
 .metric-diff.neutral {
+    color: #475467;
+}
+
+.summary-diff {
+    margin-left: 0.5rem;
+    font-weight: 700;
+}
+
+.summary-diff.positive {
+    color: #39d98a;
+}
+
+.summary-diff.negative {
+    color: #c62828;
+}
+
+.summary-diff.neutral {
     color: #475467;
 }
 
@@ -2245,7 +2329,7 @@ canvas#gantt-canvas {
 }
 
 .days-diff.positive {
-    color: #1b5e20;
+    color: #39d98a;
 }
 
 .days-diff.negative {
@@ -2308,7 +2392,7 @@ canvas#gantt-canvas {
 }
 
 .income-diff.positive {
-    color: #1b5e20;
+    color: #39d98a;
 }
 
 .income-diff.negative {
@@ -2430,6 +2514,18 @@ canvas#gantt-canvas {
         max-width: 100%;
     }
 
+    #vårdnad-group {
+        width: 100%;
+        gap: 12px;
+    }
+
+    #vårdnad-group .toggle-btn {
+        flex: 1 1 calc(50% - 12px);
+        min-width: 0;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.95rem;
+    }
+
     #leave-slider {
         height: 12px;
     }
@@ -2450,6 +2546,28 @@ canvas#gantt-canvas {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
+    }
+
+    .monthly-row,
+    .monthly-total {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 0.35rem;
+    }
+
+    .monthly-row span,
+    .monthly-total span {
+        width: 100%;
+        text-align: center;
+    }
+
+    .monthly-row span:last-child,
+    .monthly-total span:last-child,
+    .monthly-total .total-value {
+        margin-left: 0;
+        text-align: center;
     }
 
     .monthly-box,

@@ -312,7 +312,7 @@ export function renderGanttChart(
     summaryBox.style.overflowY = 'visible';
     summaryBox.style.position = 'relative';
     summaryBox.style.paddingBottom = '40px';
-    summaryBox.innerHTML = '<p>Hovra över en punkt för att se detaljer.</p>';
+    summaryBox.innerHTML = '<p>Välj en punkt för att se detaljer.</p>';
 
     const isMobileView = typeof window !== 'undefined'
         ? window.matchMedia('(max-width: 720px)').matches
@@ -337,7 +337,7 @@ export function renderGanttChart(
 
     const baseLegendDefinitions = [
         { color: '#800080', text: 'Överlappande Ledighet' },
-        { color: '#00796b', text: 'Förälder 1 Ledig' },
+        { color: '#39d98a', text: 'Förälder 1 Ledig' },
         { color: '#f28c38', text: 'Förälder 1 Ledig (Överförda dagar)' },
         { color: '#007bff', text: 'Förälder 2 Ledig' },
         { color: 'red', text: 'Efter Ledighet' }
@@ -634,6 +634,7 @@ export function renderGanttChart(
     let pointDisplayData = [];
     let displayDraggables = [];
     let highlightRanges = [];
+    let selectedPointIndex = null;
 
     const computeHighlightRanges = () => {
         highlightRanges = [];
@@ -668,13 +669,16 @@ export function renderGanttChart(
         if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
         if (x < period1TotalWeeks) {
             if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-            return '#00796b';
+            return '#39d98a';
         }
         if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
         return 'red';
     };
 
-    const getPointBorderColors = () => pointDisplayData.map(data => {
+    const getPointBorderColors = () => pointDisplayData.map((data, index) => {
+        if (selectedPointIndex === index) {
+            return '#000000';
+        }
         const referenceWeek = Number.isFinite(data?.startWeekIndex) ? data.startWeekIndex : data.x;
         return getPeriodColor(referenceWeek);
     });
@@ -687,6 +691,28 @@ export function renderGanttChart(
         const referenceWeek = Number.isFinite(data?.startWeekIndex) ? data.startWeekIndex : data.x;
         return getPeriodColor(referenceWeek);
     });
+
+    const getPointBorderWidths = () => pointDisplayData.map((_, index) => (
+        selectedPointIndex === index ? 3 : 1
+    ));
+
+    const normalizeSelectedPointIndex = () => {
+        if (selectedPointIndex == null) {
+            return;
+        }
+        if (!pointDisplayData.length) {
+            selectedPointIndex = null;
+            return;
+        }
+        if (selectedPointIndex < 0) {
+            selectedPointIndex = 0;
+            return;
+        }
+        const maxIndex = pointDisplayData.length - 1;
+        if (selectedPointIndex > maxIndex) {
+            selectedPointIndex = maxIndex;
+        }
+    };
 
     function generateInkomstData() {
         inkomstData = [];
@@ -931,6 +957,7 @@ export function renderGanttChart(
 
     generateInkomstData();
     buildDisplayData();
+    normalizeSelectedPointIndex();
 
     usedPeriodColors = new Set(inkomstData.map(data => getPeriodColor(data.x)));
     usedSeverityLevels = new Set(
@@ -1613,12 +1640,38 @@ export function renderGanttChart(
             ? resolvedRemainingTotal.toLocaleString('sv-SE')
             : null;
 
+        const canShowSummaryDiffs = Boolean(baselineSummary) && !useBaselineForDisplay;
+        let incomeDiffHtml = '';
+        let remainingDiffHtml = '';
+        if (canShowSummaryDiffs) {
+            const incomeDiffValue = Math.round(
+                toFiniteNumber(summary.totalIncome) - toFiniteNumber(baselineSummary.totalIncome)
+            );
+            const incomeDiffInfo = formatDifference(incomeDiffValue, { unit: 'kr', epsilon: 0.5 });
+            if (incomeDiffInfo.text) {
+                const incomeClass = incomeDiffInfo.className ? ` ${incomeDiffInfo.className}` : '';
+                incomeDiffHtml = `<span class="summary-diff${incomeClass}">${incomeDiffInfo.text.trim()}</span>`;
+            }
+
+            const remainingDiffValue = toFiniteNumber(summary.totalRemainingDays) -
+                toFiniteNumber(baselineSummary.totalRemainingDays);
+            const remainingDiffInfo = formatDayDifference(remainingDiffValue);
+            if (remainingDiffInfo?.text) {
+                const remainingClass = remainingDiffInfo.className ? ` ${remainingDiffInfo.className}` : '';
+                remainingDiffHtml = `<span class="summary-diff${remainingClass}">${remainingDiffInfo.text}</span>`;
+            }
+        }
+
         if (formattedIncomeTotal && formattedRemainingTotal) {
-            summaryMessageHtml = `Denna strategi ger den totala nettoinkomsten <span class="strategy-highlight">${formattedIncomeTotal} sek</span>.<br>Med detta upplägg kommer du att ha <span class="strategy-highlight">${formattedRemainingTotal} dagar</span> kvar efter ledigheten.`;
+            const incomeSuffix = incomeDiffHtml ? ` ${incomeDiffHtml}` : '';
+            const remainingSuffix = remainingDiffHtml ? ` ${remainingDiffHtml}` : '';
+            summaryMessageHtml = `Denna strategi ger den totala nettoinkomsten <span class="strategy-highlight">${formattedIncomeTotal} sek</span>${incomeSuffix}.<br>Med detta upplägg kommer du att ha <span class="strategy-highlight">${formattedRemainingTotal} dagar</span>${remainingSuffix} kvar efter ledigheten.`;
         } else if (formattedIncomeTotal) {
-            summaryMessageHtml = `Denna strategi ger den totala nettoinkomsten <span class="strategy-highlight">${formattedIncomeTotal} sek</span>.`;
+            const incomeSuffix = incomeDiffHtml ? ` ${incomeDiffHtml}` : '';
+            summaryMessageHtml = `Denna strategi ger den totala nettoinkomsten <span class="strategy-highlight">${formattedIncomeTotal} sek</span>${incomeSuffix}.`;
         } else if (formattedRemainingTotal) {
-            summaryMessageHtml = `Med detta upplägg kommer du att ha <span class="strategy-highlight">${formattedRemainingTotal} dagar</span> kvar efter ledigheten.`;
+            const remainingSuffix = remainingDiffHtml ? ` ${remainingDiffHtml}` : '';
+            summaryMessageHtml = `Med detta upplägg kommer du att ha <span class="strategy-highlight">${formattedRemainingTotal} dagar</span>${remainingSuffix} kvar efter ledigheten.`;
         }
 
         if (summaryMessageHtml) {
@@ -1979,9 +2032,9 @@ export function renderGanttChart(
     const totalIncomeDisplay = document.createElement('div');
     totalIncomeDisplay.className = 'total-income-display';
     if (baselineIncomeTotal != null && Number.isFinite(baselineIncomeTotal)) {
-        totalIncomeDisplay.textContent = `Total inkomst under perioden: ${baselineIncomeTotal.toLocaleString('sv-SE')} sek`;
+        totalIncomeDisplay.innerHTML = `Total inkomst under perioden:<br><span class="total-income-value">${baselineIncomeTotal.toLocaleString('sv-SE')} sek</span>`;
     } else {
-        totalIncomeDisplay.textContent = 'Total inkomst under perioden: –';
+        totalIncomeDisplay.innerHTML = 'Total inkomst under perioden:<br><span class="total-income-value">–</span>';
     }
     ganttChart.appendChild(messageDiv);
     ganttChart.appendChild(totalIncomeDisplay);
@@ -2115,12 +2168,15 @@ export function renderGanttChart(
 
                         generateInkomstData();
                         buildDisplayData();
+                        normalizeSelectedPointIndex();
                         chart.data.datasets[0].data = pointDisplayData;
                         chart.data.datasets[0].pointBackgroundColor = getPointBackgroundColors();
                         chart.data.datasets[0].pointBorderColor = getPointBorderColors();
+                        chart.data.datasets[0].pointBorderWidth = getPointBorderWidths();
                         chart.data.datasets[0].pointRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? activePointRadius : basePointRadius);
                         chart.data.datasets[0].pointHoverRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? hoverPointRadius : activePointRadius);
                         chart.update();
+                        summaryBox.innerHTML = formatSummaryData(selectedPointIndex);
                         updateMessage();
                     }
                 }
@@ -2149,7 +2205,7 @@ export function renderGanttChart(
     // Reusable function to format tooltip/summary data
     function formatSummaryData(index) {
         if (index == null || !pointDisplayData[index]) {
-            return '<p>Hovra över en punkt för att se detaljer.</p>';
+            return '<p>Välj en punkt för att se detaljer.</p>';
         }
         const data = pointDisplayData[index];
         const fallbackIndex = Number.isFinite(data?.startWeekIndex)
@@ -2215,6 +2271,23 @@ export function renderGanttChart(
                     summaryBox.innerHTML = formatSummaryData(lastHoveredIndex);
                 }
             });
+            chart.canvas.addEventListener('mouseleave', () => {
+                summaryBox.innerHTML = formatSummaryData(selectedPointIndex);
+            });
+            chart.canvas.addEventListener('click', (e) => {
+                const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
+                if (!points.length) {
+                    return;
+                }
+                const point = points[0];
+                selectedPointIndex = point.index;
+                normalizeSelectedPointIndex();
+                const dataset = chart.data.datasets[0];
+                dataset.pointBorderColor = getPointBorderColors();
+                dataset.pointBorderWidth = getPointBorderWidths();
+                summaryBox.innerHTML = formatSummaryData(selectedPointIndex);
+                chart.update();
+            });
         }
     };
 
@@ -2238,7 +2311,8 @@ export function renderGanttChart(
                     backgroundColor: ctx => getPeriodColor(ctx.p0.parsed.x)
                 },
                 pointBackgroundColor: getPointBackgroundColors(),
-                pointBorderColor: getPointBorderColors()
+                pointBorderColor: getPointBorderColors(),
+                pointBorderWidth: getPointBorderWidths()
             }]
         },
         options: {
