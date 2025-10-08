@@ -1417,15 +1417,41 @@ export function renderGanttChart(
             if (Number.isFinite(strategyIncomeTotal)) {
                 const incomeNote = document.createElement('div');
                 incomeNote.className = 'strategy-income-note';
+
+                let dayDiffSegment = '';
+                if (baselineSummary) {
+                    const baselineRemainingTotal = Math.round(toFiniteNumber(baselineSummary.totalRemainingDays));
+                    const strategyRemainingTotal = Math.round(toFiniteNumber(summary.totalRemainingDays));
+                    if (
+                        Number.isFinite(baselineRemainingTotal) &&
+                        Number.isFinite(strategyRemainingTotal)
+                    ) {
+                        const diffDays = strategyRemainingTotal - baselineRemainingTotal;
+                        let diffClass = 'neutral';
+                        let diffLabel = '0 dagar';
+                        if (diffDays > 0) {
+                            diffClass = 'positive';
+                            diffLabel = `+${Math.abs(diffDays).toLocaleString('sv-SE')} dagar`;
+                        } else if (diffDays < 0) {
+                            diffClass = 'negative';
+                            diffLabel = `−${Math.abs(diffDays).toLocaleString('sv-SE')} dagar`;
+                        }
+                        dayDiffSegment = ` Antalet dagar förändras med <span class="days-diff ${diffClass}">${diffLabel}</span>.`;
+                    }
+                }
+
+                let messageHtml = '';
                 if (strategyIncomeTotal === baselineIncomeTotal) {
-                    incomeNote.textContent = `Denna strategi ger samma totala inkomst (${strategyIncomeTotal.toLocaleString('sv-SE')} sek) som ditt nuvarande val.`;
+                    messageHtml = `Denna strategi ger samma totala inkomst (${strategyIncomeTotal.toLocaleString('sv-SE')} sek) som ditt nuvarande val.`;
                 } else {
                     const diffValue = strategyIncomeTotal - baselineIncomeTotal;
                     const signClass = diffValue > 0 ? 'positive' : 'negative';
                     const signLabel = diffValue > 0 ? '+' : '−';
                     const diffText = `${signLabel}${Math.abs(diffValue).toLocaleString('sv-SE')} sek`;
-                    incomeNote.innerHTML = `Totala hushållsinkomsten blir <strong>${strategyIncomeTotal.toLocaleString('sv-SE')} sek</strong> med den här strategin, vilket är <span class="income-diff ${signClass}">${diffText}</span> jämfört med ditt nuvarande val.`;
+                    messageHtml = `Totala hushållsinkomsten blir <strong>${strategyIncomeTotal.toLocaleString('sv-SE')} sek</strong> med den här strategin, vilket är <span class="income-diff ${signClass}">${diffText}</span> jämfört med ditt nuvarande val.`;
                 }
+
+                incomeNote.innerHTML = `${messageHtml}${dayDiffSegment}`;
                 box.appendChild(incomeNote);
             }
         }
@@ -1600,10 +1626,17 @@ export function renderGanttChart(
         const bestRemaining = byRemaining[0] || null;
 
         const byIncome = [...results].sort((a, b) => {
-            if (b.summary.weightedAverageIncome !== a.summary.weightedAverageIncome) {
-                return b.summary.weightedAverageIncome - a.summary.weightedAverageIncome;
+            const incomeA = Math.round(toFiniteNumber(a.summary.totalIncome));
+            const incomeB = Math.round(toFiniteNumber(b.summary.totalIncome));
+            if (incomeB !== incomeA) {
+                return incomeB - incomeA;
             }
-            return b.summary.totalRemainingDays - a.summary.totalRemainingDays;
+            const avgIncomeA = toFiniteNumber(a.summary.weightedAverageIncome);
+            const avgIncomeB = toFiniteNumber(b.summary.weightedAverageIncome);
+            if (avgIncomeB !== avgIncomeA) {
+                return avgIncomeB - avgIncomeA;
+            }
+            return toFiniteNumber(b.summary.totalRemainingDays) - toFiniteNumber(a.summary.totalRemainingDays);
         });
         let bestIncome = byIncome[0] || null;
         if (bestIncome && bestRemaining && bestIncome.id === bestRemaining.id) {
