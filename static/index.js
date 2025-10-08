@@ -229,10 +229,14 @@ function handleFormSubmit(e) {
         preferensTotalLedigTid: totalPreferensLedigTid
     };
 
+    const includePartner = vårdnad === 'gemensam' && beräknaPartner === 'ja';
     const leaveContainer = document.getElementById('leave-slider-container');
     if (leaveContainer) {
         leaveContainer.style.display = includePartner ? 'block' : 'none';
     }
+    document.body.dataset.resultsReady = 'true';
+    if (stickyCtaButton) stickyCtaButton.textContent = 'Optimera';
+    document.dispatchEvent(new Event('results-ready'));
 
     const hushallsBarnbidrag = vårdnad === 'ensam'
         ? barnbidragResult.total
