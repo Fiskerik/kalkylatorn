@@ -31,14 +31,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBar = document.getElementById('progress-bar');
 
     const COMPACT_SCROLL_THRESHOLD = 120;
+    const mobileQuery = window.matchMedia('(max-width: 768px)');
 
     const handleScroll = () => {
         if (!progressBar) return;
+        if (!mobileQuery.matches) {
+            progressBar.classList.remove('compact');
+            return;
+        }
         const shouldCompact = window.scrollY > COMPACT_SCROLL_THRESHOLD;
         progressBar.classList.toggle('compact', shouldCompact);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    if (typeof mobileQuery.addEventListener === 'function') {
+        mobileQuery.addEventListener('change', handleScroll);
+    } else if (typeof mobileQuery.addListener === 'function') {
+        mobileQuery.addListener(handleScroll);
+    }
 
     function setPartnerFieldsVisible(visible) {
         partnerActive = visible;
