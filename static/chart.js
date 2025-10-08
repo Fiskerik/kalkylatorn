@@ -2,7 +2,167 @@
  * chart.js - Chart rendering for the Föräldrapenningkalkylator
  * Renders an interactive Gantt chart showing parental leave schedules and income.
  */
-import { beräknaMånadsinkomst, beräknaNetto } from './calculations.js';
+import {
+    beräknaMånadsinkomst,
+    beräknaNetto,
+    optimizeParentalLeave
+} from './calculations.js';
+
+const WEEKS_PER_MONTH = 4.3;
+const EPSILON = 1e-6;
+
+const toFiniteNumber = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const toNonNegative = (value) => Math.max(0, toFiniteNumber(value));
+
+const roundToOneDecimal = (value) => Math.round(value * 10) / 10;
+
+const weeksToMonths = (weeks) => toFiniteNumber(weeks) / WEEKS_PER_MONTH;
+
+const computeWeightedAverage = (phases = []) => {
+    const normalized = phases.map(phase => ({
+        weeks: toNonNegative(phase?.weeks),
+        income: toFiniteNumber(phase?.income)
+    }));
+    const totalWeeks = normalized.reduce((sum, phase) => sum + phase.weeks, 0);
+    if (totalWeeks <= EPSILON) {
+        return { value: 0, totalWeeks: 0 };
+    }
+    const weightedIncome = normalized.reduce(
+        (sum, phase) => sum + (phase.weeks * phase.income),
+        0
+    );
+    return {
+        value: weightedIncome / totalWeeks,
+        totalWeeks
+    };
+};
+
+const createStrategySummary = (result, preferences, includePartner) => {
+    if (!result) {
+        return null;
+    }
+
+    const minIncome = toNonNegative(
+        preferences?.minInkomst ?? result.genomförbarhet?.minInkomst
+    );
+    const partnerWorkIncome = includePartner ? toFiniteNumber(result.arbetsInkomst2) : 0;
+    const parent1WorkIncome = toFiniteNumber(result.arbetsInkomst1);
+
+    const parent1Phases = [
+        {
+            weeks: result.plan1?.weeks,
+            income: toFiniteNumber(result.plan1?.inkomst) + partnerWorkIncome
+        },
+        {
+            weeks: result.plan1NoExtra?.weeks,
+            income: toFiniteNumber(result.plan1NoExtra?.inkomst) + partnerWorkIncome
+        },
+        {
+            weeks: result.plan1MinDagar?.weeks,
+            income: toFiniteNumber(result.plan1MinDagar?.inkomst) + partnerWorkIncome
+        }
+    ];
+
+    const parent2Phases = includePartner
+        ? [
+            {
+                weeks: result.plan2?.weeks,
+                income: toFiniteNumber(result.plan2?.inkomst) + parent1WorkIncome
+            },
+            {
+                weeks: result.plan2NoExtra?.weeks,
+                income: toFiniteNumber(result.plan2NoExtra?.inkomst) + parent1WorkIncome
+            },
+            {
+                weeks: result.plan2MinDagar?.weeks,
+                income: toFiniteNumber(result.plan2MinDagar?.inkomst) + parent1WorkIncome
+            }
+        ]
+        : [];
+
+    const parent1Weeks = parent1Phases.reduce((sum, phase) => sum + phase.weeks, 0);
+    const parent2Weeks = parent2Phases.reduce((sum, phase) => sum + phase.weeks, 0);
+
+    const parent1Months = roundToOneDecimal(weeksToMonths(parent1Weeks));
+    const parent2Months = roundToOneDecimal(weeksToMonths(parent2Weeks));
+
+    const period1Average = computeWeightedAverage(parent1Phases);
+    const period2Average = computeWeightedAverage(parent2Phases);
+    const combinedAverage = computeWeightedAverage([...parent1Phases, ...parent2Phases]);
+
+    const usedIncomeDays1 = Math.round(toNonNegative(result.användaInkomstDagar1));
+    const usedIncomeDays2 = Math.round(toNonNegative(result.användaInkomstDagar2));
+    const usedMinDays1 = Math.round(toNonNegative(result.användaMinDagar1));
+    const usedMinDays2 = Math.round(toNonNegative(result.användaMinDagar2));
+
+    const remainingIncomeDays1 = Math.round(toNonNegative(result.förälder1InkomstDagar));
+    const remainingIncomeDays2 = Math.round(toNonNegative(result.förälder2InkomstDagar));
+    const remainingMinDays1 = Math.round(toNonNegative(result.förälder1MinDagar));
+    const remainingMinDays2 = Math.round(toNonNegative(result.förälder2MinDagar));
+
+    const totalRemainingDays = remainingIncomeDays1 + remainingMinDays1 +
+        (includePartner ? remainingIncomeDays2 + remainingMinDays2 : 0);
+
+    return {
+        minIncome,
+        parent1Months,
+        parent2Months,
+        period1Income: Math.round(period1Average.value),
+        period2Income: Math.round(period2Average.value),
+        usedDays: {
+            parent1: { income: usedIncomeDays1, min: usedMinDays1 },
+            parent2: { income: usedIncomeDays2, min: usedMinDays2 }
+        },
+        remainingDays: {
+            parent1: { income: remainingIncomeDays1, min: remainingMinDays1 },
+            parent2: { income: remainingIncomeDays2, min: remainingMinDays2 }
+        },
+        totalRemainingDays,
+        weightedAverageIncome: combinedAverage.value,
+        parent1Weeks,
+        parent2Weeks,
+        period1Weeks: period1Average.totalWeeks,
+        period2Weeks: period2Average.totalWeeks
+    };
+};
+
+const formatCurrencyValue = (value, suffix = 'kr/månad') => {
+    const numeric = Math.round(toFiniteNumber(value));
+    return `${numeric.toLocaleString('sv-SE')} ${suffix}`;
+};
+
+const formatMonthsValue = (value) => {
+    const numeric = roundToOneDecimal(toFiniteNumber(value));
+    return `${numeric.toLocaleString('sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} månader`;
+};
+
+const formatDaysBreakdown = (incomeDays, minDays) => {
+    const incomeText = Math.round(toNonNegative(incomeDays)).toLocaleString('sv-SE');
+    const minText = Math.round(toNonNegative(minDays)).toLocaleString('sv-SE');
+    return `${incomeText} dagar (inkomstnivå) / ${minText} dagar (lägstanivå)`;
+};
+
+const formatDifference = (diff, { unit, fractionDigits = 0, epsilon = 0.05 } = {}) => {
+    if (!Number.isFinite(diff)) {
+        return { text: '', className: '' };
+    }
+    if (Math.abs(diff) <= epsilon) {
+        return { text: ' (oförändrat)', className: 'neutral' };
+    }
+    const sign = diff > 0 ? '+' : '-';
+    const formattedNumber = Math.abs(diff).toLocaleString('sv-SE', {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits
+    });
+    return {
+        text: ` (${sign}${formattedNumber} ${unit})`,
+        className: diff > 0 ? 'positive' : 'negative'
+    };
+};
 
 /**
  * Render the Gantt chart
@@ -69,7 +229,8 @@ export function renderGanttChart(
     användaInkomstDagar1 = 0,
     användaMinDagar1 = 0,
     användaInkomstDagar2 = 0,
-    användaMinDagar2 = 0
+    användaMinDagar2 = 0,
+    optimizationContext = null
 ) {
     const ganttChart = document.getElementById('gantt-chart');
     if (!ganttChart) {
@@ -149,6 +310,13 @@ export function renderGanttChart(
                     hidden: false
                 });
             }
+            entries.push({
+                text: 'Minimum household income',
+                fillStyle: 'rgba(220, 0, 0, 0.8)',
+                strokeStyle: 'rgba(220, 0, 0, 0.8)',
+                lineWidth: 2,
+                hidden: false
+            });
         }
 
         return entries;
@@ -563,6 +731,37 @@ export function renderGanttChart(
     );
     const legendEntries = buildLegendEntries();
 
+    const baseResultSnapshot = {
+        plan1,
+        plan1NoExtra,
+        plan2,
+        plan2NoExtra,
+        plan1MinDagar,
+        plan2MinDagar,
+        plan1Overlap,
+        genomförbarhet,
+        dag1,
+        extra1,
+        dag2,
+        extra2,
+        förälder1InkomstDagar,
+        förälder2InkomstDagar,
+        förälder1MinDagar,
+        förälder2MinDagar,
+        användaInkomstDagar1,
+        användaInkomstDagar2,
+        användaMinDagar1,
+        användaMinDagar2,
+        arbetsInkomst1,
+        arbetsInkomst2
+    };
+
+    const baselineSummary = createStrategySummary(
+        baseResultSnapshot,
+        optimizationContext?.preferences,
+        includePartner
+    );
+
     const formatDate = (date) => {
         if (!(date instanceof Date) || isNaN(date.getTime())) {
             console.warn("Invalid date in formatDate, returning fallback:", date);
@@ -897,8 +1096,381 @@ export function renderGanttChart(
         return html;
     };
 
+    const suggestionsContainer = document.createElement('div');
+    suggestionsContainer.id = 'optimization-suggestions';
+    suggestionsContainer.className = 'optimization-suggestions';
+    suggestionsContainer.style.display = 'none';
+
+    const assistanceButton = document.createElement('button');
+    assistanceButton.type = 'button';
+    assistanceButton.className = 'optimization-assist-btn';
+    assistanceButton.textContent = 'Get help to optimize';
+
+    let cachedSuggestions = null;
+
+    const createMetricItem = (label, valueText, diffValue, diffOptions) => {
+        const item = document.createElement('li');
+        item.className = 'strategy-metric';
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'metric-label';
+        labelSpan.textContent = label;
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'metric-value';
+        valueSpan.textContent = valueText;
+        if (baselineSummary && typeof diffValue === 'number') {
+            const { text, className } = formatDifference(diffValue, diffOptions);
+            if (text) {
+                const diffSpan = document.createElement('span');
+                diffSpan.className = `metric-diff ${className}`.trim();
+                diffSpan.textContent = text;
+                valueSpan.appendChild(diffSpan);
+            }
+        }
+        item.appendChild(labelSpan);
+        item.appendChild(valueSpan);
+        return item;
+    };
+
+    const renderStrategyBox = (boxData) => {
+        const box = document.createElement('div');
+        box.className = 'strategy-box';
+        const title = document.createElement('h4');
+        title.textContent = boxData.title;
+        box.appendChild(title);
+
+        if (boxData.description) {
+            const description = document.createElement('p');
+            description.className = 'strategy-description';
+            description.textContent = boxData.description;
+            box.appendChild(description);
+        }
+
+        if (!boxData.summary) {
+            const message = document.createElement('p');
+            message.className = 'strategy-message';
+            message.textContent = boxData.message || 'No data available for this strategy.';
+            box.appendChild(message);
+            return box;
+        }
+
+        const summary = boxData.summary;
+        const list = document.createElement('ul');
+        list.className = 'strategy-metrics';
+
+        const minIncomeDiff = baselineSummary
+            ? summary.minIncome - baselineSummary.minIncome
+            : undefined;
+        list.appendChild(
+            createMetricItem(
+                'Minimum household income',
+                formatCurrencyValue(summary.minIncome),
+                minIncomeDiff,
+                { unit: 'kr', epsilon: 0.5 }
+            )
+        );
+
+        const parent1MonthsDiff = baselineSummary
+            ? summary.parent1Months - baselineSummary.parent1Months
+            : undefined;
+        list.appendChild(
+            createMetricItem(
+                'Parent 1 home',
+                formatMonthsValue(summary.parent1Months),
+                parent1MonthsDiff,
+                { unit: 'mån', fractionDigits: 1, epsilon: 0.05 }
+            )
+        );
+
+        const parent2MonthsDiff = baselineSummary
+            ? summary.parent2Months - baselineSummary.parent2Months
+            : undefined;
+        list.appendChild(
+            createMetricItem(
+                'Parent 2 home',
+                formatMonthsValue(summary.parent2Months),
+                parent2MonthsDiff,
+                { unit: 'mån', fractionDigits: 1, epsilon: 0.05 }
+            )
+        );
+
+        const period1IncomeDiff = baselineSummary
+            ? summary.period1Income - baselineSummary.period1Income
+            : undefined;
+        list.appendChild(
+            createMetricItem(
+                'Period 1 household income',
+                formatCurrencyValue(summary.period1Income),
+                period1IncomeDiff,
+                { unit: 'kr', epsilon: 0.5 }
+            )
+        );
+
+        const period2IncomeDiff = baselineSummary
+            ? summary.period2Income - baselineSummary.period2Income
+            : undefined;
+        list.appendChild(
+            createMetricItem(
+                'Period 2 household income',
+                formatCurrencyValue(summary.period2Income),
+                period2IncomeDiff,
+                { unit: 'kr', epsilon: 0.5 }
+            )
+        );
+
+        const summaryUsedParent1 = summary.usedDays.parent1;
+        const summaryUsedParent2 = summary.usedDays.parent2;
+        const baselineUsedParent1 = baselineSummary
+            ? baselineSummary.usedDays.parent1
+            : { income: 0, min: 0 };
+        const baselineUsedParent2 = baselineSummary
+            ? baselineSummary.usedDays.parent2
+            : { income: 0, min: 0 };
+        const usedParent1Total = summaryUsedParent1.income + summaryUsedParent1.min;
+        const usedParent2Total = summaryUsedParent2.income + summaryUsedParent2.min;
+        const baselineUsedParent1Total = baselineUsedParent1.income + baselineUsedParent1.min;
+        const baselineUsedParent2Total = baselineUsedParent2.income + baselineUsedParent2.min;
+
+        list.appendChild(
+            createMetricItem(
+                'Used days Parent 1',
+                formatDaysBreakdown(summaryUsedParent1.income, summaryUsedParent1.min),
+                baselineSummary ? usedParent1Total - baselineUsedParent1Total : undefined,
+                { unit: 'dagar', epsilon: 0.5 }
+            )
+        );
+
+        list.appendChild(
+            createMetricItem(
+                'Used days Parent 2',
+                formatDaysBreakdown(summaryUsedParent2.income, summaryUsedParent2.min),
+                baselineSummary ? usedParent2Total - baselineUsedParent2Total : undefined,
+                { unit: 'dagar', epsilon: 0.5 }
+            )
+        );
+
+        const remainingParent1 = summary.remainingDays.parent1;
+        const remainingParent2 = summary.remainingDays.parent2;
+        const baselineRemainingParent1 = baselineSummary
+            ? baselineSummary.remainingDays.parent1
+            : { income: 0, min: 0 };
+        const baselineRemainingParent2 = baselineSummary
+            ? baselineSummary.remainingDays.parent2
+            : { income: 0, min: 0 };
+        const remainingParent1Total = remainingParent1.income + remainingParent1.min;
+        const remainingParent2Total = remainingParent2.income + remainingParent2.min;
+        const baselineRemainingParent1Total =
+            baselineRemainingParent1.income + baselineRemainingParent1.min;
+        const baselineRemainingParent2Total =
+            baselineRemainingParent2.income + baselineRemainingParent2.min;
+
+        list.appendChild(
+            createMetricItem(
+                'Remaining days Parent 1',
+                formatDaysBreakdown(remainingParent1.income, remainingParent1.min),
+                baselineSummary ? remainingParent1Total - baselineRemainingParent1Total : undefined,
+                { unit: 'dagar', epsilon: 0.5 }
+            )
+        );
+
+        list.appendChild(
+            createMetricItem(
+                'Remaining days Parent 2',
+                formatDaysBreakdown(remainingParent2.income, remainingParent2.min),
+                baselineSummary ? remainingParent2Total - baselineRemainingParent2Total : undefined,
+                { unit: 'dagar', epsilon: 0.5 }
+            )
+        );
+
+        box.appendChild(list);
+        return box;
+    };
+
+    const renderSuggestions = (data) => {
+        suggestionsContainer.innerHTML = '';
+        if (data?.message) {
+            const message = document.createElement('p');
+            message.className = 'strategy-message';
+            message.textContent = data.message;
+            suggestionsContainer.appendChild(message);
+            suggestionsContainer.style.display = 'block';
+            return;
+        }
+        const boxes = data?.boxes ?? [];
+        if (!boxes.length) {
+            const message = document.createElement('p');
+            message.className = 'strategy-message';
+            message.textContent = 'No alternative strategies could be generated.';
+            suggestionsContainer.appendChild(message);
+            suggestionsContainer.style.display = 'block';
+            return;
+        }
+        boxes.forEach(boxData => {
+            suggestionsContainer.appendChild(renderStrategyBox(boxData));
+        });
+        suggestionsContainer.style.display = 'flex';
+    };
+
+    const evaluateOptimizationAlternatives = () => {
+        if (!optimizationContext?.preferences || !optimizationContext?.inputs) {
+            return { message: 'Optimization data is missing. Please run a calculation first.' };
+        }
+        if (!includePartner) {
+            return { message: 'Alternative suggestions require calculations for both parents.' };
+        }
+        const totalMonths = toNonNegative(optimizationContext.totalMonths);
+        if (!Number.isFinite(totalMonths) || totalMonths <= 0) {
+            return { message: 'Enter the total number of months to generate suggestions.' };
+        }
+        const stepValue = Number(optimizationContext.step);
+        const stepSize = Number.isFinite(stepValue) && stepValue > 0
+            ? stepValue
+            : (totalMonths > 2 ? 1 : 0.5);
+        const iterations = Math.max(1, Math.round(totalMonths / stepSize));
+        const results = [];
+        const seen = new Set();
+        const basePreferences = { ...optimizationContext.preferences };
+        const baseInputs = { ...optimizationContext.inputs };
+        const monthTolerance = 0.05;
+
+        for (let i = 0; i <= iterations; i++) {
+            const candidateMonths = Math.min(totalMonths, i * stepSize);
+            const parent1Months = Math.round(candidateMonths * 100) / 100;
+            const parent2Months = Math.max(0, totalMonths - parent1Months);
+            const key = `${parent1Months.toFixed(2)}-${parent2Months.toFixed(2)}`;
+            if (seen.has(key)) {
+                continue;
+            }
+            seen.add(key);
+
+            try {
+                const prefs = {
+                    ...basePreferences,
+                    ledigTid1: parent1Months,
+                    ledigTid2: parent2Months
+                };
+                const inputClone = { ...baseInputs };
+                const candidateResult = optimizeParentalLeave(prefs, inputClone);
+                if (!candidateResult?.genomförbarhet) {
+                    continue;
+                }
+                const shortfall = Number(candidateResult.genomförbarhet.maxShortfallRatio);
+                if (Number.isFinite(shortfall) && shortfall > 0.0001) {
+                    continue;
+                }
+                if (
+                    candidateResult.genomförbarhet.ärGenomförbar === false &&
+                    (!Number.isFinite(shortfall) || shortfall > 0)
+                ) {
+                    continue;
+                }
+                const summary = createStrategySummary(candidateResult, prefs, includePartner);
+                if (!summary) {
+                    continue;
+                }
+                if (baselineSummary) {
+                    const parent1Diff = Math.abs(summary.parent1Months - baselineSummary.parent1Months);
+                    const parent2Diff = Math.abs(summary.parent2Months - baselineSummary.parent2Months);
+                    if (parent1Diff <= monthTolerance && parent2Diff <= monthTolerance) {
+                        continue;
+                    }
+                }
+                results.push({
+                    id: key,
+                    summary,
+                    preferences: prefs,
+                    result: candidateResult
+                });
+            } catch (error) {
+                console.error('Scenario evaluation failed', error);
+            }
+        }
+
+        if (!results.length) {
+            return { message: 'No alternative strategies that meet the minimum income were found.' };
+        }
+
+        const byRemaining = [...results].sort((a, b) => {
+            if (b.summary.totalRemainingDays !== a.summary.totalRemainingDays) {
+                return b.summary.totalRemainingDays - a.summary.totalRemainingDays;
+            }
+            return b.summary.weightedAverageIncome - a.summary.weightedAverageIncome;
+        });
+        const bestRemaining = byRemaining[0] || null;
+
+        const byIncome = [...results].sort((a, b) => {
+            if (b.summary.weightedAverageIncome !== a.summary.weightedAverageIncome) {
+                return b.summary.weightedAverageIncome - a.summary.weightedAverageIncome;
+            }
+            return b.summary.totalRemainingDays - a.summary.totalRemainingDays;
+        });
+        let bestIncome = byIncome[0] || null;
+        if (bestIncome && bestRemaining && bestIncome.id === bestRemaining.id) {
+            bestIncome = byIncome.find(candidate => candidate.id !== bestRemaining.id) || null;
+        }
+
+        const boxes = [];
+
+        if (bestRemaining) {
+            boxes.push({
+                title: 'Strategy – More days left',
+                summary: bestRemaining.summary,
+                description: 'Focus on freeing up additional days while meeting the minimum income requirement.'
+            });
+        } else {
+            boxes.push({
+                title: 'Strategy – More days left',
+                message: 'No alternative distribution with more days left over was found.'
+            });
+        }
+
+        if (bestIncome) {
+            boxes.push({
+                title: 'Strategy – Maximize income',
+                summary: bestIncome.summary,
+                description: 'Focus on maximizing household income while meeting the minimum income requirement.'
+            });
+        } else {
+            boxes.push({
+                title: 'Strategy – Maximize income',
+                message: 'No alternative distribution with higher income was found.'
+            });
+        }
+
+        return { boxes };
+    };
+
+    const handleOptimizationAssistance = () => {
+        if (cachedSuggestions) {
+            renderSuggestions(cachedSuggestions);
+            return;
+        }
+        const defaultLabel = 'Get help to optimize';
+        const loadingLabel = 'Calculating suggestions...';
+        assistanceButton.disabled = true;
+        assistanceButton.classList.add('loading');
+        assistanceButton.textContent = loadingLabel;
+        setTimeout(() => {
+            let data;
+            try {
+                data = evaluateOptimizationAlternatives();
+            } catch (error) {
+                console.error('Failed to build optimization suggestions', error);
+                data = { message: 'Unable to build optimization suggestions. Please try again.' };
+            }
+            cachedSuggestions = data;
+            renderSuggestions(data);
+            assistanceButton.disabled = false;
+            assistanceButton.classList.remove('loading');
+            assistanceButton.textContent = defaultLabel;
+        }, 50);
+    };
+
+    assistanceButton.addEventListener('click', handleOptimizationAssistance);
+
     messageDiv.innerHTML = buildFeasibilityHtml();
     ganttChart.appendChild(messageDiv);
+    ganttChart.appendChild(assistanceButton);
+    ganttChart.appendChild(suggestionsContainer);
     ganttChart.appendChild(canvas);
     ganttChart.appendChild(summaryBox);
 
@@ -969,12 +1541,6 @@ export function renderGanttChart(
             ctx.stroke();
 
             ctx.setLineDash([]);
-            ctx.fillStyle = 'rgba(220, 0, 0, 0.85)';
-            ctx.font = '12px "Inter", sans-serif';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = yPosition - 6 < chartArea.top ? 'top' : 'bottom';
-            const labelYOffset = ctx.textBaseline === 'top' ? 4 : -4;
-            ctx.fillText('Minimum household income', chartArea.right - 6, yPosition + labelYOffset);
             ctx.restore();
         }
     };
@@ -1191,6 +1757,8 @@ export function renderGanttChart(
             plugins: {
                 legend: {
                     display: legendEntries.length > 0,
+                    position: 'bottom',
+                    align: 'center',
                     labels: {
                         generateLabels: () => legendEntries.map(item => ({ ...item }))
                     }
