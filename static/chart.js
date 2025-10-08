@@ -192,10 +192,6 @@ const formatDaysComparison = (currentDays, baselineDays, { forceNeutral = false 
     };
 
     if (forceNeutral && baselineIncome != null) {
-        formatted.diff = {
-            text: '(oförändrat)',
-            className: 'neutral'
-        };
         return formatted;
     }
 
@@ -814,6 +810,14 @@ export function renderGanttChart(
         };
     };
 
+    const formatDate = (date) => {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+            console.warn('Invalid date in formatDate, returning fallback:', date);
+            return new Date().toISOString().split('T')[0];
+        }
+        return date.toISOString().split('T')[0];
+    };
+
     const formatRangeLabel = (startIndex, endIndex) => {
         const safeStartIndex = Number.isFinite(startIndex) ? Math.max(0, Math.floor(startIndex)) : null;
         const safeEndIndex = Number.isFinite(endIndex) ? Math.max(0, Math.floor(endIndex)) : safeStartIndex;
@@ -951,14 +955,6 @@ export function renderGanttChart(
     const baselineIncomeTotal = baselineSummary
         ? Math.round(toFiniteNumber(baselineSummary.totalIncome))
         : null;
-
-    const formatDate = (date) => {
-        if (!(date instanceof Date) || isNaN(date.getTime())) {
-            console.warn("Invalid date in formatDate, returning fallback:", date);
-            return new Date().toISOString().split('T')[0];
-        }
-        return date.toISOString().split('T')[0];
-    };
 
     const statusFärger = {
         ok: { bakgrund: '#e6ffe6', kant: '#00cc00', titel: 'Planen är genomförbar' },
@@ -1490,8 +1486,8 @@ export function renderGanttChart(
         const list = document.createElement('ul');
         list.className = 'strategy-metrics';
 
-        const minIncomeDiff = baselineSummary != null
-            ? (useBaselineForDisplay ? 0 : summary.minIncome - baselineSummary.minIncome)
+        const minIncomeDiff = baselineSummary != null && !useBaselineForDisplay
+            ? summary.minIncome - baselineSummary.minIncome
             : undefined;
         list.appendChild(
             createMetricItem(
@@ -1502,8 +1498,8 @@ export function renderGanttChart(
             )
         );
 
-        const parent1MonthsDiff = baselineSummary != null
-            ? (useBaselineForDisplay ? 0 : summary.parent1Months - baselineSummary.parent1Months)
+        const parent1MonthsDiff = baselineSummary != null && !useBaselineForDisplay
+            ? summary.parent1Months - baselineSummary.parent1Months
             : undefined;
         list.appendChild(
             createMetricItem(
@@ -1514,8 +1510,8 @@ export function renderGanttChart(
             )
         );
 
-        const parent2MonthsDiff = baselineSummary != null
-            ? (useBaselineForDisplay ? 0 : summary.parent2Months - baselineSummary.parent2Months)
+        const parent2MonthsDiff = baselineSummary != null && !useBaselineForDisplay
+            ? summary.parent2Months - baselineSummary.parent2Months
             : undefined;
         list.appendChild(
             createMetricItem(
@@ -1526,8 +1522,8 @@ export function renderGanttChart(
             )
         );
 
-        const period1IncomeDiff = baselineSummary != null
-            ? (useBaselineForDisplay ? 0 : summary.period1Income - baselineSummary.period1Income)
+        const period1IncomeDiff = baselineSummary != null && !useBaselineForDisplay
+            ? summary.period1Income - baselineSummary.period1Income
             : undefined;
         list.appendChild(
             createMetricItem(
@@ -1538,8 +1534,8 @@ export function renderGanttChart(
             )
         );
 
-        const period2IncomeDiff = baselineSummary != null
-            ? (useBaselineForDisplay ? 0 : summary.period2Income - baselineSummary.period2Income)
+        const period2IncomeDiff = baselineSummary != null && !useBaselineForDisplay
+            ? summary.period2Income - baselineSummary.period2Income
             : undefined;
         list.appendChild(
             createMetricItem(
@@ -1602,18 +1598,37 @@ export function renderGanttChart(
                     }
                 }
 
+                const formattedIncomeTotal = strategyIncomeTotal.toLocaleString('sv-SE');
                 let messageHtml = '';
-                if (useBaselineForDisplay || strategyIncomeTotal === baselineIncomeTotal) {
-                    messageHtml = `Denna strategi ger samma totala inkomst (${strategyIncomeTotal.toLocaleString('sv-SE')} sek) som ditt nuvarande val.`;
+
+                if (useBaselineForDisplay) {
+                    if (boxData.type === 'remainingDays') {
+                        const parent1Remaining = Math.round(
+                            toNonNegative(displaySummary?.remainingDays?.parent1?.income)
+                        );
+                        const parent2Remaining = Math.round(
+                            toNonNegative(displaySummary?.remainingDays?.parent2?.income)
+                        );
+                        const totalSavedDays = parent1Remaining + parent2Remaining;
+                        const savedLabel = `${totalSavedDays.toLocaleString('sv-SE')} dagar`;
+                        messageHtml = `Denna strategi ger <span class="income-diff positive">den totala nettoinkomsten ${formattedIncomeTotal} sek</span>.<br>Med detta upplägg <span class="days-diff positive">sparar du ${savedLabel}</span>.`;
+                    } else {
+                        messageHtml = `Denna strategi ger <span class="income-diff positive">den totala nettoinkomsten ${formattedIncomeTotal} sek</span>.`;
+                    }
+                    dayDiffSegment = '';
+                } else if (strategyIncomeTotal === baselineIncomeTotal) {
+                    messageHtml = `Denna strategi ger samma totala inkomst (${formattedIncomeTotal} sek) som ditt nuvarande val.`;
                 } else {
                     const diffValue = strategyIncomeTotal - baselineIncomeTotal;
                     const signClass = diffValue > 0 ? 'positive' : 'negative';
                     const signLabel = diffValue > 0 ? '+' : '−';
                     const diffText = `${signLabel}${Math.abs(diffValue).toLocaleString('sv-SE')} sek`;
-                    messageHtml = `Totala hushållsinkomsten blir <strong>${strategyIncomeTotal.toLocaleString('sv-SE')} sek</strong> med den här strategin, vilket är <span class="income-diff ${signClass}">${diffText}</span> jämfört med ditt nuvarande val.`;
+                    messageHtml = `Totala hushållsinkomsten blir <strong>${formattedIncomeTotal} sek</strong> med den här strategin, vilket är <span class="income-diff ${signClass}">${diffText}</span> jämfört med ditt nuvarande val.`;
                 }
 
-                incomeNote.innerHTML = `${messageHtml}${dayDiffSegment}`;
+                incomeNote.innerHTML = dayDiffSegment
+                    ? `${messageHtml}${dayDiffSegment}`
+                    : messageHtml;
                 box.appendChild(incomeNote);
             }
         }
