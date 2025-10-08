@@ -28,6 +28,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const partnerFields = document.querySelectorAll('[data-partner-field]');
     const barnError = document.getElementById('barn-selection-error');
     const progressSteps = document.querySelectorAll('#progress-bar .step');
+    const progressBar = document.getElementById('progress-bar');
+
+    const COMPACT_SCROLL_THRESHOLD = 120;
+
+    const handleScroll = () => {
+        if (!progressBar) return;
+        const shouldCompact = window.scrollY > COMPACT_SCROLL_THRESHOLD;
+        progressBar.classList.toggle('compact', shouldCompact);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     function setPartnerFieldsVisible(visible) {
         partnerActive = visible;
@@ -41,19 +52,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function shouldShowStickySummary() {
+        return (
+            document.body.dataset.resultsReady === 'true' &&
+            currentIndex === idx.summary
+        );
+    }
+
     function updateStickyCtaLabel() {
         if (!stickyCTA) return;
         const resultsReady = document.body.dataset.resultsReady === 'true';
-        if (resultsReady) {
-            stickyCTA.textContent = 'Optimera';
-            if (mobileSummary) {
-                mobileSummary.classList.add('is-visible');
-            }
-        } else {
-            stickyCTA.textContent = 'Visa resultat';
-            if (mobileSummary) {
-                mobileSummary.classList.remove('is-visible');
-            }
+        stickyCTA.textContent = resultsReady ? 'Optimera' : 'Visa resultat';
+        if (mobileSummary) {
+            mobileSummary.classList.toggle('is-visible', shouldShowStickySummary());
         }
     }
 
@@ -145,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setPartnerFieldsVisible(true);
     displayStep(idx.household);
+    handleScroll();
 
     setupToggleButtons('vårdnad-group', 'vårdnad', value => {
         const isEnsam = value === 'ensam';

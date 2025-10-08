@@ -53,8 +53,8 @@
                             <div class="question-icon"><i class="fa-solid fa-people-roof"></i></div>
                             <label for="vårdnad">Har du Gemensam eller Ensam vårdnad?</label>
                             <div class="button-group" id="vårdnad-group">
-                                <button type="button" class="vårdnad-btn toggle-btn" data-value="gemensam">Gemensam vårdnad</button>
-                                <button type="button" class="vårdnad-btn toggle-btn" data-value="ensam">Ensam vårdnad</button>
+                                <button type="button" class="vårdnad-btn toggle-btn" data-value="gemensam">Gemensan</button>
+                                <button type="button" class="vårdnad-btn toggle-btn" data-value="ensam">Ensam</button>
                             </div>
                             <input type="hidden" name="vårdnad" id="vårdnad" value="">
                             <p id="vårdnad-info" class="info-text"></p>
@@ -209,6 +209,11 @@
                     <input type="number" id="ledig-tid-2" name="ledig-tid-2" min="0" placeholder="Ange antal månader">
                 </div>
                 <div class="form-section">
+                    <label for="min-inkomst">Minimi-netto för hushållet (kr/månad)</label>
+                    <input type="number" id="min-inkomst" name="min-inkomst" min="0" placeholder="Ange belopp">
+                    <div id="min-income-error" class="inline-error" role="alert" aria-live="assertive" style="display: none;"></div>
+                </div>
+                <div class="form-section">
                     <label for="strategy">Välj strategi:</label>
                     <div class="toggle-group" id="strategy-group">
                         <div class="toggle-options">
@@ -242,6 +247,27 @@
                     <span class="summary-label">Återstående dagar</span>
                     <span class="summary-value" id="sticky-days">–</span>
                 </div>
+                <div class="form-section">
+                    <label for="strategy">Välj strategi:</label>
+                    <div class="toggle-group" id="strategy-group">
+                        <div class="toggle-options">
+                            <button class="toggle-btn active" data-value="longer">Längre ledighet</button>
+                            <button class="toggle-btn" data-value="maximize">Maximera inkomst</button>
+                        </div>
+                        <input type="hidden" id="strategy" value="longer">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="wizard-step" id="step-summary">
+                <legend>Resultat</legend>
+                <p class="summary-intro">Sammanfatta dina uppgifter och visa resultatet när du är redo.</p>
+            </fieldset>
+
+            <div class="wizard-nav">
+                <button type="button" id="back-btn" class="hidden back-btn">&larr; Tillbaka</button>
+                <button type="button" id="next-btn">Nästa steg</button>
+                <button type="submit" id="calculate-btn" class="hidden">Visa resultat</button>
             </div>
             <button type="button" id="sticky-cta" class="primary-cta">Visa resultat</button>
         </div>
