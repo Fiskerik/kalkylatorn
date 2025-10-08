@@ -1772,6 +1772,42 @@ canvas#gantt-canvas {
     border: 1px solid #b6e2d8;
 }
 
+.strategy-summary-note {
+    margin-top: 0.75rem;
+    padding: 0.5rem 0;
+    color: #344054;
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.strategy-details {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.strategy-details.collapsed {
+    display: none;
+}
+
+.strategy-details-toggle {
+    margin-top: 0.75rem;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background-color: #f2f4f7;
+    color: #1d2939;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.strategy-details-toggle:hover {
+    background-color: #e4e7ec;
+}
+
 .income-diff {
     font-weight: 600;
 }
@@ -1833,6 +1869,7 @@ canvas#gantt-canvas {
     button,
     .toggle-btn {
         width: 100%;
+        font-size: 0.9rem;
     }
 
     form,
@@ -1840,8 +1877,37 @@ canvas#gantt-canvas {
         padding: 1rem;
     }
 
+    body {
+        font-size: 15px;
+    }
+
+    h1 {
+        font-size: 1.4rem;
+    }
+
+    label,
+    input,
+    select,
+    .info-text {
+        font-size: 0.9rem;
+    }
+
     .strategy-box {
         flex: 1 1 100%;
+        padding: 1rem;
+    }
+
+    .strategy-box h4 {
+        font-size: 1rem;
+    }
+
+    .strategy-description,
+    .strategy-summary-note,
+    .strategy-income-note,
+    .strategy-details-toggle,
+    .strategy-metrics,
+    .strategy-best-note {
+        font-size: 0.9rem;
     }
 
     .strategy-box-wrapper {
@@ -1850,4 +1916,36 @@ canvas#gantt-canvas {
         gap: 1rem;
     }
 
+    #leave-slider-container {
+        padding: 12px;
+    }
+
+    #leave-slider {
+        height: 12px;
+    }
+
+    .slider-values {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        font-size: 0.9rem;
+    }
+
+    .slider-labels span {
+        font-size: 0.85rem;
+    }
+
+    #strategy-group .toggle-options {
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    #strategy-group .toggle-options .toggle-btn {
+        flex: 1 1 calc(50% - 8px);
+        max-width: none;
+        padding: 0.6rem 0.4rem;
+        font-size: 0.85rem;
+        width: auto;
+        min-width: 0;
+    }
 }
