@@ -1483,7 +1483,7 @@ export function renderGanttChart(
             const applyButton = document.createElement('button');
             applyButton.type = 'button';
             applyButton.className = 'strategy-use-btn';
-            applyButton.textContent = 'Use';
+            applyButton.textContent = 'Använd';
             applyButton.addEventListener('click', () => applySuggestedPlan(boxData));
             actionElement = applyButton;
         }
