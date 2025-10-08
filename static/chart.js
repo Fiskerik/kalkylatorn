@@ -182,24 +182,25 @@ const formatMonthsValue = (value) => {
 
 const formatDaysComparison = (currentDays, baselineDays) => {
     const currentIncome = Math.round(toNonNegative(currentDays?.income));
-    const currentMin = Math.round(toNonNegative(currentDays?.min));
-    const baselineIncome = baselineDays ? Math.round(toNonNegative(baselineDays.income)) : null;
-    const baselineMin = baselineDays ? Math.round(toNonNegative(baselineDays.min)) : null;
+    const baselineIncome = baselineDays != null
+        ? Math.round(toNonNegative(baselineDays.income))
+        : null;
 
-    const formatSegment = (value, label, baselineValue) => {
-        const base = `${value.toLocaleString('sv-SE')} dagar (${label})`;
-        if (baselineValue == null) {
-            return base;
-        }
-        const diff = value - baselineValue;
-        if (!diff) {
-            return base;
-        }
-        const diffText = `${diff > 0 ? '+' : ''}${diff.toLocaleString('sv-SE')} dagar`;
-        return `${base} (${diffText})`;
+    const formatted = {
+        valueText: `${currentIncome.toLocaleString('sv-SE')} dagar`,
+        diff: null
     };
 
-    return `${formatSegment(currentIncome, 'inkomstnivå', baselineIncome)} / ${formatSegment(currentMin, 'lägstanivå', baselineMin)}`;
+    if (baselineIncome != null && currentIncome !== baselineIncome) {
+        const diffValue = currentIncome - baselineIncome;
+        const sign = diffValue > 0 ? '+' : '−';
+        formatted.diff = {
+            text: `${sign}${Math.abs(diffValue).toLocaleString('sv-SE')} dagar`,
+            className: diffValue > 0 ? 'positive' : 'negative'
+        };
+    }
+
+    return formatted;
 };
 
 const formatDifference = (diff, { unit, fractionDigits = 0, epsilon = 0.05 } = {}) => {
@@ -819,6 +820,9 @@ export function renderGanttChart(
         optimizationContext?.preferences,
         includePartner
     );
+    const baselineIncomeTotal = baselineSummary
+        ? Math.round(toFiniteNumber(baselineSummary.totalIncome))
+        : null;
 
     const formatDate = (date) => {
         if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -1151,7 +1155,7 @@ export function renderGanttChart(
     const assistanceButton = document.createElement('button');
     assistanceButton.type = 'button';
     assistanceButton.className = 'optimization-assist-btn';
-    assistanceButton.textContent = 'Get help to optimize';
+    assistanceButton.textContent = 'Hjälp mig att optimera';
 
     let cachedSuggestions = null;
 
@@ -1160,6 +1164,39 @@ export function renderGanttChart(
             return;
         }
         const preferencesOverride = boxData.preferences ? { ...boxData.preferences } : {};
+        const suggestedParent1Months = toNonNegative(preferencesOverride.ledigTid1);
+        const suggestedParent2Months = includePartner
+            ? toNonNegative(preferencesOverride.ledigTid2)
+            : 0;
+        const suggestedTotalMonths = suggestedParent1Months + suggestedParent2Months;
+
+        const syncFormControls = () => {
+            const totalInput = document.getElementById('ledig-tid-5823');
+            if (totalInput && Number.isFinite(suggestedTotalMonths)) {
+                totalInput.value = suggestedTotalMonths;
+                totalInput.dispatchEvent(new Event('input', { bubbles: true }));
+                totalInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const slider = document.getElementById('leave-slider');
+            if (slider && includePartner && Number.isFinite(suggestedParent1Months)) {
+                slider.value = suggestedParent1Months;
+                slider.dispatchEvent(new Event('input', { bubbles: true }));
+                slider.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const minIncomeInput = document.getElementById('min-inkomst');
+            if (minIncomeInput && Number.isFinite(preferencesOverride.minInkomst)) {
+                minIncomeInput.value = preferencesOverride.minInkomst;
+            }
+
+            const strategySelect = document.getElementById('strategy');
+            if (strategySelect && typeof preferencesOverride.strategy === 'string') {
+                strategySelect.value = preferencesOverride.strategy;
+            }
+        };
+
+        syncFormControls();
         const nextContext = optimizationContext
             ? {
                 ...optimizationContext,
@@ -1170,10 +1207,8 @@ export function renderGanttChart(
             }
             : null;
         if (nextContext) {
-            const suggestedTotal = toNonNegative(preferencesOverride.ledigTid1) +
-                (includePartner ? toNonNegative(preferencesOverride.ledigTid2) : 0);
-            if (suggestedTotal > 0) {
-                nextContext.totalMonths = suggestedTotal;
+            if (suggestedTotalMonths > 0) {
+                nextContext.totalMonths = suggestedTotalMonths;
             }
         }
         const enrichedResult = {
@@ -1253,13 +1288,21 @@ export function renderGanttChart(
 
         const parent1Line = document.createElement('div');
         parent1Line.className = 'strategy-days-line';
-        parent1Line.textContent = `Förälder 1: ${formatDaysComparison(current?.parent1, baseline?.parent1)}`;
+        const parent1Formatted = formatDaysComparison(current?.parent1, baseline?.parent1);
+        parent1Line.innerHTML = `Förälder 1: ${parent1Formatted.valueText}`;
+        if (parent1Formatted.diff) {
+            parent1Line.innerHTML += ` <span class="days-diff ${parent1Formatted.diff.className}">(${parent1Formatted.diff.text})</span>`;
+        }
         block.appendChild(parent1Line);
 
         if (includePartner && current?.parent2) {
             const parent2Line = document.createElement('div');
             parent2Line.className = 'strategy-days-line';
-            parent2Line.textContent = `Förälder 2: ${formatDaysComparison(current.parent2, baseline?.parent2)}`;
+            const parent2Formatted = formatDaysComparison(current.parent2, baseline?.parent2);
+            parent2Line.innerHTML = `Förälder 2: ${parent2Formatted.valueText}`;
+            if (parent2Formatted.diff) {
+                parent2Line.innerHTML += ` <span class="days-diff ${parent2Formatted.diff.className}">(${parent2Formatted.diff.text})</span>`;
+            }
             block.appendChild(parent2Line);
         }
 
@@ -1368,6 +1411,24 @@ export function renderGanttChart(
             )
         );
 
+        if (baselineIncomeTotal != null) {
+            const strategyIncomeTotal = Math.round(toFiniteNumber(summary.totalIncome));
+            if (Number.isFinite(strategyIncomeTotal)) {
+                const incomeNote = document.createElement('div');
+                incomeNote.className = 'strategy-income-note';
+                if (strategyIncomeTotal === baselineIncomeTotal) {
+                    incomeNote.textContent = `Denna strategi ger samma totala inkomst (${strategyIncomeTotal.toLocaleString('sv-SE')} sek) som ditt nuvarande val.`;
+                } else {
+                    const diffValue = strategyIncomeTotal - baselineIncomeTotal;
+                    const signClass = diffValue > 0 ? 'positive' : 'negative';
+                    const signLabel = diffValue > 0 ? '+' : '−';
+                    const diffText = `${signLabel}${Math.abs(diffValue).toLocaleString('sv-SE')} sek`;
+                    incomeNote.innerHTML = `Totala hushållsinkomsten blir <strong>${strategyIncomeTotal.toLocaleString('sv-SE')} sek</strong> med den här strategin, vilket är <span class="income-diff ${signClass}">${diffText}</span> jämfört med ditt nuvarande val.`;
+                }
+                box.appendChild(incomeNote);
+            }
+        }
+
         const applyButton = document.createElement('button');
         applyButton.type = 'button';
         applyButton.className = 'strategy-use-btn';
@@ -1400,49 +1461,13 @@ export function renderGanttChart(
 
         const wrapper = document.createElement('div');
         wrapper.className = 'strategy-box-wrapper';
-        const boxesWithSummary = [];
 
         boxes.forEach(boxData => {
             const element = renderStrategyBox(boxData);
             wrapper.appendChild(element);
-            if (boxData.summary) {
-                boxesWithSummary.push(boxData);
-            }
         });
 
         suggestionsContainer.appendChild(wrapper);
-
-        const baselineIncomeTotal = baselineSummary ? Math.round(baselineSummary.totalIncome) : null;
-        if (baselineIncomeTotal != null && boxesWithSummary.length) {
-            const richest = boxesWithSummary.reduce((best, candidate) => {
-                const candidateIncome = Math.round(candidate.summary.totalIncome || 0);
-                if (!best) {
-                    return candidate;
-                }
-                const bestIncome = Math.round(best.summary.totalIncome || 0);
-                return candidateIncome > bestIncome ? candidate : best;
-            }, null);
-
-            if (richest) {
-                const divider = document.createElement('hr');
-                divider.className = 'strategy-summary-divider';
-                suggestionsContainer.appendChild(divider);
-
-                const summaryFooter = document.createElement('div');
-                summaryFooter.className = 'strategy-income-summary';
-                const proposedIncome = Math.round(richest.summary.totalIncome || 0);
-                const diff = proposedIncome - baselineIncomeTotal;
-                const diffMagnitude = Math.abs(diff);
-                const diffText = diff === 0
-                    ? ''
-                    : ` (${diff > 0 ? '+' : ''}${diffMagnitude.toLocaleString('sv-SE')} sek)`;
-                summaryFooter.innerHTML = `
-                    <div>Inkomst under föräldraledighet (ditt val): ${baselineIncomeTotal.toLocaleString('sv-SE')} sek</div>
-                    <div>Inkomst under föräldraledighet (föreslagen): ${proposedIncome.toLocaleString('sv-SE')} sek${diffText}</div>
-                `;
-                suggestionsContainer.appendChild(summaryFooter);
-            }
-        }
 
         suggestionsContainer.style.display = 'block';
     };
@@ -1510,6 +1535,16 @@ export function renderGanttChart(
                     const parent1Diff = Math.abs(summary.parent1Months - baselineSummary.parent1Months);
                     const parent2Diff = Math.abs(summary.parent2Months - baselineSummary.parent2Months);
                     if (parent1Diff <= monthTolerance && parent2Diff <= monthTolerance) {
+                        continue;
+                    }
+                    const incomeGain = Math.round(
+                        toFiniteNumber(summary.totalIncome) - toFiniteNumber(baselineSummary.totalIncome)
+                    );
+                    const remainingGain = Math.round(
+                        toFiniteNumber(summary.totalRemainingDays) - toFiniteNumber(baselineSummary.totalRemainingDays)
+                    );
+                    const incomeTolerance = 1;
+                    if (incomeGain <= incomeTolerance && remainingGain <= 0) {
                         continue;
                     }
                 }
@@ -1583,7 +1618,7 @@ export function renderGanttChart(
             renderSuggestions(cachedSuggestions);
             return;
         }
-        const defaultLabel = 'Get help to optimize';
+        const defaultLabel = 'Hjälp mig att optimera';
         const loadingLabel = 'Beräknar förslag...';
         assistanceButton.disabled = true;
         assistanceButton.classList.add('loading');
