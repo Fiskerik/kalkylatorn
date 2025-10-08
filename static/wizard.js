@@ -2,175 +2,221 @@ import { updateProgress, setupToggleButtons } from './ui.js';
 
 /**
  * wizard.js - Sequential question wizard for the Föräldrapenningkalkylator
- * Handles navigation between questions, progress bar updates and back navigation.
+ * Handles navigation between wizard steps, progress bar updates and developer shortcuts.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    const sections = {
-        vardnad: document.querySelector('#vårdnad-group').closest('.wizard-step'),
-        partner: document.getElementById('partner-question'),
-        barnIdag: document.querySelector('#barn-tidigare-group').closest('.wizard-step'),
-        barnPlan: document.querySelector('#barn-planerade-group').closest('.wizard-step'),
-        inkomst1: document.getElementById('inkomst-avtal-1'),
-        inkomst2: document.getElementById('inkomst-block-2')
-    };
-
-    const stepSections = [
-        sections.vardnad,
-        sections.partner,
-        sections.barnIdag,
-        sections.barnPlan,
-        sections.inkomst1,
-        sections.inkomst2
-    ];
-
+    const steps = Array.from(document.querySelectorAll('fieldset.wizard-step'));
     const idx = {
-        vardnad: 0,
-        partner: 1,
-        barnIdag: 2,
-        barnPlan: 3,
-        inkomst1: 4,
-        inkomst2: 5,
-        calc: 6
+        household: 0,
+        income: 1,
+        preferences: 2,
+        summary: 3
     };
+
+    let currentIndex = idx.household;
+    let history = [];
+    let partnerActive = true;
 
     const calculateBtn = document.getElementById('calculate-btn');
     const backBtn = document.getElementById('back-btn');
-    const step6 = document.querySelector('.step-6');
-    let partnerSelected = false;
+    const nextBtn = document.getElementById('next-btn');
+    const stickyCTA = document.getElementById('sticky-cta');
+    const mobileSummary = document.getElementById('mobile-summary');
+    const partnerCheckbox = document.getElementById('beräkna-partner-checkbox');
+    const partnerHidden = document.getElementById('beräkna-partner');
+    const partnerFields = document.querySelectorAll('[data-partner-field]');
+    const barnError = document.getElementById('barn-selection-error');
+    const progressSteps = document.querySelectorAll('#progress-bar .step');
+    const progressBar = document.getElementById('progress-bar');
 
-    let currentIndex = idx.vardnad;
-    let history = [];
+    const COMPACT_SCROLL_THRESHOLD = 120;
 
-    function progressStepForIndex(i) {
-        if (i === idx.calc) return 7;
-        if (i <= idx.barnPlan) return i + 1;
-        if (i === idx.inkomst1) return 5;
-        if (i === idx.inkomst2) return 6;
-        return 1;
-    }
+    const handleScroll = () => {
+        if (!progressBar) return;
+        const shouldCompact = window.scrollY > COMPACT_SCROLL_THRESHOLD;
+        progressBar.classList.toggle('compact', shouldCompact);
+    };
 
-    function showCurrent() {
-        stepSections.forEach(sec => sec.classList.remove('visible'));
-        calculateBtn.classList.add('hidden');
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
-        if (currentIndex !== idx.calc) {
-            stepSections[currentIndex]?.classList.add('visible');
+    function setPartnerFieldsVisible(visible) {
+        partnerActive = visible;
+        partnerFields.forEach(field => {
+            if (field instanceof HTMLElement) {
+                field.style.display = visible ? '' : 'none';
+            }
+        });
+        if (partnerHidden) {
+            partnerHidden.value = visible ? 'ja' : 'nej';
         }
-
-        updateProgress(progressStepForIndex(currentIndex));
-        backBtn.classList.toggle('hidden', history.length === 0);
-
-        if (currentIndex === idx.calc) calculateBtn.classList.remove('hidden');
     }
 
-    function goTo(nextIndex) {
-        history.push(currentIndex);
-        currentIndex = nextIndex;
-        showCurrent();
+    function shouldShowStickySummary() {
+        return (
+            document.body.dataset.resultsReady === 'true' &&
+            currentIndex === idx.summary
+        );
+    }
+
+    function updateStickyCtaLabel() {
+        if (!stickyCTA) return;
+        const resultsReady = document.body.dataset.resultsReady === 'true';
+        stickyCTA.textContent = resultsReady ? 'Optimera' : 'Visa resultat';
+        if (mobileSummary) {
+            mobileSummary.classList.toggle('is-visible', shouldShowStickySummary());
+        }
+    }
+
+    function updateNavigation() {
+        backBtn.classList.toggle('hidden', currentIndex === idx.household);
+        const onSummary = currentIndex === idx.summary;
+        nextBtn.classList.toggle('hidden', onSummary);
+        calculateBtn.classList.toggle('hidden', !onSummary);
+        nextBtn.textContent = currentIndex === idx.preferences ? 'Gå till resultat' : 'Nästa steg';
+        updateStickyCtaLabel();
+    }
+
+    function displayStep(index, recordHistory = false) {
+        if (index < 0 || index >= steps.length) return;
+        if (recordHistory) {
+            history.push(currentIndex);
+        }
+        steps.forEach((step, i) => step.classList.toggle('visible', i === index));
+        currentIndex = index;
+        updateProgress(index + 1);
+        updateNavigation();
+    }
+
+    function validateStep(index) {
+        if (index === idx.household) {
+            const custodyInput = document.getElementById('vårdnad');
+            const custodyValue = custodyInput ? custodyInput.value : '';
+            const info = document.getElementById('vårdnad-info');
+            if (!custodyValue) {
+                if (info) info.textContent = 'Välj vårdnadstyp för att fortsätta.';
+                return false;
+            }
+            if (info && info.textContent) info.textContent = '';
+            const plannedValue = Number.parseInt(document.getElementById('barn-planerade').value, 10);
+            const validPlanned = Number.isFinite(plannedValue) && plannedValue > 0;
+            if (barnError) {
+                barnError.style.display = validPlanned ? 'none' : 'block';
+            }
+            return validPlanned;
+        }
+        if (index === idx.income) {
+            const income1 = document.getElementById('inkomst1');
+            if (income1 && (!income1.value || Number(income1.value) <= 0)) {
+                income1.focus();
+                if (typeof income1.reportValidity === 'function') {
+                    income1.reportValidity();
+                }
+                return false;
+            }
+        }
+        return true;
     }
 
     backBtn.addEventListener('click', () => {
         if (history.length === 0) return;
-        currentIndex = history.pop();
-        showCurrent();
+        const previous = history.pop();
+        displayStep(previous, false);
     });
 
-    const progressSteps = document.querySelectorAll('#progress-bar .step');
-    progressSteps.forEach((stepEl, i) => {
+    nextBtn.addEventListener('click', () => {
+        if (!validateStep(currentIndex)) return;
+        const nextIndex = Math.min(currentIndex + 1, steps.length - 1);
+        displayStep(nextIndex, true);
+    });
+
+    if (stickyCTA) {
+        stickyCTA.addEventListener('click', () => {
+            if (document.body.dataset.resultsReady === 'true') {
+                document.getElementById('optimize-btn')?.click();
+                return;
+            }
+            if (currentIndex !== idx.summary) {
+                nextBtn.click();
+            } else if (!calculateBtn.classList.contains('hidden')) {
+                calculateBtn.click();
+            }
+        });
+    }
+
+    progressSteps.forEach((stepEl, index) => {
         stepEl.addEventListener('click', () => {
-            if (!stepEl.classList.contains('completed') && !stepEl.classList.contains('active')) return;
-            const stepNum = i + 1;
-            const combined = history.concat(currentIndex);
-            let targetPos = -1;
-            for (let j = combined.length - 1; j >= 0; j--) {
-                if (progressStepForIndex(combined[j]) === stepNum) {
-                    targetPos = j;
-                    break;
-                }
-            }
-            if (targetPos !== -1) {
-                history = combined.slice(0, targetPos);
-                currentIndex = combined[targetPos];
-                showCurrent();
-            }
+            if (index > currentIndex) return;
+            displayStep(index, true);
         });
     });
 
-    showCurrent();
+    document.addEventListener('results-ready', updateStickyCtaLabel);
+    document.addEventListener('results-reset', updateStickyCtaLabel);
+
+    setPartnerFieldsVisible(true);
+    displayStep(idx.household);
+    handleScroll();
 
     setupToggleButtons('vårdnad-group', 'vårdnad', value => {
-        if (value === 'ensam') {
-            partnerSelected = false;
-            document.getElementById('beräkna-partner').value = 'nej';
-            step6?.style.setProperty('display', 'none');
-            goTo(idx.barnIdag);
-        } else {
-            partnerSelected = true;
-            step6?.style.setProperty('display', 'flex');
-            goTo(idx.partner);
+        const isEnsam = value === 'ensam';
+        if (partnerCheckbox) {
+            partnerCheckbox.disabled = isEnsam;
+            if (isEnsam) {
+                partnerCheckbox.checked = false;
+                setPartnerFieldsVisible(false);
+            } else {
+                setPartnerFieldsVisible(partnerCheckbox.checked);
+            }
+        } else if (isEnsam) {
+            setPartnerFieldsVisible(false);
         }
     });
 
-    setupToggleButtons('partner-group', 'beräkna-partner', value => {
-        partnerSelected = value === 'ja';
-        if (partnerSelected) {
-            step6?.style.setProperty('display', 'flex');
-        } else {
-            step6?.style.setProperty('display', 'none');
-        }
-        goTo(idx.barnIdag);
-    });
+    if (partnerCheckbox) {
+        partnerCheckbox.addEventListener('change', () => {
+            if (partnerCheckbox.disabled) return;
+            setPartnerFieldsVisible(partnerCheckbox.checked);
+        });
+    }
 
     setupToggleButtons('barn-tidigare-group', 'barn-tidigare', () => {
-        goTo(idx.barnPlan);
+        if (barnError) barnError.style.display = 'none';
     });
-
     setupToggleButtons('barn-planerade-group', 'barn-planerade', () => {
-        goTo(idx.inkomst1);
+        if (barnError) barnError.style.display = 'none';
     });
 
     setupToggleButtons('avtal-group-1', 'har-avtal-1', value => {
         const container = document.getElementById('anstallningstid-container-1');
+        if (!container) return;
         if (value === 'ja') {
             container.style.display = 'block';
         } else {
             container.style.display = 'none';
-            document.getElementById('anstallningstid-1').value = '';
-            if (partnerSelected) {
-                goTo(idx.inkomst2);
-            } else {
-                goTo(idx.calc);
-            }
+            const input = document.getElementById('anstallningstid-1');
+            if (input) input.value = '';
         }
     });
 
-    setupToggleButtons('anstallningstid-group-1', 'anstallningstid-1', () => {
-        if (partnerSelected) {
-            goTo(idx.inkomst2);
-        } else {
-            goTo(idx.calc);
-        }
-    });
+    setupToggleButtons('anstallningstid-group-1', 'anstallningstid-1');
 
     setupToggleButtons('avtal-group-2', 'har-avtal-2', value => {
         const container = document.getElementById('anstallningstid-container-2');
-        if (value === 'ja') {
+        if (!container) return;
+        if (value === 'ja' && partnerActive) {
             container.style.display = 'block';
         } else {
             container.style.display = 'none';
-            document.getElementById('anstallningstid-2').value = '';
-            goTo(idx.calc);
+            const input = document.getElementById('anstallningstid-2');
+            if (input) input.value = '';
         }
     });
 
-    setupToggleButtons('anstallningstid-group-2', 'anstallningstid-2', () => {
-        goTo(idx.calc);
-    });
+    setupToggleButtons('anstallningstid-group-2', 'anstallningstid-2');
 
     const toggleInputMap = {
         'vårdnad-group': 'vårdnad',
-        'partner-group': 'beräkna-partner',
         'barn-tidigare-group': 'barn-tidigare',
         'barn-planerade-group': 'barn-planerade',
         'avtal-group-1': 'har-avtal-1',
@@ -202,17 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetFormState() {
-        const toggleGroups = [
-            'vårdnad-group',
-            'partner-group',
-            'barn-tidigare-group',
-            'barn-planerade-group',
-            'avtal-group-1',
-            'anstallningstid-group-1',
-            'avtal-group-2',
-            'anstallningstid-group-2'
-        ];
-        toggleGroups.forEach(groupId => applyToggleValue(groupId, null));
+        Object.keys(toggleInputMap).forEach(groupId => applyToggleValue(groupId, null));
 
         const inputsToClear = [
             'inkomst1',
@@ -221,11 +257,9 @@ document.addEventListener('DOMContentLoaded', () => {
             'ledig-tid-2',
             'min-inkomst'
         ];
-        inputsToClear.forEach(inputId => {
-            const input = document.getElementById(inputId);
-            if (input) {
-                input.value = '';
-            }
+        inputsToClear.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) input.value = '';
         });
 
         const container1 = document.getElementById('anstallningstid-container-1');
@@ -233,11 +267,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const container2 = document.getElementById('anstallningstid-container-2');
         if (container2) container2.style.display = 'none';
 
-        step6?.style.setProperty('display', 'none');
-        partnerSelected = false;
+        if (partnerCheckbox) {
+            partnerCheckbox.disabled = false;
+            partnerCheckbox.checked = true;
+        }
+        setPartnerFieldsVisible(true);
+        document.body.dataset.resultsReady = 'false';
+        document.dispatchEvent(new Event('results-reset'));
         history = [];
-        currentIndex = idx.vardnad;
-        showCurrent();
+        displayStep(idx.household);
     }
 
     function employmentOptionForParent(parent) {
@@ -269,12 +307,13 @@ document.addEventListener('DOMContentLoaded', () => {
             : (typeof partnerFallback === 'boolean' ? partnerFallback : true);
         const parents = Array.isArray(family.parents) ? family.parents : [];
         const hasSecondParent = parents.length > 1;
-        partnerSelected = custodyValue === 'gemensam' && shouldIncludePartner && hasSecondParent;
+        const includePartner = custodyValue === 'gemensam' && shouldIncludePartner && hasSecondParent;
 
-        const partnerValue = partnerSelected ? 'ja' : 'nej';
-        applyToggleValue('partner-group', partnerValue);
-        document.getElementById('beräkna-partner').value = partnerValue;
-        step6?.style.setProperty('display', partnerSelected ? 'flex' : 'none');
+        if (partnerCheckbox) {
+            partnerCheckbox.disabled = custodyValue === 'ensam';
+            partnerCheckbox.checked = includePartner;
+        }
+        setPartnerFieldsVisible(includePartner);
 
         const existingChildren = family.barn?.befintliga ?? 0;
         applyToggleValue('barn-tidigare-group', existingChildren.toString());
@@ -282,16 +321,12 @@ document.addEventListener('DOMContentLoaded', () => {
         applyToggleValue('barn-planerade-group', plannedChildren.toString());
 
         const parent1 = parents[0] || {};
-        const parent2 = partnerSelected ? parents[1] || {} : null;
+        const parent2 = includePartner ? parents[1] || {} : null;
 
         const income1Input = document.getElementById('inkomst1');
         const income2Input = document.getElementById('inkomst2');
-        if (income1Input) {
-            income1Input.value = parent1.salary_sek_per_month ?? '';
-        }
-        if (income2Input) {
-            income2Input.value = parent2?.salary_sek_per_month ?? '';
-        }
+        if (income1Input) income1Input.value = parent1.salary_sek_per_month ?? '';
+        if (income2Input) income2Input.value = parent2?.salary_sek_per_month ?? '';
 
         const minIncomeInput = document.getElementById('min-inkomst');
         if (minIncomeInput) {
@@ -314,11 +349,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const avtal2Value = parent2?.kollektivavtal ? 'ja' : 'nej';
-        applyToggleValue('avtal-group-2', partnerSelected ? avtal2Value : null);
+        applyToggleValue('avtal-group-2', includePartner ? avtal2Value : null);
         const container2 = document.getElementById('anstallningstid-container-2');
         const employment2 = employmentOptionForParent(parent2);
         if (container2) {
-            if (partnerSelected && avtal2Value === 'ja' && employment2) {
+            if (includePartner && avtal2Value === 'ja' && employment2) {
                 container2.style.display = 'block';
                 applyToggleValue('anstallningstid-group-2', employment2);
             } else {
@@ -327,17 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const historyPath = [idx.vardnad];
-        if (custodyValue === 'gemensam') {
-            historyPath.push(idx.partner);
-        }
-        historyPath.push(idx.barnIdag, idx.barnPlan, idx.inkomst1);
-        if (partnerSelected) {
-            historyPath.push(idx.inkomst2);
-        }
-        history = [...historyPath];
-        currentIndex = idx.calc;
-        showCurrent();
+        history = [idx.household, idx.income, idx.preferences];
+        displayStep(idx.summary, false);
     }
 
     const devFamilyButtons = document.querySelectorAll('.dev-family-btn');
