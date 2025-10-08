@@ -1599,6 +1599,13 @@ canvas#gantt-canvas {
     background-color: #005f56;
 }
 
+.strategy-best-note {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: #00796b;
+    text-align: center;
+}
+
 .summary-line-part {
     margin-top: 0.35rem;
     color: #344054;

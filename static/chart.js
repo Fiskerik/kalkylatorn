@@ -1430,12 +1430,39 @@ export function renderGanttChart(
             }
         }
 
-        const applyButton = document.createElement('button');
-        applyButton.type = 'button';
-        applyButton.className = 'strategy-use-btn';
-        applyButton.textContent = 'Use';
-        applyButton.addEventListener('click', () => applySuggestedPlan(boxData));
-        box.appendChild(applyButton);
+        let actionElement = null;
+        if (baselineSummary && boxData.type === 'remainingDays') {
+            const strategyRemaining = toFiniteNumber(summary.totalRemainingDays);
+            const baselineRemaining = toFiniteNumber(baselineSummary.totalRemainingDays);
+            if (strategyRemaining < baselineRemaining) {
+                const note = document.createElement('p');
+                note.className = 'strategy-best-note';
+                note.textContent = 'Detta är den bästa strategin för att få ut flest antal dagar';
+                actionElement = note;
+            }
+        }
+
+        if (!actionElement && baselineSummary && boxData.type === 'income') {
+            const strategyIncomeTotal = toFiniteNumber(summary.totalIncome);
+            const baselineIncome = toFiniteNumber(baselineSummary.totalIncome);
+            if (strategyIncomeTotal < baselineIncome) {
+                const note = document.createElement('p');
+                note.className = 'strategy-best-note';
+                note.textContent = 'Detta är den bästa strategin för att maximera inkomsten under föräldraledigheten';
+                actionElement = note;
+            }
+        }
+
+        if (!actionElement) {
+            const applyButton = document.createElement('button');
+            applyButton.type = 'button';
+            applyButton.className = 'strategy-use-btn';
+            applyButton.textContent = 'Use';
+            applyButton.addEventListener('click', () => applySuggestedPlan(boxData));
+            actionElement = applyButton;
+        }
+
+        box.appendChild(actionElement);
 
         return box;
     };
@@ -1588,6 +1615,7 @@ export function renderGanttChart(
         if (bestRemaining) {
             boxes.push({
                 title: 'Strategi – Fler dagar kvar',
+                type: 'remainingDays',
                 summary: bestRemaining.summary,
                 description: 'Fokuserar på att frigöra fler dagar samtidigt som minimiinkomsten uppnås.',
                 preferences: bestRemaining.preferences,
@@ -1603,6 +1631,7 @@ export function renderGanttChart(
         if (bestIncome) {
             boxes.push({
                 title: 'Strategi – Maximera inkomst',
+                type: 'income',
                 summary: bestIncome.summary,
                 description: 'Fokuserar på att maximera hushållets inkomst inom ramen för minimiinkomsten.',
                 preferences: bestIncome.preferences,
