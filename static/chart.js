@@ -631,8 +631,33 @@ export function renderGanttChart(
                 '</div>'
             );
         };
-        const joinSummaryParts = parts =>
-            parts.filter(Boolean).join(' <span class="summary-separator">|</span> ');
+        const joinSummaryParts = parts => {
+            const filtered = parts.filter(Boolean);
+            if (!filtered.length) {
+                return '';
+            }
+
+            const lines = [];
+            const currentLine = [];
+
+            filtered.forEach(part => {
+                if (part.includes('income-flag')) {
+                    if (currentLine.length) {
+                        lines.push(currentLine.join(' <span class="summary-separator">|</span> '));
+                        currentLine.length = 0;
+                    }
+                    lines.push(part);
+                } else {
+                    currentLine.push(part);
+                }
+            });
+
+            if (currentLine.length) {
+                lines.push(currentLine.join(' <span class="summary-separator">|</span> '));
+            }
+
+            return lines.join('<br>');
+        };
         const appendPeriod = blocks => {
             if (!blocks.length) {
                 return;
@@ -912,6 +937,48 @@ export function renderGanttChart(
         }
     };
 
+    const minIncomeLinePlugin = {
+        id: 'minIncomeLinePlugin',
+        afterDatasetsDraw: chart => {
+            if (!minIncomeRequirement) {
+                return;
+            }
+
+            const { ctx, chartArea, scales } = chart;
+            if (!ctx || !chartArea) {
+                return;
+            }
+
+            const yScale = scales?.y;
+            if (!yScale) {
+                return;
+            }
+
+            const yPosition = yScale.getPixelForValue(minIncomeRequirement);
+            if (Number.isNaN(yPosition) || yPosition < chartArea.top || yPosition > chartArea.bottom) {
+                return;
+            }
+
+            ctx.save();
+            ctx.setLineDash([6, 6]);
+            ctx.strokeStyle = 'rgba(220, 0, 0, 0.8)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(chartArea.left, yPosition);
+            ctx.lineTo(chartArea.right, yPosition);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(220, 0, 0, 0.85)';
+            ctx.font = '12px "Inter", sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = yPosition - 6 < chartArea.top ? 'top' : 'bottom';
+            const labelYOffset = ctx.textBaseline === 'top' ? 4 : -4;
+            ctx.fillText('Minimum household income', chartArea.right - 6, yPosition + labelYOffset);
+            ctx.restore();
+        }
+    };
+
     const dragPlugin = {
         id: 'dragPlugin',
         afterInit: (chart) => {
@@ -1060,6 +1127,10 @@ export function renderGanttChart(
     };
 
     const ctx = canvas.getContext('2d');
+    const maxIncomeValue = inkomstData.length
+        ? Math.max(...inkomstData.map(d => d.y))
+        : 0;
+
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -1104,7 +1175,10 @@ export function renderGanttChart(
                 y: {
                     position: 'right',
                     min: 0,
-                    suggestedMax: Math.max(...inkomstData.map(d => d.y)) * 1.1,
+                    suggestedMax: Math.max(
+                        maxIncomeValue,
+                        minIncomeRequirement || 0
+                    ) * 1.1,
                     title: { display: true, text: 'Inkomst (kr/månad)' },
                     grid: { drawOnChartArea: true },
                     ticks: {
@@ -1126,6 +1200,6 @@ export function renderGanttChart(
                 }
             }
         },
-        plugins: [highlightPlugin, dragPlugin, summaryPlugin]
+        plugins: [highlightPlugin, dragPlugin, summaryPlugin, minIncomeLinePlugin]
     });
 }
