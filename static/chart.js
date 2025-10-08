@@ -337,7 +337,7 @@ export function renderGanttChart(
 
     const baseLegendDefinitions = [
         { color: '#800080', text: 'Överlappande Ledighet' },
-        { color: '#34c759', text: 'Förälder 1 Ledig' },
+        { color: '#39d98a', text: 'Förälder 1 Ledig' },
         { color: '#f28c38', text: 'Förälder 1 Ledig (Överförda dagar)' },
         { color: '#007bff', text: 'Förälder 2 Ledig' },
         { color: 'red', text: 'Efter Ledighet' }
@@ -634,6 +634,7 @@ export function renderGanttChart(
     let pointDisplayData = [];
     let displayDraggables = [];
     let highlightRanges = [];
+    let selectedPointIndex = null;
 
     const computeHighlightRanges = () => {
         highlightRanges = [];
@@ -668,13 +669,16 @@ export function renderGanttChart(
         if (beräknaPartner === "ja" && x >= 0 && x < dadLeaveDurationWeeks) return '#800080';
         if (x < period1TotalWeeks) {
             if (transferredWeeks > 0 && x >= transferredStartWeek) return '#f28c38';
-            return '#34c759';
+            return '#39d98a';
         }
         if (x < period1TotalWeeks + period2TotalWeeks) return '#007bff';
         return 'red';
     };
 
-    const getPointBorderColors = () => pointDisplayData.map(data => {
+    const getPointBorderColors = () => pointDisplayData.map((data, index) => {
+        if (selectedPointIndex === index) {
+            return '#000000';
+        }
         const referenceWeek = Number.isFinite(data?.startWeekIndex) ? data.startWeekIndex : data.x;
         return getPeriodColor(referenceWeek);
     });
@@ -687,6 +691,28 @@ export function renderGanttChart(
         const referenceWeek = Number.isFinite(data?.startWeekIndex) ? data.startWeekIndex : data.x;
         return getPeriodColor(referenceWeek);
     });
+
+    const getPointBorderWidths = () => pointDisplayData.map((_, index) => (
+        selectedPointIndex === index ? 3 : 1
+    ));
+
+    const normalizeSelectedPointIndex = () => {
+        if (selectedPointIndex == null) {
+            return;
+        }
+        if (!pointDisplayData.length) {
+            selectedPointIndex = null;
+            return;
+        }
+        if (selectedPointIndex < 0) {
+            selectedPointIndex = 0;
+            return;
+        }
+        const maxIndex = pointDisplayData.length - 1;
+        if (selectedPointIndex > maxIndex) {
+            selectedPointIndex = maxIndex;
+        }
+    };
 
     function generateInkomstData() {
         inkomstData = [];
@@ -931,6 +957,7 @@ export function renderGanttChart(
 
     generateInkomstData();
     buildDisplayData();
+    normalizeSelectedPointIndex();
 
     usedPeriodColors = new Set(inkomstData.map(data => getPeriodColor(data.x)));
     usedSeverityLevels = new Set(
@@ -2141,12 +2168,15 @@ export function renderGanttChart(
 
                         generateInkomstData();
                         buildDisplayData();
+                        normalizeSelectedPointIndex();
                         chart.data.datasets[0].data = pointDisplayData;
                         chart.data.datasets[0].pointBackgroundColor = getPointBackgroundColors();
                         chart.data.datasets[0].pointBorderColor = getPointBorderColors();
+                        chart.data.datasets[0].pointBorderWidth = getPointBorderWidths();
                         chart.data.datasets[0].pointRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? activePointRadius : basePointRadius);
                         chart.data.datasets[0].pointHoverRadius = pointDisplayData.map((_, index) => displayDraggables.some(p => p.displayIndex === index) ? hoverPointRadius : activePointRadius);
                         chart.update();
+                        summaryBox.innerHTML = formatSummaryData(selectedPointIndex);
                         updateMessage();
                     }
                 }
@@ -2241,6 +2271,23 @@ export function renderGanttChart(
                     summaryBox.innerHTML = formatSummaryData(lastHoveredIndex);
                 }
             });
+            chart.canvas.addEventListener('mouseleave', () => {
+                summaryBox.innerHTML = formatSummaryData(selectedPointIndex);
+            });
+            chart.canvas.addEventListener('click', (e) => {
+                const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
+                if (!points.length) {
+                    return;
+                }
+                const point = points[0];
+                selectedPointIndex = point.index;
+                normalizeSelectedPointIndex();
+                const dataset = chart.data.datasets[0];
+                dataset.pointBorderColor = getPointBorderColors();
+                dataset.pointBorderWidth = getPointBorderWidths();
+                summaryBox.innerHTML = formatSummaryData(selectedPointIndex);
+                chart.update();
+            });
         }
     };
 
@@ -2264,7 +2311,8 @@ export function renderGanttChart(
                     backgroundColor: ctx => getPeriodColor(ctx.p0.parsed.x)
                 },
                 pointBackgroundColor: getPointBackgroundColors(),
-                pointBorderColor: getPointBorderColors()
+                pointBorderColor: getPointBorderColors(),
+                pointBorderWidth: getPointBorderWidths()
             }]
         },
         options: {

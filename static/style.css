@@ -580,11 +580,18 @@ input[type="number"] {
     color: #666;
 }
 
+.benefit-bar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
 .benefit-bar {
+    flex: 1;
     height: 10px;
     background: #ddd;
     border-radius: 5px;
-    margin-top: 1rem;
     position: relative;
     width: 100%;
 }
@@ -596,12 +603,10 @@ input[type="number"] {
     transition: width 0.3s ease-in-out;
 }
 
-.benefit-bar-labels {
-    display: flex;
-    justify-content: space-between;
+.benefit-bar-label {
     font-size: 0.85rem;
-    margin-top: 0.5rem;
     color: #777;
+    white-space: nowrap;
 }
 .benefit-details {
     margin-top: 0.5rem;
@@ -1672,7 +1677,7 @@ canvas#gantt-canvas {
     background-color: white;
 }
 .day-cell.parent1-start, .day-cell.parent1-end, .day-cell.parent1-single {
-    background-color: #34c759 !important; /* Green */
+    background-color: #39d98a !important; /* Green */
 }
 .day-cell.parent1-between {
     background-color: #81c784 !important; /* Lighter green */
@@ -1689,7 +1694,7 @@ canvas#gantt-canvas {
 .day-cell.combined-between {
     background-color: #ce93d8 !important; /* Lighter purple */
 }
-.parent1-start, .parent1-end, .parent1-single { background-color: #34c759; color: white; } /* Green */
+.parent1-start, .parent1-end, .parent1-single { background-color: #39d98a; color: white; } /* Green */
 .parent1-between { background-color: #a5d6a7; } /* Light Green */
 .parent2-start, .parent2-end, .parent2-single { background-color: #00008b; color: white; } /* Dark Blue */
 .parent2-between { background-color: #add8e6; } /* Light Blue */
@@ -1834,7 +1839,7 @@ canvas#gantt-canvas {
     width: 100%;
     height: 14px;
     border-radius: 999px;
-    background: linear-gradient(to right, #34c759 50%, #007bff 50%);
+    background: linear-gradient(to right, #39d98a 50%, #007bff 50%);
     border: 1px solid #d0d5dd;
     box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.15);
     outline: none;
@@ -2164,7 +2169,7 @@ canvas#gantt-canvas {
 }
 
 .metric-diff.positive {
-    color: #1b5e20;
+    color: #39d98a;
 }
 
 .metric-diff.negative {
@@ -2181,7 +2186,7 @@ canvas#gantt-canvas {
 }
 
 .summary-diff.positive {
-    color: #1b5e20;
+    color: #39d98a;
 }
 
 .summary-diff.negative {
@@ -2274,7 +2279,7 @@ canvas#gantt-canvas {
 }
 
 .days-diff.positive {
-    color: #1b5e20;
+    color: #39d98a;
 }
 
 .days-diff.negative {
@@ -2337,7 +2342,7 @@ canvas#gantt-canvas {
 }
 
 .income-diff.positive {
-    color: #1b5e20;
+    color: #39d98a;
 }
 
 .income-diff.negative {
