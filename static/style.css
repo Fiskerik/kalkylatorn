@@ -550,6 +550,12 @@ input[type="number"] {
     gap: 0.65rem;
 }
 
+.benefit-grid .info-box {
+    flex: 1 1 100%;
+    width: 100%;
+    align-self: stretch;
+}
+
 
 .benefit-title {
     font-weight: 600;
@@ -581,24 +587,35 @@ input[type="number"] {
 }
 
 .benefit-bar-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    position: relative;
+    padding-top: 1.25rem;
     margin-top: 1rem;
+    width: 100%;
+}
+
+.benefit-bar-labels {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .benefit-bar {
     flex: 1;
     height: 10px;
-    background: #ddd;
+    background: #d7e1df;
     border-radius: 5px;
     position: relative;
     width: 100%;
+    overflow: hidden;
 }
 
 .benefit-bar-fill {
     height: 100%;
-    background: #34c759;
+    background: #0f766e;
     border-radius: 5px;
     transition: width 0.3s ease-in-out;
 }
@@ -681,6 +698,21 @@ input[type="number"] {
 .info-box.open .info-content {
     display: block;
     text-align: left;
+}
+
+.household-income-info .info-content ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.household-income-info .info-content li {
+    margin-bottom: 0.35rem;
+}
+
+.household-income-info .info-note {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: #475467;
 }
 
 .result-box {
@@ -1943,6 +1975,25 @@ canvas#gantt-canvas {
     color: #007bff;
 }
 
+.slider-min-income {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.slider-min-income label {
+    margin-top: 0;
+    font-weight: 600;
+    text-align: center;
+}
+
+.slider-min-income input {
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+}
+
 .summary-section {
     margin: 0.75rem 0;
     line-height: 1.5;
@@ -2134,7 +2185,7 @@ canvas#gantt-canvas {
 }
 
 .strategy-highlight {
-    color: #00796b;
+    color: #1f2937;
     font-weight: 700;
 }
 
@@ -2182,7 +2233,7 @@ canvas#gantt-canvas {
 
 .summary-diff {
     margin-left: 0.5rem;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .summary-diff.positive {

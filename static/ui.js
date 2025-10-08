@@ -270,11 +270,13 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                         <span>${dag.toLocaleString()}</span><span class="unit">kr/dag</span>
                     </div>
                     <div class="benefit-bar-wrapper">
-                        <span class="benefit-bar-label">250 kr</span>
+                        <div class="benefit-bar-labels">
+                            <span class="benefit-bar-label">250 kr</span>
+                            <span class="benefit-bar-label">1 250 kr</span>
+                        </div>
                         <div class="benefit-bar">
                             <div class="benefit-bar-fill" style="width: ${benefitBarWidth}%;"></div>
                         </div>
-                        <span class="benefit-bar-label">1 250 kr</span>
                     </div>
                 </div>
                 <div class="benefit-card">

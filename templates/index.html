@@ -212,6 +212,26 @@
                     <input type="number" id="min-inkomst" name="min-inkomst" min="0" placeholder="Ange belopp">
                     <div id="min-income-error" class="inline-error" role="alert" aria-live="assertive" style="display: none;"></div>
                 </div>
+                <div class="info-box open household-income-info">
+                    <div class="info-header">
+                        <span class="info-icon"><i class="fa-solid fa-circle-info"></i></span>
+                        <span><strong>Riktvärden för hushållets netto</strong></span>
+                        <span class="info-arrow">▾</span>
+                    </div>
+                    <div class="info-content">
+                        <p>
+                            Använd riktvärdena nedan om du är osäker på vilket minimi-netto ditt hushåll behöver varje månad.
+                        </p>
+                        <ul>
+                            <li><strong>Ensam förälder med 1 barn:</strong> cirka 22&nbsp;000 kr/månad</li>
+                            <li><strong>Två föräldrar med 2 barn:</strong> cirka 32&nbsp;000 kr/månad</li>
+                            <li><strong>Två föräldrar med 3 barn:</strong> cirka 45&nbsp;000 kr/månad</li>
+                        </ul>
+                        <p class="info-note">
+                            Riktvärdena baseras på genomsnittliga hushållsbudgetar från Konsumentverket (2024) och kan justeras efter era egna kostnader.
+                        </p>
+                    </div>
+                </div>
                 <div class="form-section">
                     <label for="strategy">Välj strategi:</label>
                     <div class="toggle-group" id="strategy-group">
@@ -262,6 +282,10 @@
             <div class="slider-values">
                 <span class="slider-value p1-value"><strong>Förälder 1:</strong> <span id="p1-months">0</span> månader</span>
                 <span class="slider-value p2-value"><strong>Förälder 2:</strong> <span id="p2-months">0</span> månader</span>
+            </div>
+            <div class="slider-min-income">
+                <label for="min-inkomst-result">Minimi-netto för hushållet (kr/månad)</label>
+                <input type="number" id="min-inkomst-result" min="0" placeholder="Ange belopp">
             </div>
         </div>
         <div id="leave-duration-error" style="color: red; display: none; margin-top: 10px;">

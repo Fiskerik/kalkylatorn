@@ -610,6 +610,8 @@ function setupLeaveSlider() {
     const tickList = document.getElementById('leave-ticks');
     const startLabel = document.getElementById('slider-start');
     const endLabel = document.getElementById('slider-end');
+    const minIncomeFormInput = document.getElementById('min-inkomst');
+    const inlineMinIncomeInput = document.getElementById('min-inkomst-result');
     if (!totalInput || !slider || !container) return;
 
     const includePartnerActive = () => (
@@ -663,6 +665,46 @@ function setupLeaveSlider() {
     slider.addEventListener('input', () => {
         updateLeaveDisplay(slider, computeTotalMonths());
     });
+
+    const syncInlineWithForm = () => {
+        if (!inlineMinIncomeInput || !minIncomeFormInput) return;
+        inlineMinIncomeInput.value = minIncomeFormInput.value || '';
+    };
+
+    const updateAppStateMinIncome = value => {
+        if (window.appState) {
+            window.appState.preferensMinNetto = Number.isFinite(value) ? value : 0;
+        }
+    };
+
+    const syncFormWithInline = () => {
+        if (!inlineMinIncomeInput || !minIncomeFormInput) return;
+        minIncomeFormInput.value = inlineMinIncomeInput.value;
+        const parsed = parseInt(inlineMinIncomeInput.value, 10);
+        updateAppStateMinIncome(Number.isFinite(parsed) ? parsed : 0);
+    };
+
+    if (minIncomeFormInput && inlineMinIncomeInput) {
+        minIncomeFormInput.addEventListener('input', syncInlineWithForm);
+        minIncomeFormInput.addEventListener('change', syncInlineWithForm);
+        inlineMinIncomeInput.addEventListener('input', () => {
+            syncFormWithInline();
+            if (inlineMinIncomeInput.value) {
+                const minIncomeError = document.getElementById('min-income-error');
+                if (minIncomeError) {
+                    minIncomeError.style.display = 'none';
+                    minIncomeError.textContent = '';
+                }
+            }
+        });
+        inlineMinIncomeInput.addEventListener('change', syncFormWithInline);
+        document.addEventListener('results-ready', () => {
+            syncInlineWithForm();
+            const parsed = parseInt(minIncomeFormInput.value, 10);
+            updateAppStateMinIncome(Number.isFinite(parsed) ? parsed : 0);
+        });
+        syncInlineWithForm();
+    }
 
     syncSlider();
 }
