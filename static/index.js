@@ -58,7 +58,9 @@ function setBirthDateToToday(force = false) {
     if (!force && birthDateInput.value) return;
     const today = new Date();
     const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
-    birthDateInput.value = localDate.toISOString().split('T')[0];
+    const isoDate = localDate.toISOString().split('T')[0];
+    birthDateInput.value = isoDate;
+    birthDateInput.setAttribute('value', isoDate);
 }
 
 document.addEventListener('results-reset', () => setBirthDateToToday(false));

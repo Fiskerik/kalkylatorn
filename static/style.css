@@ -44,12 +44,13 @@ h3 {
 }
 /* Behåll denna för barnantal */
 .button-group.barnval .toggle-btn {
-    flex: 0 0 40px;
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
+    flex: 0 1 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
     padding: 0;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     text-align: center;
     border-radius: 8px;
     font-weight: 700;
@@ -137,7 +138,7 @@ button {
 .toggle-btn:focus-visible {
     background-color: #e0f2f1;
     border-color: #00796b;
-    color: #0f766e;
+    color: #00796b;
 }
 
 .toggle-btn.active {
@@ -158,18 +159,11 @@ button {
 }
 
 .button-group.barnval {
-    flex-wrap: nowrap;
-    justify-content: center;
-    gap: 6px;
-    padding-bottom: 0;
-    overflow-x: auto;
-}
-
-.button-group.barnval {
     flex-wrap: wrap;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     padding-bottom: 4px;
+    overflow-x: visible;
 }
 
 .result {
@@ -264,6 +258,15 @@ canvas {
     white-space: normal;
 }
 
+.dev-family-btn .family-label-text {
+    display: inline;
+}
+
+.dev-family-btn::after {
+    content: attr(data-short-label);
+    display: none;
+}
+
 .dev-family-btn:hover {
     background-color: #263238;
 }
@@ -282,12 +285,12 @@ button:hover {
 }
 
 .button-group.barnval .toggle-btn {
-    flex: 0 0 40px;
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
+    flex: 0 1 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
     padding: 0;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     line-height: 1;
     border-radius: 8px;
     font-weight: 700;
@@ -296,8 +299,8 @@ button:hover {
 .button-group.barnval .toggle-btn:hover,
 .button-group.barnval .toggle-btn:focus-visible {
     background-color: #e5f4f2;
-    border-color: #0f766e;
-    color: #0f766e;
+    border-color: #00796b;
+    color: #00796b;
 }
 
 .button-group.barnval .toggle-btn.active {
@@ -737,7 +740,7 @@ input[type="number"] {
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: 600;
-    color: #2e7d32;
+    color: #00796b;
     background-color: transparent;
 }
 
@@ -964,11 +967,12 @@ input[type="number"] {
         flex-direction: row;
         flex-wrap: wrap;
         gap: 0.75rem;
+        justify-content: center;
     }
 
     .dev-family-btn {
         flex: 1 1 calc(50% - 0.75rem);
-        min-width: 200px;
+        min-width: 150px;
     }
 }
 
@@ -1055,11 +1059,12 @@ input[type="number"] {
     }
 
     .dev-shortcuts {
-        overflow-x: auto;
+        justify-content: center;
     }
 
     .dev-family-btn {
-        min-width: 160px;
+        flex: 1 1 calc(50% - 0.75rem);
+        min-width: 120px;
     }
 
     .container {
@@ -1116,6 +1121,46 @@ input[type="number"] {
     #progress-bar .step {
         min-width: 110px;
     }
+
+    .dev-shortcuts {
+        gap: 0.5rem;
+    }
+
+    .dev-family-btn {
+        flex: 0 1 calc(25% - 0.5rem);
+        min-width: 48px;
+        padding: 0.5rem;
+    }
+
+    .dev-family-btn .family-label-text {
+        display: none;
+    }
+
+    .dev-family-btn::after {
+        display: inline;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .monthly-box .monthly-info {
+        font-size: 0.8rem;
+    }
+
+    .info-box .info-content table,
+    .info-box .info-content th,
+    .info-box .info-content td {
+        font-size: 0.5rem;
+    }
+
+    #calendar-container .legend {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #calendar-container .legend-item {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1136,8 +1181,9 @@ input[type="number"] {
     }
 
     .button-group.barnval .toggle-btn {
-        flex: 0 0 36px;
-        max-width: 36px;
+        flex: 0 0 32px;
+        max-width: 32px;
+        min-width: 32px;
     }
 
     #progress-bar {
@@ -1687,6 +1733,11 @@ canvas#gantt-canvas {
     align-items: center;
 }
 
+.mobile-sticky,
+.mobile-sticky.is-visible {
+    display: none !important;
+}
+
 .mobile-summary-content {
     display: flex;
     justify-content: space-between;
@@ -1734,6 +1785,28 @@ canvas#gantt-canvas {
     .mobile-summary-content {
         flex: 1;
     }
+}
+
+#calendar-container .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+#calendar-container .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 140px;
+}
+
+#calendar-container .legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
 }
 
 /* Slider for distributing leave between parents */
@@ -2007,6 +2080,17 @@ canvas#gantt-canvas {
     color: #101828;
 }
 
+@media (min-width: 1024px) {
+    .strategy-box-wrapper {
+        justify-content: space-between;
+    }
+
+    .strategy-box {
+        flex: 1 1 calc(50% - 0.75rem);
+        max-width: calc(50% - 0.75rem);
+    }
+}
+
 .strategy-description {
     margin: 0 0 1rem;
     color: #475467;
@@ -2259,15 +2343,15 @@ canvas#gantt-canvas {
 
     .button-group.barnval {
         flex-direction: row;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         justify-content: center;
-        overflow-x: auto;
+        overflow-x: visible;
     }
 
     .button-group.barnval .toggle-btn {
-        flex: 0 0 40px;
-        min-width: 40px;
-        width: 40px;
+        flex: 0 0 32px;
+        min-width: 32px;
+        width: 32px;
     }
 
     form,
