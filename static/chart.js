@@ -1305,17 +1305,58 @@ export function renderGanttChart(
     };
 
     const buildFeasibilityHtml = () => {
-        let html = `<div class="feasibility-message" style="background-color: ${status.bakgrund}; border: 1px solid ${status.kant}; padding: 15px; margin-bottom: 15px; font-family: Inter, sans-serif; border-radius: 10px;">` +
-            `<strong style="font-size: 1.2em;">${status.titel}</strong><br><br>`;
+        let contentHtml = `<strong style="font-size: 1.2em;">${status.titel}</strong><br><br>`;
         if (transferredDays > 0 && genomförbarhet.status === 'ok') {
-            html += `<span style="color: #f28c38;">Överförde ${transferredDays} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>`;
+            contentHtml += `<span style="color: #f28c38;">Överförde ${transferredDays} inkomstbaserade dagar till Förälder 1, används under ${transferredWeeks} veckor.</span><br><br>`;
         }
         if (!genomförbarhet.ärGenomförbar && genomförbarhet.meddelande) {
-            html += `<span style="color: #ff0000;">${genomförbarhet.meddelande}</span><br><br>`;
+            contentHtml += `<span style="color: #ff0000;">${genomförbarhet.meddelande}</span><br><br>`;
         }
-        html += buildPeriodSummary();
-        html += '</div>';
-        return html;
+        contentHtml += buildPeriodSummary();
+
+        return `<div class="feasibility-message collapsed" style="background-color: ${status.bakgrund}; border: 1px solid ${status.kant}; padding: 15px; margin-bottom: 15px; font-family: Inter, sans-serif; border-radius: 10px;">`
+            + `<button type="button" class="feasibility-toggle" aria-expanded="false">`
+            + `<span class="feasibility-toggle-label">Mer detaljer</span>`
+            + `<span class="feasibility-toggle-icon" aria-hidden="true">▾</span>`
+            + `</button>`
+            + `<div class="feasibility-content" hidden>${contentHtml}</div>`
+            + '</div>';
+    };
+
+    const initializeFeasibilityToggle = (rootElement) => {
+        const messageEl = rootElement?.querySelector('.feasibility-message');
+        if (!messageEl) {
+            return;
+        }
+        const toggleButton = messageEl.querySelector('.feasibility-toggle');
+        const contentEl = messageEl.querySelector('.feasibility-content');
+        if (!toggleButton || !contentEl) {
+            return;
+        }
+        const labelEl = toggleButton.querySelector('.feasibility-toggle-label');
+        const iconEl = toggleButton.querySelector('.feasibility-toggle-icon');
+
+        const setState = (expanded) => {
+            messageEl.classList.toggle('expanded', expanded);
+            messageEl.classList.toggle('collapsed', !expanded);
+            contentEl.hidden = !expanded;
+            toggleButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            if (labelEl) {
+                labelEl.textContent = expanded ? 'Dölj detaljer' : 'Mer detaljer';
+            } else {
+                toggleButton.textContent = expanded ? 'Dölj detaljer' : 'Mer detaljer';
+            }
+            if (iconEl) {
+                iconEl.textContent = expanded ? '▴' : '▾';
+            }
+        };
+
+        toggleButton.addEventListener('click', () => {
+            const nextState = !messageEl.classList.contains('expanded');
+            setState(nextState);
+        });
+
+        setState(false);
     };
 
     const suggestionsContainer = document.createElement('div');
@@ -2029,6 +2070,7 @@ export function renderGanttChart(
     assistanceButton.addEventListener('click', handleOptimizationAssistance);
 
     messageDiv.innerHTML = buildFeasibilityHtml();
+    initializeFeasibilityToggle(messageDiv);
     const totalIncomeDisplay = document.createElement('div');
     totalIncomeDisplay.className = 'total-income-display';
     if (baselineIncomeTotal != null && Number.isFinite(baselineIncomeTotal)) {
@@ -2200,6 +2242,7 @@ export function renderGanttChart(
 
     function updateMessage() {
         messageDiv.innerHTML = buildFeasibilityHtml();
+        initializeFeasibilityToggle(messageDiv);
     }
 
     // Reusable function to format tooltip/summary data
