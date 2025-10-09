@@ -500,6 +500,61 @@ input[type="number"] {
     text-align: center;
 }
 
+#result-block .result-section {
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 2rem;
+}
+
+#result-block .result-section > :not(.monthly-wrapper) {
+    display: none !important;
+}
+
+#result-block .monthly-wrapper {
+    margin-top: 0;
+}
+
+.feasibility-message {
+    position: relative;
+}
+
+.feasibility-toggle {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.feasibility-toggle:focus-visible {
+    outline: 2px solid #00796b;
+    outline-offset: 2px;
+}
+
+.feasibility-message .feasibility-content {
+    margin-top: 1rem;
+}
+
+.feasibility-message.collapsed .feasibility-content[hidden] {
+    display: none;
+}
+
+.feasibility-toggle-icon {
+    transition: transform 0.2s ease-in-out;
+}
+
+.feasibility-message.expanded .feasibility-toggle-icon {
+    transform: rotate(180deg);
+}
+
 .result-section {
     margin-bottom: 2rem;
     background: #dbdbdb;
