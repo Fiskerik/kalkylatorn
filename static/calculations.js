@@ -1789,3 +1789,4 @@ function optimizeParentalLeaveParentalSalary(preferences, inputs) {
         unusedFöräldralönWeeks2
     };
 }
+ 
