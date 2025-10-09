@@ -25,21 +25,9 @@ export function calculateParentalLeaveDays(vårdnadstyp, expectedChildren = 1) {
     const normalizedCustody = (vårdnadstyp || 'gemensam').toLowerCase() === 'ensam'
         ? 'ensam'
         : 'gemensam';
-    const parsedChildren = Number(expectedChildren);
-    const plannedChildren = Number.isFinite(parsedChildren)
-        ? Math.max(1, Math.round(parsedChildren))
-        : 1;
-
-    let totalIncomeDays = 390;
-    let totalLowDays = 90;
-
-    if (plannedChildren === 2) {
-        totalIncomeDays = 480;
-        totalLowDays = 180;
-    } else if (plannedChildren === 3) {
-        totalIncomeDays = 660;
-        totalLowDays = 180;
-    }
+    void expectedChildren; // kept for API compatibility
+    const totalIncomeDays = 390;
+    const totalLowDays = 90;
 
     const total = { incomeDays: totalIncomeDays, lowDays: totalLowDays };
 
@@ -302,17 +290,13 @@ export function beräknaNetto(inkomst, skattesats = 30) {
  * @returns {Object} Object with barnbidrag, tillägg, total, and details
  */
 export function beräknaBarnbidrag(totalBarn, ensamVårdnad) {
-    const bidragPerBarn = 1250;
-    const flerbarnstillägg = { 2: 150, 3: 730, 4: 1740, 5: 2990, 6: 4240 };
-    const barnbidrag = bidragPerBarn * totalBarn;
-    const tillägg = flerbarnstillägg[totalBarn] || 0;
-    const total = barnbidrag + tillägg;
-    const details = `${totalBarn} barn ger ${barnbidrag.toLocaleString()} kr barnbidrag${tillägg ? " + " + tillägg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
+    void totalBarn;
+    void ensamVårdnad;
     return {
-        barnbidrag: ensamVårdnad ? barnbidrag : Math.round(barnbidrag / 2),
-        tillägg: ensamVårdnad ? tillägg : Math.round(tillägg / 2),
-        total: ensamVårdnad ? total : Math.round(total / 2),
-        details
+        barnbidrag: 0,
+        tillägg: 0,
+        total: 0,
+        details: ''
     };
 }
 
@@ -374,8 +358,8 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
         return severity;
     };
 
-    const barnbidrag = inputs.barnbidragPerPerson || 1250;
-    const tillägg = inputs.tilläggPerPerson || 75;
+    const barnbidrag = Number(inputs.barnbidragPerPerson) || 0;
+    const tillägg = Number(inputs.tilläggPerPerson) || 0;
 
     const inkomst1 = Number(inputs.inkomst1) || 0;
     const inkomst2 = Number(inputs.inkomst2) || 0;
@@ -1160,8 +1144,8 @@ function optimizeParentalLeaveParentalSalary(preferences, inputs) {
         return severity;
     };
 
-    const barnbidrag = inputs.barnbidragPerPerson || 1250;
-    const tillägg = inputs.tilläggPerPerson || 75;
+    const barnbidrag = Number(inputs.barnbidragPerPerson) || 0;
+    const tillägg = Number(inputs.tilläggPerPerson) || 0;
 
     const inkomst1 = Number(inputs.inkomst1) || 0;
     const inkomst2 = Number(inputs.inkomst2) || 0;

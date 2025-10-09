@@ -19,7 +19,7 @@ export const förälder1MinDagar = 45; // Minimum reserved days for Parent 1
 export const förälder2MinDagar = 45; // Minimum reserved days for Parent 2
 
 // Benefits
-export const barnbidragPerPerson = 625; // Child allowance per person (SEK/month)
+export const barnbidragPerPerson = 0; // Child allowance per person (SEK/month)
 export const tilläggPerPerson = 0; // Additional allowance per person (SEK/month)
 
 // Constants
@@ -27,7 +27,7 @@ export const INCOME_CAP = 1250; // SEK/day max parental benefit
 export const MINIMUM_RATE = 180; // SEK/day minimum parental benefit
 export const GRUNDNIVÅ = 250; // SEK/day grundnivå for low income parents
 export const SGI_CAP = 49000; // Max monthly SGI
-export const DEFAULT_BARNBIDRAG = 625; // Default child allowance per person
+export const DEFAULT_BARNBIDRAG = 0; // Default child allowance per person
 export const PRISBASBELOPP = 58800; // Prisbasbelopp 2025 (SEK)
 
 // Default preferences
