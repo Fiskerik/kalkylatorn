@@ -32,15 +32,20 @@
                     </label>
                     <input type="number" name="inkomst1" id="inkomst1"
                            placeholder="30000 kr" required>
-                    <label for="har-avtal-1-checkbox" class="checkbox-label avtals-checkbox">
-                        <input type="checkbox" id="har-avtal-1-checkbox">
-                        Jag omfattas av kollektivavtal
+                    <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
+                    <label for="har-avtal-1">
+                        Har du kollektivavtal?
                         <span class="help-tooltip"
                               title="Kollektivavtal kan ge extra föräldralön"
                               aria-label="Kollektivavtal kan ge extra föräldralön"
                               data-help="Kollektivavtal kan ge extra föräldralön"
                               tabindex="0">?</span>
                     </label>
+                    <div class="button-group" id="avtal-group-1">
+                        <button type="button" class="toggle-btn" data-value="ja">Ja</button>
+                        <button type="button" class="toggle-btn" data-value="nej">Nej</button>
+                    </div>
+                    <input type="hidden" name="har_avtal_1" id="har-avtal-1" value="">
                     <div id="anstallningstid-container-1" style="display: none;">
                         <label for="anstallningstid-1">
                             Hur länge har du varit anställd på din nuvarande arbetsplats?
@@ -80,15 +85,20 @@
                     </label>
                     <input type="number" name="inkomst2" id="inkomst2"
                            placeholder="30000 kr">
-                    <label for="har-avtal-2-checkbox" class="checkbox-label avtals-checkbox">
-                        <input type="checkbox" id="har-avtal-2-checkbox">
-                        Partnern omfattas av kollektivavtal
+                    <div class="question-icon"><i class="fa-solid fa-handshake"></i></div>
+                    <label for="har-avtal-2">
+                        Har din partner kollektivavtal?
                         <span class="help-tooltip"
                               title="Kollektivavtal kan ge extra föräldralön"
                               aria-label="Kollektivavtal kan ge extra föräldralön"
                               data-help="Kollektivavtal kan ge extra föräldralön"
                               tabindex="0">?</span>
                     </label>
+                    <div class="button-group" id="avtal-group-2">
+                        <button type="button" class="toggle-btn" data-value="ja">Ja</button>
+                        <button type="button" class="toggle-btn" data-value="nej">Nej</button>
+                    </div>
+                    <input type="hidden" name="har_avtal_2" id="har-avtal-2" value="">
                     <div id="anstallningstid-container-2" style="display: none;">
                         <label for="anstallningstid-2">
                             Hur länge har din partner varit anställd?
@@ -113,7 +123,7 @@
                 <input type="number" id="min-inkomst" name="min-inkomst" min="0" placeholder="Ange belopp">
                 <div id="min-income-error" class="inline-error" role="alert" aria-live="assertive" style="display: none;"></div>
             </div>
-            <div class="info-box household-income-info">
+            <div class="info-box open household-income-info">
                 <div class="info-header">
                     <span class="info-icon"><i class="fa-solid fa-circle-info"></i></span>
                     <span><strong>Riktvärden för hushållets netto</strong></span>
@@ -130,29 +140,6 @@
                     <p class="info-note">
                         Riktvärdena baseras på genomsnittliga hushållsbudgetar från Konsumentverket (2024) och kan justeras efter era egna kostnader.
                     </p>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <label for="ledig-tid-5823">Hur länge vill du vara ledig? (månader)</label>
-                <input type="number" id="ledig-tid-5823" name="ledig-tid-1" min="0" step="0.5" placeholder="Ange antal månader">
-            </div>
-
-            <div class="preference-group" id="leave-slider-container" style="display: none;">
-                <label for="leave-slider">Fördela månader mellan föräldrarna</label>
-                <input type="range" id="leave-slider" min="0" max="0" value="0" step="1" list="leave-ticks">
-                <datalist id="leave-ticks"></datalist>
-                <div class="slider-labels">
-                    <span id="slider-start">0</span>
-                    <span id="slider-end">0</span>
-                </div>
-                <div class="slider-values">
-                    <span class="slider-value p1-value"><strong>Förälder 1:</strong> <span id="p1-months">0</span> månader</span>
-                    <span class="slider-value p2-value" data-partner-field><strong>Förälder 2:</strong> <span id="p2-months">0</span> månader</span>
-                </div>
-                <div class="slider-min-income">
-                    <label for="min-inkomst-result">Minimi-netto för hushållet (kr/månad)</label>
-                    <input type="number" id="min-inkomst-result" min="0" placeholder="Ange belopp">
                 </div>
             </div>
 
@@ -176,7 +163,15 @@
         </div>
 
         <div id="result-block"></div>
-        <section id="results-controls" aria-label="Resultatinställningar" style="display: none;">
+        <section id="results-controls" aria-label="Resultatinställningar">
+            <div class="form-section">
+                <label>Hur länge vill du vara ledig? (månader)</label>
+                <input type="number" id="ledig-tid-5823" name="ledig-tid-1" min="0" placeholder="Ange antal månader">
+            </div>
+            <div class="form-section" id="parent-ledig-tid" data-partner-field>
+                <label>Hur länge vill din partner vara ledig? (månader)</label>
+                <input type="number" id="ledig-tid-2" name="ledig-tid-2" min="0" placeholder="Ange antal månader">
+            </div>
             <div class="form-section">
                 <label for="strategy">Välj strategi:</label>
                 <div class="toggle-group" id="strategy-group">
@@ -189,6 +184,22 @@
                 </div>
             </div>
         </section>
+        <div class="preference-group" id="leave-slider-container" style="display: none;">
+            <input type="range" id="leave-slider" min="0" max="0" value="0" step="1" list="leave-ticks">
+            <datalist id="leave-ticks"></datalist>
+            <div class="slider-labels">
+                <span id="slider-start">0</span>
+                <span id="slider-end">0</span>
+            </div>
+            <div class="slider-values">
+                <span class="slider-value p1-value"><strong>Förälder 1:</strong> <span id="p1-months">0</span> månader</span>
+                <span class="slider-value p2-value" data-partner-field><strong>Förälder 2:</strong> <span id="p2-months">0</span> månader</span>
+            </div>
+            <div class="slider-min-income">
+                <label for="min-inkomst-result">Minimi-netto för hushållet (kr/månad)</label>
+                <input type="number" id="min-inkomst-result" min="0" placeholder="Ange belopp">
+            </div>
+        </div>
         <div id="leave-duration-error" style="color: red; display: none; margin-top: 10px;">
             Ogiltig ledighetslängd. Kontrollera antalet dagar och försök igen.
         </div>

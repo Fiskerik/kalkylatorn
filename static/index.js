@@ -46,27 +46,6 @@ function resetStickySummary() {
     if (stickyCtaButton) {
         stickyCtaButton.textContent = 'Beräkna';
     }
-    const resultsControls = document.getElementById('results-controls');
-    if (resultsControls) {
-        resultsControls.style.display = 'none';
-    }
-    const optimizeButton = document.getElementById('optimize-btn');
-    if (optimizeButton) {
-        optimizeButton.style.display = 'none';
-    }
-    const optimizationResult = document.getElementById('optimization-result');
-    if (optimizationResult) {
-        optimizationResult.style.display = 'none';
-    }
-    const leaveDurationError = document.getElementById('leave-duration-error');
-    if (leaveDurationError) {
-        leaveDurationError.style.display = 'none';
-        leaveDurationError.textContent = '';
-    }
-    const resultBlock = document.getElementById('result-block');
-    if (resultBlock && document.body.dataset.resultsReady !== 'true') {
-        resultBlock.innerHTML = '';
-    }
 }
 
 document.addEventListener('results-reset', resetStickySummary);
@@ -128,33 +107,20 @@ function handleFormSubmit(e) {
         minIncomeErrorEl.textContent = '';
         minIncomeErrorEl.style.display = 'none';
     }
-    const ledigTidInputEl = document.getElementById('ledig-tid-5823');
+    const ledigTid1InputEl = document.getElementById('ledig-tid-5823');
+    const ledigTid2InputEl = document.getElementById('ledig-tid-2');
     const minInkomstInputEl = document.getElementById('min-inkomst');
     const inkomst1 = parseFloat(document.getElementById('inkomst1').value) || 0;
     const inkomst2 = parseFloat(document.getElementById('inkomst2').value) || 0;
     const partnerActive = document.getElementById('beräkna-partner')?.value === 'ja';
     const vårdnad = partnerActive ? 'gemensam' : 'ensam';
     const beräknaPartner = partnerActive ? 'ja' : 'nej';
-    const avtal1Checked = document.getElementById('har-avtal-1-checkbox')?.checked || false;
-    const avtal2Checked = document.getElementById('har-avtal-2-checkbox')?.checked || false;
-    const avtal1 = avtal1Checked ? 'ja' : 'nej';
-    const avtal2 = avtal2Checked ? 'ja' : 'nej';
+    const avtal1 = document.getElementById('har-avtal-1').value || 'nej';
+    const avtal2 = document.getElementById('har-avtal-2').value || 'nej';
     const anst1 = document.getElementById('anstallningstid-1').value || '';
     const anst2 = document.getElementById('anstallningstid-2').value || '';
-    const totalLedigTid = parseFloat(ledigTidInputEl?.value) || 0;
-    const leaveSlider = document.getElementById('leave-slider');
-    let preferensLedigTid1 = totalLedigTid;
-    if (partnerActive) {
-        const sliderValue = leaveSlider ? parseFloat(leaveSlider.value) : Number.NaN;
-        if (Number.isFinite(sliderValue)) {
-            preferensLedigTid1 = Math.max(0, Math.min(sliderValue, totalLedigTid));
-        } else {
-            preferensLedigTid1 = totalLedigTid / 2;
-        }
-    }
-    const preferensLedigTid2Raw = partnerActive
-        ? Math.max(totalLedigTid - preferensLedigTid1, 0)
-        : 0;
+    const preferensLedigTid1 = parseFloat(ledigTid1InputEl?.value) || 0;
+    const preferensLedigTid2Raw = parseFloat(ledigTid2InputEl?.value) || 0;
     const minInkomst = minInkomstInputEl ? parseInt(minInkomstInputEl.value, 10) || 0 : 0;
 
     const barnbidragResult = { barnbidrag: 0, tillägg: 0, total: 0 };
@@ -205,7 +171,7 @@ function handleFormSubmit(e) {
     // Store global state for optimization
     const includePartner = vårdnad === 'gemensam' && beräknaPartner === 'ja';
     const preferensLedigTid2 = includePartner ? preferensLedigTid2Raw : 0;
-    const totalPreferensLedigTid = totalLedigTid;
+    const totalPreferensLedigTid = preferensLedigTid1 + preferensLedigTid2;
 
     window.appState = {
         inkomst1,
@@ -236,16 +202,11 @@ function handleFormSubmit(e) {
 
     const leaveContainer = document.getElementById('leave-slider-container');
     if (leaveContainer) {
-        leaveContainer.style.display = includePartner && totalPreferensLedigTid > 0 ? 'block' : 'none';
+        leaveContainer.style.display = includePartner ? 'block' : 'none';
     }
     document.body.dataset.resultsReady = 'true';
     if (stickyCtaButton) stickyCtaButton.textContent = 'Optimera';
     document.dispatchEvent(new Event('results-ready'));
-
-    const resultsControls = document.getElementById('results-controls');
-    if (resultsControls) {
-        resultsControls.style.display = 'block';
-    }
 
     const hushallsNetto = netto1 + (includePartner ? netto2 : 0);
     const totalRemainingDays = parent1IncomeDays + parent1LowDays +
@@ -262,9 +223,12 @@ function handleFormSubmit(e) {
     if (ledigTid1InputEl) {
         ledigTid1InputEl.dispatchEvent(new Event('change', { bubbles: true }));
     }
+    if (includePartner && ledigTid2InputEl) {
+        ledigTid2InputEl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const leaveSlider = document.getElementById('leave-slider');
     if (leaveSlider) {
-        const desiredValue = includePartner ? preferensLedigTid1 : totalPreferensLedigTid;
-        const sliderValue = Number.isFinite(desiredValue) ? desiredValue : 0;
+        const sliderValue = includePartner ? Math.min(preferensLedigTid1, totalPreferensLedigTid) : totalPreferensLedigTid;
         leaveSlider.value = Number.isFinite(sliderValue) ? sliderValue : 0;
         leaveSlider.dispatchEvent(new Event('input', { bubbles: true }));
     }
@@ -319,10 +283,10 @@ function setupDropdownListeners() {
 function handleOptimize() {
     const leaveErr = document.getElementById('leave-duration-error');
     const minIncomeErr = document.getElementById('min-income-error');
-    const ledigTidInput = document.getElementById('ledig-tid-5823');
+    const ledigTid1Input = document.getElementById('ledig-tid-5823');
+    const ledigTid2Input = document.getElementById('ledig-tid-2');
     const minInkomstInput = document.getElementById('min-inkomst');
     const strategyInput = document.getElementById('strategy');
-    const leaveSlider = document.getElementById('leave-slider');
 
     if (!window.appState || document.body.dataset.resultsReady !== 'true') {
         if (leaveErr) {
@@ -339,7 +303,7 @@ function handleOptimize() {
 
     // Validate inputs
     const missingElements = [];
-    if (!ledigTidInput) missingElements.push('ledighetstid');
+    if (!ledigTid1Input) missingElements.push('ledighetstid');
     if (!minInkomstInput) missingElements.push('minimi-netto');
     if (!strategyInput) missingElements.push('strategi');
 
@@ -352,9 +316,11 @@ function handleOptimize() {
         return;
     }
 
-    const totalMonths = parseFloat(ledigTidInput.value) || 0;
+    const ledigTid1InputValue = parseFloat(ledigTid1Input.value) || 0;
+    const partnerMonthsInputValue = ledigTid2Input ? parseFloat(ledigTid2Input.value) || 0 : 0;
     const minInkomstValue = minInkomstInput.value;
     const includePartner = window.appState.vårdnad === 'gemensam' && window.appState.beräknaPartner === 'ja';
+    const totalMonths = includePartner ? ledigTid1InputValue + partnerMonthsInputValue : ledigTid1InputValue;
 
     if (!totalMonths) {
         if (leaveErr) {
@@ -373,15 +339,13 @@ function handleOptimize() {
         return;
     }
     if (minIncomeErr) minIncomeErr.style.display = 'none';
+    const slider = document.getElementById('leave-slider');
     let ledigTid1 = totalMonths;
-    if (includePartner && leaveSlider) {
-        const sliderValue = parseFloat(leaveSlider.value);
-        if (Number.isFinite(sliderValue)) {
-            ledigTid1 = Math.max(0, Math.min(sliderValue, totalMonths));
-        } else {
-            ledigTid1 = totalMonths / 2;
-        }
+    if (includePartner && slider) {
+        const sliderValue = parseFloat(slider.value);
+        ledigTid1 = Number.isFinite(sliderValue) ? sliderValue : totalMonths;
     }
+    ledigTid1 = Math.max(0, Math.min(ledigTid1, totalMonths));
     const ledigTid2 = includePartner ? Math.max(totalMonths - ledigTid1, 0) : 0;
     const minInkomst = parseInt(minInkomstValue, 10);
     const strategy = strategyInput.value || 'longer';
@@ -545,7 +509,7 @@ function handleOptimize() {
 
         // Render Gantt chart
         document.getElementById('optimization-result').style.display = 'block';
-        const stepFromSlider = leaveSlider ? parseFloat(leaveSlider.step) : NaN;
+        const stepFromSlider = slider ? parseFloat(slider.step) : NaN;
         const chartContext = {
             preferences: { ...preferences },
             inputs: { ...inputs },
@@ -602,6 +566,7 @@ function handleOptimize() {
 
 function setupLeaveSlider() {
     const totalInput = document.getElementById('ledig-tid-5823');
+    const partnerInput = document.getElementById('ledig-tid-2');
     const slider = document.getElementById('leave-slider');
     const container = document.getElementById('leave-slider-container');
     const tickList = document.getElementById('leave-ticks');
@@ -612,26 +577,19 @@ function setupLeaveSlider() {
     if (!totalInput || !slider || !container) return;
 
     const includePartnerActive = () => (
-        document.getElementById('beräkna-partner')?.value === 'ja'
+        window.appState?.vårdnad === 'gemensam' &&
+        window.appState?.beräknaPartner === 'ja'
     );
 
-    const computeTotalMonths = () => {
-        const total = parseFloat(totalInput.value);
-        return Number.isFinite(total) ? Math.max(total, 0) : 0;
+    const getParentMonths = () => parseFloat(totalInput.value) || 0;
+    const getPartnerMonths = () => {
+        if (!includePartnerActive()) return 0;
+        return partnerInput ? parseFloat(partnerInput.value) || 0 : 0;
     };
 
-    const formatValue = value => (Number.isInteger(value) ? value : value.toFixed(1));
-
-    const buildTicks = (total, step) => {
-        if (!tickList) return;
-        tickList.innerHTML = '';
-        if (!total || total <= 0) return;
-        for (let value = 0; value <= total + 0.0001; value += step) {
-            const roundedValue = Number.isInteger(step)
-                ? Math.round(value)
-                : Math.round(value * 10) / 10;
-            tickList.innerHTML += `<option value="${roundedValue}"></option>`;
-        }
+    const computeTotalMonths = () => {
+        const total = getParentMonths() + getPartnerMonths();
+        return Number.isFinite(total) ? Math.max(total, 0) : 0;
     };
 
     // Sync slider state with total leave and toggle visibility
@@ -641,65 +599,33 @@ function setupLeaveSlider() {
         slider.max = total;
         const step = total > 2 ? 1 : 0.5;
         slider.step = step;
-
-        let desiredValue;
-        if (includePartner) {
-            const storedValue = window.appState?.preferensLedigTid1;
-            if (Number.isFinite(storedValue)) {
-                desiredValue = storedValue;
-            } else {
-                const currentValue = parseFloat(slider.value);
-                desiredValue = Number.isFinite(currentValue) ? currentValue : total / 2;
+        const defaultValue = includePartner ? Math.min(getParentMonths(), total) : total;
+        slider.value = Number.isFinite(defaultValue) ? defaultValue : 0;
+        updateLeaveDisplay(slider, total);
+        if (tickList) {
+            tickList.innerHTML = '';
+            for (let value = 0; value <= total + 0.0001; value += step) {
+                const roundedValue = Number.isInteger(step)
+                    ? Math.round(value)
+                    : Math.round(value * 10) / 10;
+                tickList.innerHTML += `<option value="${roundedValue}"></option>`;
             }
-        } else {
-            desiredValue = total;
         }
-
-        if (!Number.isFinite(desiredValue)) {
-            desiredValue = includePartner ? total / 2 : total;
-        }
-        desiredValue = Math.max(0, Math.min(desiredValue, total));
-        slider.value = Number.isFinite(desiredValue) ? desiredValue : 0;
-
         if (startLabel) startLabel.textContent = '0';
-        if (endLabel) {
-            const labelValue = includePartner ? total : parseFloat(slider.value) || 0;
-            endLabel.textContent = formatValue(labelValue);
-        }
-
-        if (includePartner && total > 0) {
-            container.style.display = 'block';
-            buildTicks(total, step);
-        } else {
-            container.style.display = 'none';
-            if (tickList) tickList.innerHTML = '';
-        }
-
-        const backgroundTotal = includePartner ? total : parseFloat(slider.value) || 0;
-        updateLeaveDisplay(slider, backgroundTotal, includePartner);
+        if (endLabel) endLabel.textContent = total;
+        container.style.display = includePartner && total > 0 ? 'block' : 'none';
     };
 
     totalInput.addEventListener('input', syncSlider);
     totalInput.addEventListener('change', syncSlider);
 
+    if (partnerInput) {
+        partnerInput.addEventListener('input', syncSlider);
+        partnerInput.addEventListener('change', syncSlider);
+    }
+
     slider.addEventListener('input', () => {
-        const includePartner = includePartnerActive();
-        const total = includePartner ? computeTotalMonths() : parseFloat(slider.value) || 0;
-        updateLeaveDisplay(slider, total, includePartner);
-        if (window.appState) {
-            const sliderValue = parseFloat(slider.value) || 0;
-            if (includePartner) {
-                const totalMonths = computeTotalMonths();
-                const parentOne = Math.max(0, Math.min(sliderValue, totalMonths));
-                window.appState.preferensLedigTid1 = parentOne;
-                window.appState.preferensLedigTid2 = Math.max(totalMonths - parentOne, 0);
-                window.appState.preferensTotalLedigTid = totalMonths;
-            } else {
-                window.appState.preferensLedigTid1 = sliderValue;
-                window.appState.preferensLedigTid2 = 0;
-                window.appState.preferensTotalLedigTid = sliderValue;
-            }
-        }
+        updateLeaveDisplay(slider, computeTotalMonths());
     });
 
     const syncInlineWithForm = () => {
@@ -742,26 +668,17 @@ function setupLeaveSlider() {
         syncInlineWithForm();
     }
 
-    document.addEventListener('partner-visibility-changed', syncSlider);
-    document.addEventListener('results-reset', syncSlider);
-    document.addEventListener('results-ready', syncSlider);
-
     syncSlider();
 }
 
-function updateLeaveDisplay(slider, total, includePartner = true) {
+function updateLeaveDisplay(slider, total) {
     const p1 = parseFloat(slider.value) || 0;
-    const actualTotal = Number.isFinite(total) ? Math.max(total, 0) : 0;
-    const p2 = includePartner ? Math.max(actualTotal - p1, 0) : 0;
+    const p2 = Math.max(total - p1, 0);
     const p1Elem = document.getElementById('p1-months');
     const p2Elem = document.getElementById('p2-months');
-    const format = v => (Number.isInteger(v) ? v : v.toFixed(1));
+    const format = v => Number.isInteger(v) ? v : v.toFixed(1);
     if (p1Elem) p1Elem.textContent = format(p1);
     if (p2Elem) p2Elem.textContent = format(p2);
-    if (includePartner && actualTotal > 0) {
-        const percent = (p1 / actualTotal) * 100;
-        slider.style.background = `linear-gradient(to right, #39d98a 0%, #39d98a ${percent}%, #007bff ${percent}%, #007bff 100%)`;
-    } else {
-        slider.style.background = '';
-    }
+    const percent = total > 0 ? (p1 / total) * 100 : 0;
+    slider.style.background = `linear-gradient(to right, #39d98a 0%, #39d98a ${percent}%, #007bff ${percent}%, #007bff 100%)`;
 }

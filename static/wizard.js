@@ -9,33 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const partnerHiddenInput = document.getElementById('beräkna-partner');
     const partnerFields = document.querySelectorAll('[data-partner-field]');
     const partnerInputs = document.querySelectorAll('[data-partner-field] input');
-    const employmentContainer1 = document.getElementById('anstallningstid-container-1');
     const employmentContainer2 = document.getElementById('anstallningstid-container-2');
     const stickyCTA = document.getElementById('sticky-cta');
     const optimizeButton = document.getElementById('optimize-btn');
     const form = document.getElementById('calc-form');
-    const avtal1Checkbox = document.getElementById('har-avtal-1-checkbox');
-    const avtal2Checkbox = document.getElementById('har-avtal-2-checkbox');
 
     let partnerActive = partnerCheckbox ? partnerCheckbox.checked : false;
-
-    const resetEmploymentSelection = (container, inputId) => {
-        if (!container) return;
-        container.style.display = 'none';
-        const input = document.getElementById(inputId);
-        if (input) input.value = '';
-        const buttons = container.querySelectorAll('.toggle-btn');
-        buttons.forEach(button => button.classList.remove('active'));
-    };
-
-    const updateEmploymentVisibility = (container, inputId, checked) => {
-        if (!container) return;
-        if (checked) {
-            container.style.display = 'block';
-        } else {
-            resetEmploymentSelection(container, inputId);
-        }
-    };
 
     function setPartnerFieldsVisible(visible) {
         partnerActive = visible;
@@ -53,20 +32,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     input.value = '';
                 }
             });
-            if (avtal2Checkbox) {
-                avtal2Checkbox.checked = false;
+            const avtalButtons = document.querySelectorAll('#avtal-group-2 .toggle-btn');
+            avtalButtons.forEach(button => button.classList.remove('active'));
+            const avtalInput = document.getElementById('har-avtal-2');
+            if (avtalInput) {
+                avtalInput.value = '';
             }
-            resetEmploymentSelection(employmentContainer2, 'anstallningstid-2');
-        } else if (avtal2Checkbox) {
-            updateEmploymentVisibility(
-                employmentContainer2,
-                'anstallningstid-2',
-                avtal2Checkbox.checked
-            );
+            if (employmentContainer2) {
+                employmentContainer2.style.display = 'none';
+            }
         }
-        document.dispatchEvent(new CustomEvent('partner-visibility-changed', {
-            detail: { active: visible }
-        }));
     }
 
     if (partnerCheckbox) {
@@ -82,48 +57,42 @@ document.addEventListener('DOMContentLoaded', () => {
         stickyCTA.addEventListener('click', () => {
             if (document.body.dataset.resultsReady === 'true') {
                 optimizeButton?.click();
-            } else if (form) {
-                if (typeof form.requestSubmit === 'function') {
+            } else {
+                if (form && typeof form.requestSubmit === 'function') {
                     form.requestSubmit();
                 } else {
-                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    form?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
                 }
             }
         });
     }
 
-    if (avtal1Checkbox) {
-        avtal1Checkbox.addEventListener('change', () => {
-            updateEmploymentVisibility(
-                employmentContainer1,
-                'anstallningstid-1',
-                avtal1Checkbox.checked
-            );
-        });
-    }
-
-    if (avtal2Checkbox) {
-        avtal2Checkbox.addEventListener('change', () => {
-            updateEmploymentVisibility(
-                employmentContainer2,
-                'anstallningstid-2',
-                partnerActive && avtal2Checkbox.checked
-            );
-        });
-    }
+    setupToggleButtons('avtal-group-1', 'har-avtal-1', value => {
+        const container = document.getElementById('anstallningstid-container-1');
+        if (!container) return;
+        if (value === 'ja') {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+            const input = document.getElementById('anstallningstid-1');
+            if (input) input.value = '';
+        }
+    });
 
     setupToggleButtons('anstallningstid-group-1', 'anstallningstid-1');
+
+    setupToggleButtons('avtal-group-2', 'har-avtal-2', value => {
+        if (!employmentContainer2) return;
+        if (value === 'ja' && partnerActive) {
+            employmentContainer2.style.display = 'block';
+        } else {
+            employmentContainer2.style.display = 'none';
+            const input = document.getElementById('anstallningstid-2');
+            if (input) input.value = '';
+        }
+    });
+
     setupToggleButtons('anstallningstid-group-2', 'anstallningstid-2');
 
     setPartnerFieldsVisible(partnerActive);
-    updateEmploymentVisibility(
-        employmentContainer1,
-        'anstallningstid-1',
-        Boolean(avtal1Checkbox?.checked)
-    );
-    updateEmploymentVisibility(
-        employmentContainer2,
-        'anstallningstid-2',
-        partnerActive && Boolean(avtal2Checkbox?.checked)
-    );
 });
