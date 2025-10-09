@@ -3,17 +3,19 @@
  * Sets up event listeners and orchestrates calculations, UI, and chart rendering.
  */
 import {
+    vårdnad, beräknaPartner, barnbidragPerPerson, tilläggPerPerson,
     defaultPreferences, förälder1InkomstDagar, förälder2InkomstDagar
 } from './config.js';
 import {
     beräknaDaglig,
+    beräknaBarnbidrag,
     optimizeParentalLeave,
     beräknaFöräldralön,
     beräknaNetto,
     calculateParentalLeaveDays
 } from './calculations.js';
 import {
-    setupInfoBoxToggle, setupHelpTooltips,
+    updateProgress, setupInfoBoxToggle, setupHelpTooltips,
     generateParentSection, setupStrategyToggle, updateMonthlyBox
 } from './ui.js';
 import { renderGanttChart } from './chart.js';
@@ -44,11 +46,24 @@ function resetStickySummary() {
         mobileSummaryEl.classList.remove('is-visible');
     }
     if (stickyCtaButton) {
-        stickyCtaButton.textContent = 'Beräkna';
+        stickyCtaButton.textContent = 'Visa resultat';
     }
 }
 
 document.addEventListener('results-reset', resetStickySummary);
+
+function setBirthDateToToday(force = false) {
+    const birthDateInput = document.getElementById('barn-datum');
+    if (!birthDateInput) return;
+    if (!force && birthDateInput.value) return;
+    const today = new Date();
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+    const isoDate = localDate.toISOString().split('T')[0];
+    birthDateInput.value = isoDate;
+    birthDateInput.setAttribute('value', isoDate);
+}
+
+document.addEventListener('results-reset', () => setBirthDateToToday(false));
 
 // Initialize on DOM content loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -60,6 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
  * Initialize form elements and UI
  */
 function initializeForm() {
+    // Initialize progress bar
+    updateProgress(1);
     document.body.dataset.resultsReady = 'false';
     resetStickySummary();
     document.dispatchEvent(new Event('results-reset'));
@@ -68,6 +85,8 @@ function initializeForm() {
     setupStrategyToggle();
     setupInfoBoxToggle();
     setupHelpTooltips();
+
+    setBirthDateToToday(false);
 }
 
 /**
@@ -98,8 +117,6 @@ function setupEventListeners() {
  */
 function handleFormSubmit(e) {
     e.preventDefault();
-    document.body.dataset.resultsReady = 'false';
-    document.dispatchEvent(new Event('results-reset'));
 
     // Collect form inputs
     const minIncomeErrorEl = document.getElementById('min-income-error');
@@ -112,9 +129,10 @@ function handleFormSubmit(e) {
     const minInkomstInputEl = document.getElementById('min-inkomst');
     const inkomst1 = parseFloat(document.getElementById('inkomst1').value) || 0;
     const inkomst2 = parseFloat(document.getElementById('inkomst2').value) || 0;
-    const partnerActive = document.getElementById('beräkna-partner')?.value === 'ja';
-    const vårdnad = partnerActive ? 'gemensam' : 'ensam';
-    const beräknaPartner = partnerActive ? 'ja' : 'nej';
+    const vårdnad = document.getElementById('vårdnad').value || 'gemensam';
+    const beräknaPartner = document.getElementById('beräkna-partner').value || 'ja';
+    const barnTidigare = parseInt(document.getElementById('barn-tidigare').value) || 0;
+    const barnPlanerade = parseInt(document.getElementById('barn-planerade').value, 10) || 1;
     const avtal1 = document.getElementById('har-avtal-1').value || 'nej';
     const avtal2 = document.getElementById('har-avtal-2').value || 'nej';
     const anst1 = document.getElementById('anstallningstid-1').value || '';
@@ -123,14 +141,25 @@ function handleFormSubmit(e) {
     const preferensLedigTid2Raw = parseFloat(ledigTid2InputEl?.value) || 0;
     const minInkomst = minInkomstInputEl ? parseInt(minInkomstInputEl.value, 10) || 0 : 0;
 
-    const barnbidragResult = { barnbidrag: 0, tillägg: 0, total: 0 };
+    // Validate inputs
+    if (barnTidigare === 0 && barnPlanerade === 0) {
+        document.getElementById('barn-selection-error').style.display = 'block';
+        return;
+    } else {
+        document.getElementById('barn-selection-error').style.display = 'none';
+    }
+
+    // Calculate child benefits
+    const totalBarn = barnTidigare + barnPlanerade;
+    const barnbidragResult = beräknaBarnbidrag(totalBarn, vårdnad === 'ensam');
 
     // Calculate daily rates and parental supplement
     const dag1 = beräknaDaglig(inkomst1);
     const extra1 = avtal1 === 'ja' && anst1 !== '0-5' ? beräknaFöräldralön(inkomst1) : 0;
     const dag2 = beräknaPartner === 'ja' && vårdnad === 'gemensam' ? beräknaDaglig(inkomst2) : 0;
     const extra2 = avtal2 === 'ja' && anst2 !== '0-5' && beräknaPartner === 'ja' ? beräknaFöräldralön(inkomst2) : 0;
-    const leaveAllocation = calculateParentalLeaveDays(vårdnad, 1);
+    const plannedChildren = Math.max(1, barnPlanerade);
+    const leaveAllocation = calculateParentalLeaveDays(vårdnad, plannedChildren);
     const parent1IncomeDays = leaveAllocation.parent1.incomeDays;
     const parent2IncomeDays = leaveAllocation.parent2.incomeDays;
     const parent1LowDays = leaveAllocation.parent1.lowDays;
@@ -163,6 +192,7 @@ function handleFormSubmit(e) {
 
     resultBlock.innerHTML = resultHtml;
     document.getElementById('optimize-btn').style.display = 'block';
+    updateProgress(4);
 
     // Reinitialize info box toggles for dynamically added content
     setupInfoBoxToggle();
@@ -180,8 +210,8 @@ function handleFormSubmit(e) {
         netto2,
         vårdnad,
         beräknaPartner,
-        barnbidragPerPerson: 0,
-        tilläggPerPerson: 0,
+        barnbidragPerPerson: barnbidragResult.barnbidrag,
+        tilläggPerPerson: barnbidragResult.tillägg,
         dag1,
         extra1,
         dag2,
@@ -194,6 +224,7 @@ function handleFormSubmit(e) {
         förälder2InkomstDagar: parent2IncomeDays,
         förälder1MinDagar: parent1LowDays,
         förälder2MinDagar: parent2LowDays,
+        planeradeBarn: plannedChildren,
         preferensLedigTid1,
         preferensLedigTid2,
         preferensMinNetto: minInkomst,
@@ -208,7 +239,10 @@ function handleFormSubmit(e) {
     if (stickyCtaButton) stickyCtaButton.textContent = 'Optimera';
     document.dispatchEvent(new Event('results-ready'));
 
-    const hushallsNetto = netto1 + (includePartner ? netto2 : 0);
+    const hushallsBarnbidrag = vårdnad === 'ensam'
+        ? barnbidragResult.total
+        : barnbidragResult.total * 2;
+    const hushallsNetto = netto1 + (includePartner ? netto2 : 0) + hushallsBarnbidrag;
     const totalRemainingDays = parent1IncomeDays + parent1LowDays +
         (includePartner ? parent2IncomeDays + parent2LowDays : 0);
 
@@ -216,6 +250,9 @@ function handleFormSubmit(e) {
     if (mobileSummaryEl) {
         mobileSummaryEl.classList.add('is-visible');
     }
+    document.body.dataset.resultsReady = 'true';
+    if (stickyCtaButton) stickyCtaButton.textContent = 'Optimera';
+    document.dispatchEvent(new Event('results-ready'));
 
     // Update dropdown listeners for monthly boxes
     setupDropdownListeners();
@@ -245,12 +282,11 @@ function setupDropdownListeners() {
     if (dropdown1) {
         const parent1Days = window.appState?.förälder1InkomstDagar ?? förälder1InkomstDagar;
         dropdown1.onchange = () => {
-            if (!window.appState) return;
             const dagarPerVecka = parseInt(dropdown1.value, 10) || 7;
             updateMonthlyBox(
                 'monthly-wrapper-1', dagarPerVecka, window.appState.dag1,
-                window.appState.extra1, window.appState.barnbidragPerPerson ?? 0,
-                window.appState.tilläggPerPerson ?? 0, window.appState.avtal1,
+                window.appState.extra1, window.appState.barnbidragPerPerson,
+                window.appState.tilläggPerPerson, window.appState.avtal1,
                 parent1Days
             );
         };
@@ -262,12 +298,11 @@ function setupDropdownListeners() {
     if (dropdown2) {
         const parent2Days = window.appState?.förälder2InkomstDagar ?? förälder2InkomstDagar;
         dropdown2.onchange = () => {
-            if (!window.appState) return;
             const dagarPerVecka = parseInt(dropdown2.value, 10) || 7;
             updateMonthlyBox(
                 'monthly-wrapper-2', dagarPerVecka, window.appState.dag2,
-                window.appState.extra2, window.appState.barnbidragPerPerson ?? 0,
-                window.appState.tilläggPerPerson ?? 0, window.appState.avtal2,
+                window.appState.extra2, window.appState.barnbidragPerPerson,
+                window.appState.tilläggPerPerson, window.appState.avtal2,
                 parent2Days
             );
         };
@@ -281,8 +316,10 @@ function setupDropdownListeners() {
  * Handle optimization button click
  */
 function handleOptimize() {
+    updateProgress(8);
     const leaveErr = document.getElementById('leave-duration-error');
     const minIncomeErr = document.getElementById('min-income-error');
+    const barnDatumInput = document.getElementById('barn-datum');
     const ledigTid1Input = document.getElementById('ledig-tid-5823');
     const ledigTid2Input = document.getElementById('ledig-tid-2');
     const minInkomstInput = document.getElementById('min-inkomst');
@@ -303,6 +340,7 @@ function handleOptimize() {
 
     // Validate inputs
     const missingElements = [];
+    if (!barnDatumInput) missingElements.push('beräknat födelsedatum');
     if (!ledigTid1Input) missingElements.push('ledighetstid');
     if (!minInkomstInput) missingElements.push('minimi-netto');
     if (!strategyInput) missingElements.push('strategi');
@@ -316,6 +354,7 @@ function handleOptimize() {
         return;
     }
 
+    const barnDatum = barnDatumInput.value || '2025-05-01';
     const ledigTid1InputValue = parseFloat(ledigTid1Input.value) || 0;
     const partnerMonthsInputValue = ledigTid2Input ? parseFloat(ledigTid2Input.value) || 0 : 0;
     const minInkomstValue = minInkomstInput.value;
@@ -359,7 +398,6 @@ function handleOptimize() {
         strategy
     };
 
-    const barnDatum = '';
     const inputs = {
         inkomst1: window.appState.inkomst1,
         inkomst2: window.appState.inkomst2,
@@ -369,14 +407,14 @@ function handleOptimize() {
         anställningstid2: window.appState.anställningstid2,
         vårdnad: window.appState.vårdnad,
         beräknaPartner: window.appState.beräknaPartner,
-        barnbidragPerPerson: 0,
-        tilläggPerPerson: 0,
+        barnbidragPerPerson: window.appState.barnbidragPerPerson,
+        tilläggPerPerson: window.appState.tilläggPerPerson,
+        barnDatum,
         förälder1InkomstDagar: window.appState.förälder1InkomstDagar,
         förälder2InkomstDagar: window.appState.förälder2InkomstDagar,
         förälder1MinDagar: window.appState.förälder1MinDagar,
         förälder2MinDagar: window.appState.förälder2MinDagar,
-        barnDatum,
-        planeradeBarn: 1
+        planeradeBarn: window.appState.planeradeBarn
     };
     const optimizationResult = document.getElementById('optimization-result');
     if (optimizationResult) {
