@@ -720,3 +720,4 @@ function updateLeaveDisplay(slider, total) {
     const percent = total > 0 ? (p1 / total) * 100 : 0;
     slider.style.background = `linear-gradient(to right, #39d98a 0%, #39d98a ${percent}%, #007bff ${percent}%, #007bff 100%)`;
 }
+ 
