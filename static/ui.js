@@ -166,15 +166,12 @@ export function setupHelpTooltips() {
  * @param {number} dailyRate - Daily benefit rate
  * @param {number} dagar - Number of available days
  * @param {number} extra - Parental supplement
- * @param {number} barnbidrag - Child allowance
- * @param {number} tillägg - Additional child allowance
  * @returns {string} HTML table string
  */
-export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, tillägg = 0) {
+export function genereraTabell(dailyRate, dagar, extra = 0) {
     let rows = '';
     for (let i = 1; i <= 7; i++) {
         const månadsersättning = Math.round((dailyRate * i * 4.3) / 100) * 100;
-        const totalDisponibelt = månadsersättning + barnbidrag + tillägg + extra;
         const veckor = Math.floor(dagar / i);
         rows += `
             <tr>
@@ -215,14 +212,12 @@ export function genereraTabell(dailyRate, dagar, extra = 0, barnbidrag = 0, till
  * @param {number} månadsinkomst - Monthly parental benefit (gross)
  * @param {number} dagar - Available days
  * @param {boolean} avtal - Has collective agreement
- * @param {number} barnbidrag - Child allowance
- * @param {number} tillägg - Additional child allowance
  * @param {boolean} ärEnsam - True if sole custody
  * @param {number} inkomst - Reported salary
  * @returns {string} HTML section string
 */
 export function generateParentSection(parentNum, dag, extra, månadsinkomst,
-    inkomstDagar, lagstanivådagar, avtal, barnbidrag, tillägg, ärEnsam, inkomst) {
+    inkomstDagar, lagstanivådagar, avtal, ärEnsam, inkomst) {
     const incomeDays = Number.isFinite(inkomstDagar) ? Math.max(inkomstDagar, 0) : 0;
     const lowDays = Number.isFinite(lagstanivådagar) ? Math.max(lagstanivådagar, 0) : 0;
     const fpNet = beräknaNetto(månadsinkomst);
@@ -325,57 +320,58 @@ export function generateParentSection(parentNum, dag, extra, månadsinkomst,
                     </div>
                 </div>
             </div>
-            ${genereraTabell(dag, incomeDays, extra, barnbidrag, tillägg)}
+            ${genereraTabell(dag, incomeDays, extra)}
 
-            <div class="monthly-wrapper" id="monthly-wrapper-${parentNum}">
-                <div class="monthly-box">
-                    <h3>Förälder ${parentNum} – Månatlig ersättning</h3>
-                    <div class="monthly-row fp-row">
-                        <span>Föräldrapenning*</span>
-                        <span class="fp-brutto">${månadsinkomst.toLocaleString()} kr/månad</span>
+            <div class="monthly-card">
+                <h3 class="monthly-card-title">Förälder ${parentNum}</h3>
+                <div class="monthly-wrapper" id="monthly-wrapper-${parentNum}">
+                    <div class="monthly-box">
+                        <h4 class="monthly-box-title">Månatlig ersättning</h4>
+                        <div class="monthly-row fp-row">
+                            <span>Föräldrapenning*</span>
+                            <span class="fp-brutto">${månadsinkomst.toLocaleString()} kr/månad</span>
+                        </div>
+                        <div class="monthly-row fp-net-row">
+                            <span>Föräldrapenning efter skatt</span>
+                            <span class="fp-value">${fpNet.toLocaleString()} kr/månad</span>
+                        </div>
+                        ${avtal ? `
+                        <div class="monthly-row extra-row">
+                            <span>Föräldralön**</span>
+                            <span class="extra-value">${extra.toLocaleString()} kr/månad</span>
+                        </div>` : ''}
+                        <div class="monthly-total">
+                            <span>Totalt:</span>
+                            <span class="total-value">${(fpNet + (avtal ? extra : 0)).toLocaleString()} kr/månad</span>
+                        </div>
+                        <div class="monthly-info">
+                            * Vid ett uttag på 7 föräldradagar/vecka<br>
+                            ${avtal ? '** Utbetalning av föräldralön regleras i ditt kollektivavtal' : ''}
+                        </div>
                     </div>
-                    <div class="monthly-row fp-net-row">
-                        <span>Föräldrapenning efter skatt</span>
-                        <span class="fp-value">${fpNet.toLocaleString()} kr/månad</span>
-                    </div>
-                    ${avtal ? `
-                    <div class="monthly-row extra-row">
-                        <span>Föräldralön**</span>
-                        <span class="extra-value">${extra.toLocaleString()} kr/månad</span>
-                    </div>` : ''}
-                    <div class="monthly-row barnbidrag-row">
-                        <span>Barnbidrag</span>
-                        <span class="barnbidrag-value">${barnbidrag.toLocaleString()} kr/månad</span>
-                    </div>
-                    <div class="monthly-row tillagg-row">
-                        <span>Flerbarnstillägg</span>
-                        <span class="tillagg-value">${tillägg.toLocaleString()} kr/månad</span>
-                    </div>
-                    <div class="monthly-total">
-                        <span>Totalt:</span>
-                        <span class="total-value">${(fpNet + extra + barnbidrag + tillägg).toLocaleString()} kr/månad</span>
-                    </div>
-                    <div class="monthly-info">
-                        * Vid ett uttag på 7 föräldradagar/vecka<br>
-                        ${avtal ? '** Utbetalning av föräldralön regleras i ditt kollektivavtal' : ''}
-                    </div>
-                </div>
-                <div class="uttag-container">
-                    <div class="fp-uttagsval">
-                        <label for="uttags-dagar-${parentNum}">Antal uttag av föräldradagar per vecka:</label>
-                        <select id="uttags-dagar-${parentNum}">
-                            <option value="1">1 dag</option>
-                            <option value="2">2 dagar</option>
-                            <option value="3">3 dagar</option>
-                            <option value="4">4 dagar</option>
-                            <option value="5">5 dagar</option>
-                            <option value="6">6 dagar</option>
-                            <option value="7" selected>7 dagar</option>
-                        </select>
-                    </div>
-                    <div class="duration-info" data-total-dagar="${incomeDays}">
-                        <p class="duration-label">I denna takt kan du vara ledig i:</p>
-                        <p class="duration-text"><span class="duration-value">${defaultMonthsText}</span> månader</p>
+                    <div class="monthly-side-column">
+                        <div class="income-summary">
+                            <p class="income-summary-label">Inkomst</p>
+                            <p class="income-summary-value">${inkomst.toLocaleString()} kr/månad</p>
+                        </div>
+                        <div class="uttag-container">
+                            <div class="fp-uttagsval">
+                                <label for="uttags-dagar-${parentNum}">Antal uttag av föräldradagar per vecka:</label>
+                                <select id="uttags-dagar-${parentNum}">
+                                    <option value="1">1 dag</option>
+                                    <option value="2">2 dagar</option>
+                                    <option value="3">3 dagar</option>
+                                    <option value="4">4 dagar</option>
+                                    <option value="5">5 dagar</option>
+                                    <option value="6">6 dagar</option>
+                                    <option value="7" selected>7 dagar</option>
+                                </select>
+                            </div>
+                            <div class="duration-info" data-total-dagar="${incomeDays}">
+                                <p class="duration-label">I denna takt kan du vara ledig i:</p>
+                                <p class="duration-text"><span class="duration-value">${defaultMonthsText}</span> månader</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -404,12 +400,10 @@ export function setupStrategyToggle() {
  * @param {number} dagarPerVecka - Days per week
  * @param {number} dag - Daily rate
  * @param {number} extra - Parental supplement
- * @param {number} barnbidrag - Child allowance
- * @param {number} tillägg - Additional allowance
  * @param {boolean} avtal - Has collective agreement
  * @param {number} dagar - Available days
  */
-export function updateMonthlyBox(wrapperId, dagarPerVecka, dag, extra, barnbidrag, tillägg, avtal, dagar) {
+export function updateMonthlyBox(wrapperId, dagarPerVecka, dag, extra, avtal, dagar) {
     const wrapper = document.getElementById(wrapperId) || document.getElementById(wrapperId.replace('monthly-wrapper', 'uttags-dagar'))?.closest('.monthly-wrapper');
     if (!wrapper) return console.error(`Kunde inte hitta wrapper ${wrapperId}`);
     
@@ -419,7 +413,7 @@ export function updateMonthlyBox(wrapperId, dagarPerVecka, dag, extra, barnbidra
     const nyFpBrutto = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
     const nyFp = beräknaNetto(nyFpBrutto);
     const justeradExtraBrutto = avtal ? Math.round(extra * (dagarPerVecka / 7)) : 0;
-    const nyTotal = nyFp + justeradExtraBrutto + (barnbidrag || 0) + (tillägg || 0);
+    const nyTotal = nyFp + justeradExtraBrutto;
 
     const fpBruttoElement = monthlyBox.querySelector('.fp-row .fp-brutto');
     const fpElement = monthlyBox.querySelector('.fp-net-row .fp-value');

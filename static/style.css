@@ -500,6 +500,119 @@ input[type="number"] {
     text-align: center;
 }
 
+#result-block .result-section {
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 2rem;
+}
+
+#result-block .result-section > :not(.monthly-card) {
+    display: none !important;
+}
+
+#result-block .monthly-wrapper {
+    margin-top: 0;
+}
+
+.monthly-card {
+    background: #ffffff;
+    border: 1px solid #d0d5dd;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.monthly-card-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.monthly-box-title {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.income-summary {
+    flex: 0 0 auto;
+    width: min(240px, 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-width: 240px;
+    box-sizing: border-box;
+    align-self: flex-start;
+}
+
+.income-summary-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: #1f2937;
+}
+
+.income-summary-value {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #00796b;
+}
+
+.monthly-side-column {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+}
+
+.feasibility-message {
+    position: relative;
+}
+
+.feasibility-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    cursor: pointer;
+    text-align: left;
+}
+
+.feasibility-toggle:focus-visible {
+    outline: 2px solid #00796b;
+    outline-offset: 2px;
+}
+
+.feasibility-message .feasibility-content {
+    margin-top: 1rem;
+}
+
+.feasibility-message.collapsed .feasibility-content[hidden] {
+    display: none;
+}
+
+.feasibility-toggle-icon {
+    transition: transform 0.2s ease-in-out;
+}
+
+.feasibility-message.expanded .feasibility-toggle-icon {
+    transform: rotate(180deg);
+}
+
 .result-section {
     margin-bottom: 2rem;
     background: #dbdbdb;
@@ -847,6 +960,7 @@ input[type="number"] {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    flex-wrap: wrap;
     gap: 20px;
     margin-top: 20px;
 }
@@ -1061,7 +1175,7 @@ input[type="number"] {
         font-size: 0.9rem;
     }
 
-    .monthly-box h3,
+    .monthly-box-title,
     .benefit-title {
         font-size: 1rem;
     }
@@ -2572,11 +2686,14 @@ canvas#gantt-canvas {
     }
 
     .monthly-box,
-    .uttag-container {
+    .income-summary,
+    .uttag-container,
+    .monthly-side-column {
         width: 100%;
         max-width: 100%;
     }
 
+    .income-summary,
     .uttag-container {
         align-items: center;
         text-align: center;
@@ -2604,7 +2721,7 @@ canvas#gantt-canvas {
     .result-section,
     .result-section h2,
     .result-section h4,
-    .monthly-box h3,
+    .monthly-box-title,
     .benefit-title,
     .strategy-days-heading {
         text-align: center;

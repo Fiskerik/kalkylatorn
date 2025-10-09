@@ -243,7 +243,9 @@ function applyMinimumLevelDayUsage(options) {
 export function beräknaMånadsinkomst(dag, dagarPerVecka, extra, barnbidrag = DEFAULT_BARNBIDRAG, tillägg = 0) {
     const fp = Math.round((dag * dagarPerVecka * 4.3) / 100) * 100;
     const extraBelopp = extra ? Math.round(extra * (dagarPerVecka / 7)) : 0;
-    const resultat = beräknaNetto(fp) + beräknaNetto(extraBelopp) + barnbidrag + tillägg;
+    const resultat = beräknaNetto(fp) + beräknaNetto(extraBelopp);
+    void barnbidrag;
+    void tillägg;
     return resultat || 0;
 }
 
@@ -302,17 +304,13 @@ export function beräknaNetto(inkomst, skattesats = 30) {
  * @returns {Object} Object with barnbidrag, tillägg, total, and details
  */
 export function beräknaBarnbidrag(totalBarn, ensamVårdnad) {
-    const bidragPerBarn = 1250;
-    const flerbarnstillägg = { 2: 150, 3: 730, 4: 1740, 5: 2990, 6: 4240 };
-    const barnbidrag = bidragPerBarn * totalBarn;
-    const tillägg = flerbarnstillägg[totalBarn] || 0;
-    const total = barnbidrag + tillägg;
-    const details = `${totalBarn} barn ger ${barnbidrag.toLocaleString()} kr barnbidrag${tillägg ? " + " + tillägg + " kr flerbarnstillägg" : ""} = <strong>${total.toLocaleString()} kr</strong>`;
+    void totalBarn;
+    void ensamVårdnad;
     return {
-        barnbidrag: ensamVårdnad ? barnbidrag : Math.round(barnbidrag / 2),
-        tillägg: ensamVårdnad ? tillägg : Math.round(tillägg / 2),
-        total: ensamVårdnad ? total : Math.round(total / 2),
-        details
+        barnbidrag: 0,
+        tillägg: 0,
+        total: 0,
+        details: ''
     };
 }
 
@@ -374,8 +372,8 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
         return severity;
     };
 
-    const barnbidrag = inputs.barnbidragPerPerson || 1250;
-    const tillägg = inputs.tilläggPerPerson || 75;
+    const barnbidrag = 0;
+    const tillägg = 0;
 
     const inkomst1 = Number(inputs.inkomst1) || 0;
     const inkomst2 = Number(inputs.inkomst2) || 0;
@@ -412,8 +410,8 @@ function optimizeParentalLeaveLegacy(preferences, inputs) {
     let användaMinDagar1 = 0;
     let användaMinDagar2 = 0;
 
-    const arbetsInkomst1 = beräknaNetto(inkomst1) + barnbidrag + tillägg;
-    const arbetsInkomst2 = inkomst2 > 0 ? beräknaNetto(inkomst2) + barnbidrag + tillägg : 0;
+    const arbetsInkomst1 = beräknaNetto(inkomst1);
+    const arbetsInkomst2 = inkomst2 > 0 ? beräknaNetto(inkomst2) : 0;
 
     let dagarPerVecka1 = 0;
     let dagarPerVecka1NoExtra = 0;
@@ -1160,8 +1158,8 @@ function optimizeParentalLeaveParentalSalary(preferences, inputs) {
         return severity;
     };
 
-    const barnbidrag = inputs.barnbidragPerPerson || 1250;
-    const tillägg = inputs.tilläggPerPerson || 75;
+    const barnbidrag = 0;
+    const tillägg = 0;
 
     const inkomst1 = Number(inputs.inkomst1) || 0;
     const inkomst2 = Number(inputs.inkomst2) || 0;
@@ -1198,8 +1196,8 @@ function optimizeParentalLeaveParentalSalary(preferences, inputs) {
     let användaMinDagar1 = 0;
     let användaMinDagar2 = 0;
 
-    const arbetsInkomst1 = beräknaNetto(inkomst1) + barnbidrag + tillägg;
-    const arbetsInkomst2 = inkomst2 > 0 ? beräknaNetto(inkomst2) + barnbidrag + tillägg : 0;
+    const arbetsInkomst1 = beräknaNetto(inkomst1);
+    const arbetsInkomst2 = inkomst2 > 0 ? beräknaNetto(inkomst2) : 0;
 
     let dagarPerVecka1 = 0;
     let dagarPerVecka1NoExtra = 0;
