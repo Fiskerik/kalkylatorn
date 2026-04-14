@@ -43,29 +43,16 @@ async function extractAttendees() {
 }
 
 function collectAttendeeCards() {
-  const selectorGroups = [
-    "li.artdeco-list__item",
-    "li.org-people-profile-card",
-    "li.scaffold-finite-scroll__content-item",
-    "div[data-view-name*='event'][role='listitem']",
-    "[role='list'] > li"
-  ];
-
   const seen = new Set();
   const cards = [];
 
-  selectorGroups.forEach((selector) => {
-    document.querySelectorAll(selector).forEach((el) => {
-      const text = cleanText(el.innerText);
-      if (text.length < 3) {
-        return;
-      }
-
-      if (!seen.has(el)) {
-        seen.add(el);
-        cards.push(el);
-      }
-    });
+  document.querySelectorAll('[role="listitem"]').forEach((el) => {
+    // Filter out non-person list items (pagination, upsell widgets, etc.)
+    const hasProfileOrSearch = el.querySelector('a[href*="/in/"], a[href*="eventAttending"]');
+    if (!hasProfileOrSearch) return;
+    if (seen.has(el)) return;
+    seen.add(el);
+    cards.push(el);
   });
 
   return cards;
