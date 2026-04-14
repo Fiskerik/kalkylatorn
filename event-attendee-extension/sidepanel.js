@@ -1,4 +1,4 @@
-const state = { attendees: [], viewMode: "detailed" };
+const state = { attendees: [], viewMode: "detailed", attendeeLimit: 100, isProUser: false };
 
 const attendeeListEl = document.getElementById("attendeeList");
 const statusTextEl = document.getElementById("statusText");
@@ -6,25 +6,36 @@ const countBadgeEl = document.getElementById("countBadge");
 const crmSelectEl = document.getElementById("crmSelect");
 const detailedViewBtn = document.getElementById("detailedViewBtn");
 const cardViewBtn = document.getElementById("cardViewBtn");
+const attendeeLimitInputEl = document.getElementById("attendeeLimitInput");
+const proHintEl = document.getElementById("proHint");
+const csvBtnEl = document.getElementById("csvBtn");
+const pdfBtnEl = document.getElementById("pdfBtn");
 
 document.getElementById("scrapeBtn").addEventListener("click", handleScrape);
 document.getElementById("saveBtn").addEventListener("click", handleSave);
-document.getElementById("csvBtn").addEventListener("click", exportCsv);
-document.getElementById("pdfBtn").addEventListener("click", exportPdf);
+csvBtnEl.addEventListener("click", exportCsv);
+pdfBtnEl.addEventListener("click", exportPdf);
 detailedViewBtn.addEventListener("click", () => setViewMode("detailed"));
 cardViewBtn.addEventListener("click", () => setViewMode("card"));
 
-chrome.storage.local.get(["lastCrm", "attendeeViewMode"], (r) => {
+chrome.storage.local.get(["lastCrm", "attendeeViewMode", "attendeeLimit", "isProUser"], (r) => {
   if (r.lastCrm) crmSelectEl.value = r.lastCrm;
   if (r.attendeeViewMode === "card" || r.attendeeViewMode === "detailed") {
     state.viewMode = r.attendeeViewMode;
   }
+  if (Number.isInteger(r.attendeeLimit) && r.attendeeLimit > 0) {
+    state.attendeeLimit = r.attendeeLimit;
+  }
+  state.isProUser = Boolean(r.isProUser);
+  attendeeLimitInputEl.value = String(state.attendeeLimit);
+  syncExportPaywallUI();
   syncViewModeUI();
 });
 
 crmSelectEl.addEventListener("change", () => {
   chrome.storage.local.set({ lastCrm: crmSelectEl.value });
 });
+attendeeLimitInputEl.addEventListener("change", handleAttendeeLimitChange);
 
 init();
 
@@ -41,8 +52,13 @@ async function handleScrape() {
   setStatus("Extracting…");
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   console.log("[Event Attendee Extractor] Scrape requested for tab:", activeTab?.id, activeTab?.url);
+  console.log("[Event Attendee Extractor] Scrape attendee limit:", state.attendeeLimit);
 
-  const response = await sendRuntimeMessage({ type: "SCRAPE_ATTENDEES", tabId: activeTab?.id });
+  const response = await sendRuntimeMessage({
+    type: "SCRAPE_ATTENDEES",
+    tabId: activeTab?.id,
+    attendeeLimit: state.attendeeLimit
+  });
 
   if (!response?.ok) {
     setStatus(response?.error ?? "Extraction failed.");
@@ -62,6 +78,11 @@ function handleSave() {
 }
 
 function exportCsv() {
+  if (!state.isProUser) {
+    setStatus("Export is available on PRO.");
+    return;
+  }
+
   if (!state.attendees.length) {
     setStatus("No attendees to export.");
     return;
@@ -77,6 +98,11 @@ function exportCsv() {
 }
 
 function exportPdf() {
+  if (!state.isProUser) {
+    setStatus("Export is available on PRO.");
+    return;
+  }
+
   if (!state.attendees.length) {
     setStatus("No attendees to export.");
     return;
@@ -84,6 +110,20 @@ function exportPdf() {
   const pdfContent = buildSimplePdf(state.attendees);
   downloadBlob(new Blob([new Uint8Array(pdfContent)], { type: "application/pdf" }), "application/pdf", `attendees-${datestamp()}.pdf`);
   setStatus("PDF exported.");
+}
+
+function handleAttendeeLimitChange() {
+  const parsed = Number.parseInt(attendeeLimitInputEl.value, 10);
+  const nextLimit = Number.isInteger(parsed) && parsed > 0 ? parsed : 100;
+  state.attendeeLimit = nextLimit;
+  attendeeLimitInputEl.value = String(nextLimit);
+  chrome.storage.local.set({ attendeeLimit: nextLimit });
+}
+
+function syncExportPaywallUI() {
+  csvBtnEl.disabled = !state.isProUser;
+  pdfBtnEl.disabled = !state.isProUser;
+  proHintEl.hidden = state.isProUser;
 }
 
 function setViewMode(mode) {
