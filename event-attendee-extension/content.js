@@ -80,38 +80,28 @@ async function tryExpandAttendee(card) {
 }
 
 function parseAttendeeCard(card) {
-  const name =
-    firstText(card, [
-      ".artdeco-entity-lockup__title",
-      ".org-people-profile-card__profile-title",
-      "a[href*='/in/']",
-      "span[aria-hidden='true']"
-    ]) ?? "";
+  // Name: find the link anchor text, skip "LinkedIn Member" anonymous ones
+  const nameAnchor = card.querySelector('a[href*="/in/"]');
+  const name = cleanText(nameAnchor?.textContent ?? "");
 
-  const title =
-    firstText(card, [
-      ".artdeco-entity-lockup__subtitle",
-      ".org-people-profile-card__profile-info",
-      ".t-14.t-normal",
-      ".t-black--light"
-    ]) ?? "";
+  // Profile link
+  const profileLink = nameAnchor?.href ?? "";
 
-  const profileLink =
-    card.querySelector("a[href*='/in/']")?.href?.trim() ?? "";
+  // All <p> tags — title is 2nd, location is 3rd
+  const paragraphs = Array.from(card.querySelectorAll("p"));
+  const title = cleanText(paragraphs[1]?.textContent ?? "");
+  const location = cleanText(paragraphs[2]?.textContent ?? "");
+
+  // Skip anonymous members
+  if (!name || name === "LinkedIn Member") {
+    return { name: "", title, profileLink, email: "", phone: "", website: "", location, rawDetails: "" };
+  }
 
   const cardText = cleanText(card.innerText);
   const contact = extractContactInfo(card, cardText);
 
-  return {
-    name: cleanText(name),
-    title: cleanText(title),
-    profileLink,
-    email: contact.email,
-    phone: contact.phone,
-    website: contact.website,
-    location: contact.location,
-    rawDetails: cardText
-  };
+  return { name, title, profileLink, email: contact.email, phone: contact.phone,
+           website: contact.website, location, rawDetails: cardText };
 }
 
 function extractContactInfo(card, cardText) {
