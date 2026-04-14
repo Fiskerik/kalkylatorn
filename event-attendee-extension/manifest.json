@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Event Attendee Extractor",
+  "name": "Prospect In",
   "version": "1.0.0",
-  "description": "Extract attendees from event pages and export to CSV/PDF.",
+  "description": "Extract attendees from LinkedIn event pages and export to CSV/PDF.",
   "permissions": [
     "activeTab",
     "tabs",
@@ -21,15 +21,15 @@
     "default_path": "sidepanel.html"
   },
   "icons": {
-    "16": "assets/favicon.svg",
-    "48": "assets/logo.svg",
-    "128": "assets/logo.svg"
+    "16": "assets/logo.png",
+    "48": "assets/logo.png",
+    "128": "assets/logo.png"
   },
   "action": {
-    "default_title": "Event Attendee Extractor",
+    "default_title": "Prospect In",
     "default_icon": {
-      "16": "assets/favicon.svg",
-      "48": "assets/logo.svg"
+      "16": "assets/logo.png",
+      "48": "assets/logo.png"
     }
   },
   "content_scripts": [
