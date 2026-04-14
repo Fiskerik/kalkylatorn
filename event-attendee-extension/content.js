@@ -19,27 +19,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function extractAttendees() {
   console.log(DEBUG_PREFIX, "Starting attendee extraction.");
-  await autoScroll(12, 1500); 
 
-  const attendeeCards = collectAttendeeCards();
-  console.log(DEBUG_PREFIX, "Cards discovered:", attendeeCards.length);
+  const allAttendees = [];
 
-  const attendees = [];
-
-  for (const card of attendeeCards) {
-    await tryExpandAttendee(card);
-
+  // Extract current page
+  const cards = collectAttendeeCards();
+  for (const card of cards) {
     const attendee = parseAttendeeCard(card);
-    if (!attendee.name) {
-      continue;
-    }
-
-    attendees.push(attendee);
+    if (attendee.name) allAttendees.push(attendee);
   }
 
-  const uniqueAttendees = dedupeAttendees(attendees);
-  console.log(DEBUG_PREFIX, "Unique attendees extracted:", uniqueAttendees.length);
-  return uniqueAttendees;
+  // Click through remaining pages
+  const nextBtn = document.querySelector('[data-testid="pagination-controls-next-button-visible"]');
+  if (nextBtn) {
+    nextBtn.click();
+    await sleep(2000);
+    const moreCards = collectAttendeeCards();
+    for (const card of moreCards) {
+      const attendee = parseAttendeeCard(card);
+      if (attendee.name) allAttendees.push(attendee);
+    }
+  }
+
+  return dedupeAttendees(allAttendees);
 }
 
 function collectAttendeeCards() {
