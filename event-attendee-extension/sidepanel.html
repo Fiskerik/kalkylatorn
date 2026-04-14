@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendee Extractor</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <h1>Event Attendees</h1>
+        <p id="statusText" class="status">Ready to extract attendee data.</p>
+      </header>
+
+      <section class="actions">
+        <button id="scrapeBtn" class="btn primary">Extract attendees</button>
+        <button id="saveBtn" class="btn">Save locally</button>
+        <button id="csvBtn" class="btn">Export CSV</button>
+        <button id="pdfBtn" class="btn">Export PDF</button>
+      </section>
+
+      <section class="results">
+        <div class="results-header">
+          <h2>Attendee List</h2>
+          <span id="countBadge" class="badge">0</span>
+        </div>
+        <div id="attendeeList" class="attendee-list"></div>
+      </section>
+    </main>
+
+    <script src="sidepanel.js"></script>
+  </body>
+</html>
