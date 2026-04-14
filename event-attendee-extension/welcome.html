@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Prospect In</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+    <style>
+        :root {
+            --linkedin-blue: #0a66c2;
+            --linkedin-blue-hover: #004182;
+            --bg: #f3f2ef;
+            --surface: #ffffff;
+            --text-primary: #1d2226;
+            --text-secondary: #5f6b7a;
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .onboarding-card {
+            background: var(--surface);
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 20px;
+        }
+
+        h1 { font-size: 24px; margin-bottom: 10px; }
+        p { color: var(--text-secondary); line-height: 1.6; margin-bottom: 30px; }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            background: var(--linkedin-blue);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .btn-primary {
+            background: var(--linkedin-blue);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 20px;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--linkedin-blue-hover);
+        }
+    </style>
+</head>
+<body>
+    <div class="onboarding-card">
+        <img src="assets/logo.svg" alt="Logo" class="logo">
+        <h1>Welcome to Prospect In!</h1>
+        <p>Let's get you set up to start exporting LinkedIn prospects directly to your CRM.</p>
+        
+        <div class="step">
+            <div class="step-number">1</div>
+            <div><strong>Create your account:</strong> Connect with Supabase to sync your leads across devices.</div>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <div><strong>Choose a plan:</strong> Unlock unlimited exports with our Stripe-powered pro plans.</div>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <div><strong>Start Extracting:</strong> Open the side panel on any LinkedIn event page.</div>
+        </div>
+
+        <button id="getStartedBtn" class="btn-primary">Create Account & Get Started</button>
+    </div>
+
+    <script>
+        // You will link this to your Supabase Auth URL later
+        document.getElementById('getStartedBtn').addEventListener('click', () => {
+            window.location.href = 'https://your-supabase-app.vercel.app/signup';
+        });
+    </script>
+</body>
+</html>
