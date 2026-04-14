@@ -20,12 +20,12 @@ async function init() {
     state.attendees = response.attendees;
     renderAttendees();
     statusTextEl.textContent =
-      `Loaded ${response.attendees.length} attendees from previous scrape.`;
+      `${response.attendees.length} attendees from last scrape`;
   }
 }
 
 async function handleScrape() {
-  setStatus("Extracting attendees from current page...");
+  setStatus("Extracting…");
 
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   console.log("[Event Attendee Extractor] Scrape requested for tab:", activeTab?.id, activeTab?.url);
@@ -36,13 +36,13 @@ async function handleScrape() {
   });
 
   if (!response?.ok) {
-    setStatus(response?.error ?? "Failed to extract attendees.");
+    setStatus(response?.error ?? "Extraction failed.");
     return;
   }
 
   state.attendees = response.attendees;
   renderAttendees();
-  setStatus(`Extracted ${state.attendees.length} attendees.`);
+  setStatus(`${state.attendees.length} attendees extracted`);
 }
 
 function handleSave() {
@@ -59,30 +59,14 @@ function handleSave() {
 
 function exportCsv() {
   if (!state.attendees.length) {
-    setStatus("No attendees available for CSV export.");
+    setStatus("No attendees to export.");
     return;
   }
 
-  const headers = [
-    "Name",
-    "Title",
-    "Profile Link",
-    "Email",
-    "Phone",
-    "Website",
-    "Location",
-    "Raw Details"
-  ];
+  const headers = ["Name", "Title", "Location", "Profile Link", "Email", "Phone", "Website"];
 
-  const rows = state.attendees.map((attendee) => [
-    attendee.name,
-    attendee.title,
-    attendee.profileLink,
-    attendee.email,
-    attendee.phone,
-    attendee.website,
-    attendee.location,
-    attendee.rawDetails
+  const rows = state.attendees.map((a) => [
+    a.name, a.title, a.location, a.profileLink, a.email, a.phone, a.website
   ]);
 
   const csv = [headers, ...rows]
@@ -90,12 +74,12 @@ function exportCsv() {
     .join("\n");
 
   downloadBlob(csv, "text/csv;charset=utf-8", "attendees.csv");
-  setStatus("CSV export complete.");
+  setStatus("CSV exported.");
 }
 
 function exportPdf() {
   if (!state.attendees.length) {
-    setStatus("No attendees available for PDF export.");
+    setStatus("No attendees to export.");
     return;
   }
 
@@ -103,7 +87,7 @@ function exportPdf() {
   const byteArray = new Uint8Array(pdfContent);
   const blob = new Blob([byteArray], { type: "application/pdf" });
   downloadBlob(blob, "application/pdf", "attendees.pdf");
-  setStatus("PDF export complete.");
+  setStatus("PDF exported.");
 }
 
 function renderAttendees() {
@@ -111,8 +95,11 @@ function renderAttendees() {
   countBadgeEl.textContent = String(state.attendees.length);
 
   if (!state.attendees.length) {
-    attendeeListEl.innerHTML =
-      '<div class="empty">No attendees yet. Click "Extract attendees".</div>';
+    attendeeListEl.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">👥</div>
+        Click <strong>Extract attendees</strong><br>while on the event page.
+      </div>`;
     return;
   }
 
@@ -120,54 +107,43 @@ function renderAttendees() {
     const item = document.createElement("article");
     item.className = "attendee-item";
 
-    const summary = document.createElement("div");
-    summary.className = "attendee-summary";
-    summary.innerHTML = `
-      <div>
-        <div class="attendee-name">${escapeHtml(attendee.name || "Unknown")}</div>
-        <div class="attendee-title">${escapeHtml(attendee.title || "")}</div>
+    const profileHref = attendee.profileLink
+      ? `href="${escapeHtml(attendee.profileLink)}" target="_blank"`
+      : "";
+
+    item.innerHTML = `
+      <div class="attendee-summary">
+        <div class="attendee-info">
+          <div class="attendee-name">${escapeHtml(attendee.name || "Unknown")}</div>
+          ${attendee.title ? `<div class="attendee-title">${escapeHtml(attendee.title)}</div>` : ""}
+          ${attendee.location ? `<div class="attendee-location">📍 ${escapeHtml(attendee.location)}</div>` : ""}
+        </div>
+        <span class="chevron">▼</span>
       </div>
-      <div aria-hidden="true">▼</div>
+      <div class="attendee-details">
+        ${attendee.profileLink ? `<div class="detail-row"><span class="detail-label">Profile</span><span class="detail-value"><a ${profileHref}>LinkedIn ↗</a></span></div>` : ""}
+        ${attendee.email ? `<div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${escapeHtml(attendee.email)}</span></div>` : ""}
+        ${attendee.phone ? `<div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${escapeHtml(attendee.phone)}</span></div>` : ""}
+        ${attendee.website ? `<div class="detail-row"><span class="detail-label">Web</span><span class="detail-value"><a href="${escapeHtml(attendee.website)}" target="_blank">${escapeHtml(attendee.website)}</a></span></div>` : ""}
+      </div>
     `;
 
-    const details = document.createElement("div");
-    details.className = "attendee-details";
-    details.innerHTML = `
-      ${detailRow("Profile", attendee.profileLink)}
-      ${detailRow("Email", attendee.email)}
-      ${detailRow("Phone", attendee.phone)}
-      ${detailRow("Website", attendee.website)}
-      ${detailRow("Location", attendee.location)}
-    `;
-
-    summary.addEventListener("click", () => {
+    item.querySelector(".attendee-summary").addEventListener("click", () => {
       item.classList.toggle("expanded");
-      console.log("[Event Attendee Extractor] Toggle attendee:", index);
     });
 
-    item.appendChild(summary);
-    item.appendChild(details);
     attendeeListEl.appendChild(item);
   });
-}
-
-function detailRow(label, value) {
-  const renderedValue = value ? escapeHtml(value) : "-";
-  return `<div><strong>${label}:</strong> ${renderedValue}</div>`;
 }
 
 function sendRuntimeMessage(payload) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(payload, (response) => {
       if (chrome.runtime.lastError) {
-        console.error(
-          "[Event Attendee Extractor] Runtime message error:",
-          chrome.runtime.lastError
-        );
+        console.error("[Event Attendee Extractor] Runtime error:", chrome.runtime.lastError);
         resolve({ ok: false, error: chrome.runtime.lastError.message });
         return;
       }
-
       resolve(response);
     });
   });
@@ -178,24 +154,15 @@ function setStatus(message) {
 }
 
 function escapeCsv(value) {
-  const stringValue = String(value ?? "");
-  return `"${stringValue.replaceAll('"', '""')}"`;
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
 }
 
 function downloadBlob(data, mimeType, filename) {
   const blob = data instanceof Blob ? data : new Blob([data], { type: mimeType });
   const url = URL.createObjectURL(blob);
-
-  chrome.downloads.download(
-    {
-      url,
-      filename,
-      saveAs: true
-    },
-    () => {
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-  );
+  chrome.downloads.download({ url, filename, saveAs: true }, () => {
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
 }
 
 function escapeHtml(input) {
@@ -210,60 +177,41 @@ function escapeHtml(input) {
 function buildSimplePdf(attendees) {
   const lines = ["Event Attendees", ""];
 
-  attendees.forEach((attendee, index) => {
-    lines.push(`${index + 1}. ${safePdfText(attendee.name)}`);
-    lines.push(`Title: ${safePdfText(attendee.title)}`);
-    lines.push(`Email: ${safePdfText(attendee.email)}`);
-    lines.push(`Phone: ${safePdfText(attendee.phone)}`);
-    lines.push(`Website: ${safePdfText(attendee.website)}`);
-    lines.push(`Location: ${safePdfText(attendee.location)}`);
+  attendees.forEach((a, i) => {
+    lines.push(`${i + 1}. ${safePdfText(a.name)}`);
+    if (a.title) lines.push(`   ${safePdfText(a.title)}`);
+    if (a.location) lines.push(`   ${safePdfText(a.location)}`);
+    if (a.profileLink) lines.push(`   ${safePdfText(a.profileLink)}`);
     lines.push("");
   });
 
   const textLines = lines.slice(0, 180);
-
   let stream = "BT\n/F1 10 Tf\n14 TL\n50 770 Td\n";
   textLines.forEach((line, i) => {
-    if (i === 0) {
-      stream += `(${escapePdfString(line)}) Tj\n`;
-      return;
-    }
-
-    stream += `T* (${escapePdfString(line)}) Tj\n`;
+    stream += i === 0
+      ? `(${escapePdfString(line)}) Tj\n`
+      : `T* (${escapePdfString(line)}) Tj\n`;
   });
   stream += "ET";
 
-  const objects = [];
-  objects.push("1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj");
-  objects.push("2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj");
-  objects.push(
-    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] " +
-      "/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj"
-  );
-  objects.push("4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj");
-  objects.push(
+  const objects = [
+    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
+    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
+    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj",
+    "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
     `5 0 obj << /Length ${stream.length} >> stream\n${stream}\nendstream endobj`
-  );
+  ];
 
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
-
-  objects.forEach((obj) => {
-    offsets.push(pdf.length);
-    pdf += `${obj}\n`;
-  });
+  objects.forEach((obj) => { offsets.push(pdf.length); pdf += `${obj}\n`; });
 
   const xrefPos = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n`;
-  pdf += "0000000000 65535 f \n";
-
-  for (let i = 1; i < offsets.length; i += 1) {
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i < offsets.length; i++) {
     pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
   }
-
-  pdf += "trailer\n";
-  pdf += `<< /Size ${objects.length + 1} /Root 1 0 R >>\n`;
-  pdf += `startxref\n${xrefPos}\n%%EOF`;
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
 
   return new TextEncoder().encode(pdf);
 }
