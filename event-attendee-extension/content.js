@@ -21,64 +21,115 @@ async function extractAttendees() {
   console.log(DEBUG_PREFIX, "Starting attendee extraction.");
 
   const allAttendees = [];
+  const visitedPageKeys = new Set();
+  let pageNumber = 1;
 
-  // Extract current page
-  const cards = collectAttendeeCards();
-  for (const card of cards) {
-const attendee = parseAttendeeCard(card);
-if (attendee) allAttendees.push(attendee);
-  }
+  while (true) {
+    await waitForAttendeeList();
+    await autoScroll(3, 500);
+    const cards = collectAttendeeCards();
+    const pageKey = buildPageKey(cards);
 
-  // Click through remaining pages
-  const nextBtn = document.querySelector('[data-testid="pagination-controls-next-button-visible"]');
-  if (nextBtn) {
-    nextBtn.click();
-    await sleep(2000);
-    const moreCards = collectAttendeeCards();
-    console.log(DEBUG_PREFIX, "Cards found:", cards.length);
-    for (const card of moreCards) {
-const attendee = parseAttendeeCard(card);
-if (attendee) allAttendees.push(attendee);
+    console.log(DEBUG_PREFIX, `Page ${pageNumber}:`, {
+      cards: cards.length,
+      pageKey,
+      url: location.href
+    });
+
+    if (visitedPageKeys.has(pageKey)) {
+      console.log(DEBUG_PREFIX, "Detected repeated page; stopping pagination.");
+      break;
     }
+
+    visitedPageKeys.add(pageKey);
+
+    for (const card of cards) {
+      const attendee = parseAttendeeCard(card);
+      if (attendee) {
+        allAttendees.push(attendee);
+      }
+    }
+
+    const nextBtn = findNextButton();
+    if (!nextBtn || isPaginationButtonDisabled(nextBtn)) {
+      console.log(DEBUG_PREFIX, "No next page button available; extraction complete.");
+      break;
+    }
+
+    const previousUrl = location.href;
+    nextBtn.click();
+    console.log(DEBUG_PREFIX, `Clicked next page from page ${pageNumber}.`);
+
+    const moved = await waitForPageChange(previousUrl, pageKey);
+    if (!moved) {
+      console.log(DEBUG_PREFIX, "Next click did not move to a new page; stopping.");
+      break;
+    }
+
+    pageNumber += 1;
   }
 
-  return dedupeAttendees(allAttendees);
+  const unique = dedupeAttendees(allAttendees);
+  console.log(DEBUG_PREFIX, `Extraction done. Total unique attendees: ${unique.length}`);
+  return unique;
 }
 
 function collectAttendeeCards() {
-  const seen = new Set();
-  const cards = [];
-
-  document.querySelectorAll('[role="listitem"]').forEach((el) => {
-    // Filter out non-person list items (pagination, upsell widgets, etc.)
+  return Array.from(document.querySelectorAll('[role="listitem"]')).filter((el) => {
     const hasProfileOrSearch = el.querySelector('a[href*="/in/"], a[href*="eventAttending"]');
-    if (!hasProfileOrSearch) return;
-    if (seen.has(el)) return;
-    seen.add(el);
-    cards.push(el);
+    return Boolean(hasProfileOrSearch);
   });
-
-  return cards;
 }
 
-async function tryExpandAttendee(card) {
-  const expandSelectors = [
-    "button[aria-expanded='false']",
-    "button[aria-label*='Show']",
-    "button[aria-label*='Expand']",
-    "button[aria-label*='Contact']"
+function findNextButton() {
+  const selectors = [
+    '[data-testid="pagination-controls-next-button-visible"]',
+    'button[aria-label*="Next"]',
+    'button[aria-label*="next"]',
+    'button.artdeco-pagination__button--next'
   ];
 
-  for (const selector of expandSelectors) {
-    const button = card.querySelector(selector);
-    if (!button) {
-      continue;
+  for (const selector of selectors) {
+    const button = document.querySelector(selector);
+    if (button) {
+      return button;
     }
+  }
 
-    button.click();
-    console.log(DEBUG_PREFIX, "Clicked expand button.");
+  return null;
+}
+
+function isPaginationButtonDisabled(button) {
+  if (!button) return true;
+  return button.disabled || button.getAttribute("aria-disabled") === "true";
+}
+
+function buildPageKey(cards) {
+  const firstProfile = cards[0]?.querySelector('a[href*="/in/"]')?.getAttribute("href") || "no-first";
+  const lastProfile = cards[cards.length - 1]?.querySelector('a[href*="/in/"]')?.getAttribute("href") || "no-last";
+  return `${cards.length}|${firstProfile}|${lastProfile}`;
+}
+
+async function waitForPageChange(previousUrl, previousPageKey) {
+  for (let i = 0; i < 25; i += 1) {
     await sleep(250);
-    break;
+    const cards = collectAttendeeCards();
+    const newKey = buildPageKey(cards);
+    if (location.href !== previousUrl || (cards.length > 0 && newKey !== previousPageKey)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function waitForAttendeeList() {
+  for (let i = 0; i < 20; i += 1) {
+    const cards = collectAttendeeCards();
+    if (cards.length > 0) {
+      return;
+    }
+    await sleep(250);
   }
 }
 
@@ -87,43 +138,41 @@ function parseAttendeeCard(card) {
   const name = cleanText(nameAnchor?.textContent ?? "");
   const profileLink = nameAnchor?.href?.split("?")[0] ?? "";
 
-  // Get all non-empty paragraph texts in order
   const paragraphs = Array.from(card.querySelectorAll("p"))
-    .map(p => cleanText(p.textContent))
-    .filter(t => t.length > 0 && t !== name && !t.includes("• "));
+    .map((p) => cleanText(p.textContent))
+    .filter((t) => t.length > 0 && t !== name && !t.includes("• "));
 
   const title = paragraphs[0] ?? "";
   const location = paragraphs[1] ?? "";
-
-  console.log(DEBUG_PREFIX, "Parsed card:", { name, title, location, profileLink });
 
   if (!name || name === "LinkedIn Member") return null;
 
   const cardText = cleanText(card.innerText);
   const contact = extractContactInfo(card, cardText);
 
-  return { name, title, profileLink, email: contact.email, phone: contact.phone,
-           website: contact.website, location, rawDetails: cardText };
+  return {
+    name,
+    title,
+    profileLink,
+    email: contact.email,
+    phone: contact.phone,
+    website: contact.website,
+    location,
+    rawDetails: cardText
+  };
 }
 
 function extractContactInfo(card, cardText) {
-  const emailRegex =
-    /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
-  const phoneRegex =
-    /(\+?\d[\d\s().-]{7,}\d)/;
+  const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
+  const phoneRegex = /(\+?\d[\d\s().-]{7,}\d)/;
 
   const emailMatch = cardText.match(emailRegex);
   const phoneMatch = cardText.match(phoneRegex);
 
   const links = Array.from(card.querySelectorAll("a[href]"));
-  const website =
-    links
-      .map((link) => link.href)
-      .find((href) =>
-        href.startsWith("http") &&
-        !href.includes("linkedin.com") &&
-        !href.includes("mailto:")
-      ) ?? "";
+  const website = links
+    .map((link) => link.href)
+    .find((href) => href.startsWith("http") && !href.includes("linkedin.com") && !href.includes("mailto:")) ?? "";
 
   const location =
     firstText(card, [

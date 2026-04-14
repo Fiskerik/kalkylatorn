@@ -20,8 +20,17 @@
   "side_panel": {
     "default_path": "sidepanel.html"
   },
+  "icons": {
+    "16": "assets/favicon.svg",
+    "48": "assets/logo.svg",
+    "128": "assets/logo.svg"
+  },
   "action": {
-    "default_title": "Event Attendee Extractor"
+    "default_title": "Event Attendee Extractor",
+    "default_icon": {
+      "16": "assets/favicon.svg",
+      "48": "assets/logo.svg"
+    }
   },
   "content_scripts": [
     {
