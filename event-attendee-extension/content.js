@@ -35,6 +35,7 @@ if (attendee) allAttendees.push(attendee);
     nextBtn.click();
     await sleep(2000);
     const moreCards = collectAttendeeCards();
+    console.log(DEBUG_PREFIX, "Cards found:", cards.length);
     for (const card of moreCards) {
 const attendee = parseAttendeeCard(card);
 if (attendee) allAttendees.push(attendee);
