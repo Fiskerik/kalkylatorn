@@ -4,6 +4,7 @@ const FIVE_EXPORTS_PRICE_LABEL = "$39.99";
 const TEN_EXPORTS_PRICE_LABEL = "$69.99";
 const DEFAULT_SUPABASE_URL = "https://vhemqgjwjqgjqrnjhvm.supabase.co";
 const DEFAULT_APP_PUBLIC_URL = "https://prospectin.vercel.app";
+const PROFILE_POLL_INTERVAL_MS = 12000;
 
 const state = {
   attendees: [],
@@ -12,6 +13,8 @@ const state = {
   credits: 0,
   hasUnlimited: false,
   profile: null,
+  profilePollTimer: null,
+  lastKnownCredits: 0,
   session: null,
   config: {
     supabaseUrl: DEFAULT_SUPABASE_URL,
@@ -55,6 +58,7 @@ signInBtnEl.addEventListener("click", handleSignIn);
 signOutBtnEl.addEventListener("click", handleSignOut);
 syncAccountBtnEl.addEventListener("click", loadProfileFromSupabase);
 openWebAppBtnEl.addEventListener("click", () => chrome.tabs.create({ url: state.config.appPublicUrl }));
+document.addEventListener("visibilitychange", handlePanelVisibilityChange);
 
 crmSelectEl.addEventListener("change", () => {
   chrome.storage.local.set({ lastCrm: crmSelectEl.value });
@@ -97,9 +101,11 @@ async function init() {
   syncExportPaywallUI();
   syncViewModeUI();
   syncAuthUI();
+  state.lastKnownCredits = state.credits;
 
   if (state.session?.access_token) {
     await loadProfileFromSupabase();
+    startProfileAutoSync();
   }
 
   const response = await sendRuntimeMessage({ type: "GET_LAST_ATTENDEES" });
@@ -146,6 +152,7 @@ async function handleSignIn() {
     state.session = payload;
     await chrome.storage.local.set({ session: payload });
     await loadProfileFromSupabase();
+    startProfileAutoSync();
     syncAuthUI();
     setStatus("Signed in.");
   } catch (error) {
@@ -155,10 +162,12 @@ async function handleSignIn() {
 }
 
 async function handleSignOut() {
+  stopProfileAutoSync();
   state.session = null;
   state.profile = null;
   state.credits = 0;
   state.hasUnlimited = false;
+  state.lastKnownCredits = 0;
   await chrome.storage.local.remove(["session", "profile"]);
   await chrome.storage.local.set({ credits: 0, hasUnlimited: false });
   syncAuthUI();
@@ -166,7 +175,8 @@ async function handleSignOut() {
   setStatus("Signed out.");
 }
 
-async function loadProfileFromSupabase() {
+async function loadProfileFromSupabase(options = {}) {
+  const { silent = false } = options;
   if (!state.session?.access_token || !state.session?.user?.id) {
     syncAuthUI();
     return;
@@ -176,7 +186,9 @@ async function loadProfileFromSupabase() {
     return;
   }
 
-  setStatus("Syncing account...");
+  if (!silent) {
+    setStatus("Syncing account...");
+  }
   try {
     const profileUrl = `${state.config.supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}&select=id,email,credits,has_unlimited,updated_at`;
     const response = await fetch(profileUrl, {
@@ -195,8 +207,10 @@ async function loadProfileFromSupabase() {
 
     const profile = Array.isArray(rows) ? rows[0] : null;
     state.profile = profile;
+    const previousCredits = state.credits;
     state.credits = Number.isInteger(profile?.credits) ? profile.credits : 0;
     state.hasUnlimited = Boolean(profile?.has_unlimited);
+    state.lastKnownCredits = state.credits;
 
     await chrome.storage.local.set({
       profile,
@@ -206,10 +220,19 @@ async function loadProfileFromSupabase() {
 
     syncAuthUI();
     syncExportPaywallUI();
-    setStatus("Account synced.");
+    if (state.credits > previousCredits) {
+      setStatus("Purchase confirmed! Full export unlocked.");
+      console.log("[Prospect In] Credit increase detected:", { previousCredits, currentCredits: state.credits });
+      return;
+    }
+    if (!silent) {
+      setStatus("Account synced.");
+    }
   } catch (error) {
     console.error("[Prospect In] Profile sync error:", error);
-    setStatus("Could not sync account.");
+    if (!silent) {
+      setStatus("Could not sync account.");
+    }
   }
 }
 
@@ -232,6 +255,11 @@ async function handleScrape() {
 
   state.attendees = response.attendees;
   renderAttendees();
+  const needsUpgrade = state.attendees.length > FREE_ATTENDEE_LIMIT && !state.hasUnlimited && state.credits <= 0;
+  if (needsUpgrade) {
+    setStatus(`Found ${state.attendees.length} attendees. Unlock full report to export.`);
+    return;
+  }
   setStatus(`${state.attendees.length} attendees extracted`);
 }
 
@@ -318,16 +346,20 @@ function handleAttendeeLimitChange() {
 
 function syncExportPaywallUI() {
   const hasPaidAccess = state.hasUnlimited || state.credits > 0;
+  const hasLockedReport = state.attendees.length > FREE_ATTENDEE_LIMIT && !hasPaidAccess;
   creditsBadgeEl.textContent = state.hasUnlimited ? "Credits: Unlimited" : `Credits: ${state.credits}`;
-  buyOneBtnEl.hidden = hasPaidAccess;
-  buyFiveBtnEl.hidden = hasPaidAccess;
-  buyTenBtnEl.hidden = hasPaidAccess;
+  buyOneBtnEl.hidden = !hasLockedReport;
+  buyFiveBtnEl.hidden = !hasLockedReport;
+  buyTenBtnEl.hidden = !hasLockedReport;
 
-  const needsUpgrade = state.attendees.length > FREE_ATTENDEE_LIMIT && !hasPaidAccess;
+  const needsUpgrade = hasLockedReport;
   proHintEl.hidden = !needsUpgrade;
   if (needsUpgrade) {
-    proHintEl.textContent = `Free CSV exports include first ${FREE_ATTENDEE_LIMIT}. Full list: ${FULL_EXPORT_PRICE_LABEL}, 5 credits: ${FIVE_EXPORTS_PRICE_LABEL}, 10 credits: ${TEN_EXPORTS_PRICE_LABEL}.`;
+    proHintEl.textContent = `Report locked: ${state.attendees.length} attendees found. Buy 1 report (${FULL_EXPORT_PRICE_LABEL}) or credit packs (${FIVE_EXPORTS_PRICE_LABEL} / ${TEN_EXPORTS_PRICE_LABEL}) to unlock export.`;
   }
+
+  csvBtnEl.disabled = hasLockedReport;
+  pdfBtnEl.disabled = hasLockedReport;
 }
 
 function syncAuthUI() {
@@ -438,11 +470,41 @@ function consumeCredit() {
 }
 
 function handleBuyCredits(plan) {
-  const checkoutUrl = new URL(`${state.config.appPublicUrl}/pricing`);
+  const checkoutUrl = new URL(`${state.config.appPublicUrl}/checkout`);
   checkoutUrl.searchParams.set("source", "extension");
   checkoutUrl.searchParams.set("plan", plan);
+  if (state.session?.user?.id) {
+    checkoutUrl.searchParams.set("user_id", state.session.user.id);
+  }
   console.log("[Event Attendee Extractor] Opening pricing URL:", checkoutUrl.toString());
   chrome.tabs.create({ url: checkoutUrl.toString() });
+}
+
+function startProfileAutoSync() {
+  if (!state.session?.access_token) {
+    return;
+  }
+  stopProfileAutoSync();
+  state.profilePollTimer = window.setInterval(() => {
+    console.log("[Prospect In] Polling Supabase profile for credit updates.");
+    loadProfileFromSupabase({ silent: true });
+  }, PROFILE_POLL_INTERVAL_MS);
+}
+
+function stopProfileAutoSync() {
+  if (!state.profilePollTimer) {
+    return;
+  }
+  window.clearInterval(state.profilePollTimer);
+  state.profilePollTimer = null;
+}
+
+function handlePanelVisibilityChange() {
+  if (document.hidden || !state.session?.access_token) {
+    return;
+  }
+  console.log("[Prospect In] Panel focused. Triggering account sync.");
+  loadProfileFromSupabase({ silent: true });
 }
 
 function sendRuntimeMessage(payload) {
