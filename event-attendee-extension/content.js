@@ -25,8 +25,8 @@ async function extractAttendees() {
   // Extract current page
   const cards = collectAttendeeCards();
   for (const card of cards) {
-    const attendee = parseAttendeeCard(card);
-    if (attendee.name) allAttendees.push(attendee);
+const attendee = parseAttendeeCard(card);
+if (attendee) allAttendees.push(attendee);
   }
 
   // Click through remaining pages
@@ -36,8 +36,8 @@ async function extractAttendees() {
     await sleep(2000);
     const moreCards = collectAttendeeCards();
     for (const card of moreCards) {
-      const attendee = parseAttendeeCard(card);
-      if (attendee.name) allAttendees.push(attendee);
+const attendee = parseAttendeeCard(card);
+if (attendee) allAttendees.push(attendee);
     }
   }
 
