@@ -35,7 +35,7 @@ async function scrapeFromActiveTab(sendResponse, sender, requestedTabId) {
     const tabId = await resolveTargetTabId(sender, requestedTabId);
 
     if (!tabId) {
-      sendResponse({ ok: false, error: "No active tab found." });
+      sendResponse({ ok: false, error: "No valid browser tab found." });
       return;
     }
 
@@ -71,20 +71,52 @@ async function scrapeFromActiveTab(sendResponse, sender, requestedTabId) {
 }
 
 async function resolveTargetTabId(sender, requestedTabId) {
+  const candidates = [];
+
   if (Number.isInteger(requestedTabId)) {
-    return requestedTabId;
+    candidates.push(await safeGetTab(requestedTabId));
   }
 
   if (sender?.tab?.id) {
-    return sender.tab.id;
+    candidates.push(await safeGetTab(sender.tab.id));
   }
 
   const [activeTab] = await chrome.tabs.query({
     active: true,
-    currentWindow: true
+    lastFocusedWindow: true
   });
+  candidates.push(activeTab);
 
-  return activeTab?.id ?? null;
+  const allTabs = await chrome.tabs.query({ lastFocusedWindow: true });
+  const linkedinTabs = allTabs.filter((tab) => tab?.url?.includes("linkedin.com"));
+  candidates.push(...linkedinTabs);
+
+  const validTab = candidates.find((tab) => isScrapableUrl(tab?.url));
+
+  console.log(
+    "[Event Attendee Extractor] Target tab resolution:",
+    candidates
+      .filter(Boolean)
+      .map((tab) => ({ id: tab.id, url: tab.url, scrapable: isScrapableUrl(tab.url) }))
+  );
+
+  return validTab?.id ?? null;
+}
+
+async function safeGetTab(tabId) {
+  try {
+    return await chrome.tabs.get(tabId);
+  } catch {
+    return null;
+  }
+}
+
+function isScrapableUrl(url) {
+  if (!url || typeof url !== "string") {
+    return false;
+  }
+
+  return /^(https?:\/\/)/.test(url);
 }
 
 async function requestAttendeesFromTab(tabId) {
