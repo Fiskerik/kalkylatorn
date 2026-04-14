@@ -1,4 +1,13 @@
-const state = { attendees: [], viewMode: "detailed", attendeeLimit: 100, isProUser: false };
+const FREE_ATTENDEE_LIMIT = 20;
+const FULL_EXPORT_PRICE_LABEL = "$9.99";
+const BUY_CREDITS_URL = "https://your-stripe-checkout-url.example/full-export";
+const state = {
+  attendees: [],
+  viewMode: "detailed",
+  attendeeLimit: 100,
+  credits: 0,
+  hasUnlimited: false
+};
 
 const attendeeListEl = document.getElementById("attendeeList");
 const statusTextEl = document.getElementById("statusText");
@@ -10,6 +19,8 @@ const attendeeLimitInputEl = document.getElementById("attendeeLimitInput");
 const proHintEl = document.getElementById("proHint");
 const csvBtnEl = document.getElementById("csvBtn");
 const pdfBtnEl = document.getElementById("pdfBtn");
+const creditsBadgeEl = document.getElementById("creditsBadge");
+const buyCreditsBtnEl = document.getElementById("buyCreditsBtn");
 
 document.getElementById("scrapeBtn").addEventListener("click", handleScrape);
 document.getElementById("saveBtn").addEventListener("click", handleSave);
@@ -17,8 +28,9 @@ csvBtnEl.addEventListener("click", exportCsv);
 pdfBtnEl.addEventListener("click", exportPdf);
 detailedViewBtn.addEventListener("click", () => setViewMode("detailed"));
 cardViewBtn.addEventListener("click", () => setViewMode("card"));
+buyCreditsBtnEl.addEventListener("click", handleBuyCredits);
 
-chrome.storage.local.get(["lastCrm", "attendeeViewMode", "attendeeLimit", "isProUser"], (r) => {
+chrome.storage.local.get(["lastCrm", "attendeeViewMode", "attendeeLimit", "credits", "hasUnlimited"], (r) => {
   if (r.lastCrm) crmSelectEl.value = r.lastCrm;
   if (r.attendeeViewMode === "card" || r.attendeeViewMode === "detailed") {
     state.viewMode = r.attendeeViewMode;
@@ -26,8 +38,10 @@ chrome.storage.local.get(["lastCrm", "attendeeViewMode", "attendeeLimit", "isPro
   if (Number.isInteger(r.attendeeLimit) && r.attendeeLimit > 0) {
     state.attendeeLimit = r.attendeeLimit;
   }
-  state.isProUser = Boolean(r.isProUser);
+  state.credits = Number.isInteger(r.credits) && r.credits > 0 ? r.credits : 0;
+  state.hasUnlimited = Boolean(r.hasUnlimited);
   attendeeLimitInputEl.value = String(state.attendeeLimit);
+  buyCreditsBtnEl.textContent = `Get full list (${FULL_EXPORT_PRICE_LABEL})`;
   syncExportPaywallUI();
   syncViewModeUI();
 });
@@ -78,13 +92,13 @@ function handleSave() {
 }
 
 function exportCsv() {
-  if (!state.isProUser) {
-    setStatus("Export is available on PRO.");
+  if (!state.attendees.length) {
+    setStatus("No attendees to export.");
     return;
   }
 
-  if (!state.attendees.length) {
-    setStatus("No attendees to export.");
+  const hasAccess = checkAccess(state.attendees.length);
+  if (!hasAccess) {
     return;
   }
 
@@ -94,21 +108,24 @@ function exportCsv() {
   const filename = `attendees-${crm}-${datestamp()}.csv`;
 
   downloadBlob(csv, "text/csv;charset=utf-8", filename);
+  consumeCreditIfNeeded(state.attendees.length);
+  syncExportPaywallUI();
   setStatus(`Exported for ${profile.label}.`);
 }
 
 function exportPdf() {
-  if (!state.isProUser) {
-    setStatus("Export is available on PRO.");
-    return;
-  }
-
   if (!state.attendees.length) {
     setStatus("No attendees to export.");
     return;
   }
+  const hasAccess = checkAccess(state.attendees.length);
+  if (!hasAccess) {
+    return;
+  }
   const pdfContent = buildSimplePdf(state.attendees);
   downloadBlob(new Blob([new Uint8Array(pdfContent)], { type: "application/pdf" }), "application/pdf", `attendees-${datestamp()}.pdf`);
+  consumeCreditIfNeeded(state.attendees.length);
+  syncExportPaywallUI();
   setStatus("PDF exported.");
 }
 
@@ -121,9 +138,17 @@ function handleAttendeeLimitChange() {
 }
 
 function syncExportPaywallUI() {
-  csvBtnEl.disabled = !state.isProUser;
-  pdfBtnEl.disabled = !state.isProUser;
-  proHintEl.hidden = state.isProUser;
+  const hasPaidAccess = state.hasUnlimited || state.credits > 0;
+  const hasFreeAccess = state.attendees.length > 0 && state.attendees.length <= FREE_ATTENDEE_LIMIT;
+  const canExport = hasPaidAccess || hasFreeAccess;
+  csvBtnEl.disabled = !canExport;
+  pdfBtnEl.disabled = !canExport;
+  proHintEl.hidden = hasPaidAccess || hasFreeAccess;
+  if (!proHintEl.hidden) {
+    proHintEl.textContent = `Limit reached. Get the full list for ${FULL_EXPORT_PRICE_LABEL}.`;
+  }
+  creditsBadgeEl.textContent = state.hasUnlimited ? "Credits: Unlimited" : `Credits: ${state.credits}`;
+  buyCreditsBtnEl.hidden = hasPaidAccess || hasFreeAccess;
 }
 
 function setViewMode(mode) {
@@ -147,6 +172,7 @@ function renderAttendees() {
   attendeeListEl.innerHTML = "";
   countBadgeEl.textContent = String(state.attendees.length);
   syncViewModeUI();
+  syncExportPaywallUI();
 
   if (!state.attendees.length) {
     attendeeListEl.innerHTML = `
@@ -192,6 +218,45 @@ function renderAttendees() {
 
     attendeeListEl.appendChild(item);
   });
+}
+
+function checkAccess(requestedCount) {
+  console.log("[Event Attendee Extractor] Access check:", {
+    requestedCount,
+    freeLimit: FREE_ATTENDEE_LIMIT,
+    credits: state.credits,
+    hasUnlimited: state.hasUnlimited
+  });
+
+  if (requestedCount <= FREE_ATTENDEE_LIMIT) {
+    return true;
+  }
+
+  if (state.credits > 0 || state.hasUnlimited) {
+    return true;
+  }
+
+  setStatus(`Limit reached. Get the full list for ${FULL_EXPORT_PRICE_LABEL}`);
+  showBuyButton();
+  return false;
+}
+
+function consumeCreditIfNeeded(requestedCount) {
+  if (requestedCount <= FREE_ATTENDEE_LIMIT || state.hasUnlimited || state.credits <= 0) {
+    return;
+  }
+  state.credits -= 1;
+  chrome.storage.local.set({ credits: state.credits });
+  console.log("[Event Attendee Extractor] Credit consumed. Remaining:", state.credits);
+}
+
+function showBuyButton() {
+  buyCreditsBtnEl.hidden = false;
+}
+
+function handleBuyCredits() {
+  console.log("[Event Attendee Extractor] Opening buy credits URL:", BUY_CREDITS_URL);
+  chrome.tabs.create({ url: BUY_CREDITS_URL });
 }
 
 function sendRuntimeMessage(payload) {
