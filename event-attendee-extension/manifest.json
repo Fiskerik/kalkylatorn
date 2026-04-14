@@ -42,14 +42,7 @@
       ],
       "run_at": "document_idle"
     }
-  ],{
-  "scripts": {
-    "build": "vite build"
-  },
-  "devDependencies": {
-    "vite": "^5.0.0"
-  }
-}
+  ]
 
   
 }
