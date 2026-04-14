@@ -19,7 +19,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function extractAttendees() {
   console.log(DEBUG_PREFIX, "Starting attendee extraction.");
-  await autoScroll(8, 800);
+  await autoScroll(12, 1500); 
 
   const attendeeCards = collectAttendeeCards();
   console.log(DEBUG_PREFIX, "Cards discovered:", attendeeCards.length);
