@@ -77,6 +77,34 @@ body {
   padding: 10px;
 }
 
+.limit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.limit-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.limit-input {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-primary);
+  background: var(--surface);
+}
+
+.limit-input:focus {
+  outline: none;
+  border-color: var(--linkedin-blue);
+  box-shadow: 0 0 0 2px rgba(10, 102, 194, 0.12);
+}
+
 .btn {
   border: 1px solid #b7c9dd;
   background: var(--surface);
@@ -94,6 +122,14 @@ body {
 .btn:hover {
   background: var(--linkedin-blue-soft);
   border-color: #8ab4e2;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: #f5f7fa;
+  border-color: var(--border);
+  color: var(--text-secondary);
 }
 
 .btn.primary {
@@ -139,6 +175,11 @@ body {
   width: auto;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.pro-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 
 .results {

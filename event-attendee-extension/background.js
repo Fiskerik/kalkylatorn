@@ -18,7 +18,7 @@ chrome.action.onClicked.addListener(async (tab) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "SCRAPE_ATTENDEES") {
-    scrapeFromActiveTab(sendResponse, sender, message?.tabId);
+    scrapeFromActiveTab(sendResponse, sender, message?.tabId, message?.attendeeLimit);
     return true;
   }
 
@@ -35,7 +35,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-async function scrapeFromActiveTab(sendResponse, sender, requestedTabId) {
+async function scrapeFromActiveTab(sendResponse, sender, requestedTabId, attendeeLimit) {
   try {
     const tabId = await resolveTargetTabId(sender, requestedTabId);
 
@@ -44,7 +44,7 @@ async function scrapeFromActiveTab(sendResponse, sender, requestedTabId) {
       return;
     }
 
-    const response = await requestAttendeesFromTab(tabId);
+    const response = await requestAttendeesFromTab(tabId, attendeeLimit);
 
     if (!response?.ok) {
       sendResponse({
@@ -121,10 +121,14 @@ function isScrapableUrl(url) {
   return url.includes("linkedin.com") && /^https?:\/\//.test(url);
 }
 
-async function requestAttendeesFromTab(tabId) {
+async function requestAttendeesFromTab(tabId, attendeeLimit) {
+  const maxAttendees = Number.isInteger(attendeeLimit) && attendeeLimit > 0 ? attendeeLimit : 100;
+  console.log("[Event Attendee Extractor] Requesting attendees with limit:", maxAttendees);
+
   try {
     return await chrome.tabs.sendMessage(tabId, {
-      type: "EXTRACT_ATTENDEES"
+      type: "EXTRACT_ATTENDEES",
+      maxAttendees
     });
   } catch (error) {
     if (!isReceivingEndMissingError(error)) {
@@ -142,7 +146,8 @@ async function requestAttendeesFromTab(tabId) {
     });
 
     return chrome.tabs.sendMessage(tabId, {
-      type: "EXTRACT_ATTENDEES"
+      type: "EXTRACT_ATTENDEES",
+      maxAttendees
     });
   }
 }

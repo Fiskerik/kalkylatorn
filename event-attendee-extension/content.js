@@ -2,7 +2,7 @@ const DEBUG_PREFIX = "[Event Attendee Extractor]";
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "EXTRACT_ATTENDEES") {
-    extractAttendees()
+    extractAttendees(message?.maxAttendees)
       .then((attendees) => {
         sendResponse({ ok: true, attendees });
       })
@@ -17,8 +17,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-async function extractAttendees() {
+async function extractAttendees(maxAttendeesInput) {
+  const maxAttendees = Number.isInteger(maxAttendeesInput) && maxAttendeesInput > 0 ? maxAttendeesInput : 100;
   console.log(DEBUG_PREFIX, "Starting attendee extraction.");
+  console.log(DEBUG_PREFIX, "Max attendees limit:", maxAttendees);
 
   const allAttendees = [];
   const visitedPageKeys = new Set();
@@ -47,6 +49,12 @@ async function extractAttendees() {
       const attendee = parseAttendeeCard(card);
       if (attendee) {
         allAttendees.push(attendee);
+        if (allAttendees.length >= maxAttendees) {
+          console.log(DEBUG_PREFIX, `Reached attendee limit (${maxAttendees}); stopping pagination.`);
+          const uniqueLimited = dedupeAttendees(allAttendees).slice(0, maxAttendees);
+          console.log(DEBUG_PREFIX, `Extraction done. Total unique attendees: ${uniqueLimited.length}`);
+          return uniqueLimited;
+        }
       }
     }
 

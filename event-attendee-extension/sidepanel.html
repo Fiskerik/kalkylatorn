@@ -21,6 +21,10 @@
 
       <section class="actions">
         <button id="scrapeBtn" class="btn primary">Extract attendees</button>
+        <div class="limit-row">
+          <label for="attendeeLimitInput" class="limit-label">Max attendees per scrape</label>
+          <input id="attendeeLimitInput" class="limit-input" type="number" min="1" step="1" value="100" />
+        </div>
         <button id="saveBtn" class="btn">Save locally</button>
 
         <div class="export-row">
@@ -35,6 +39,7 @@
         </div>
 
         <button id="pdfBtn" class="btn">Export PDF</button>
+        <p id="proHint" class="pro-hint" hidden>Export is a PRO feature. Upgrade to unlock CSV/PDF export.</p>
       </section>
 
       <section class="results">
