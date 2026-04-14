@@ -82,22 +82,21 @@ async function tryExpandAttendee(card) {
 }
 
 function parseAttendeeCard(card) {
-  // Name: find the link anchor text, skip "LinkedIn Member" anonymous ones
   const nameAnchor = card.querySelector('a[href*="/in/"]');
   const name = cleanText(nameAnchor?.textContent ?? "");
+  const profileLink = nameAnchor?.href?.split("?")[0] ?? "";
 
-  // Profile link
-  const profileLink = nameAnchor?.href ?? "";
+  // Get all non-empty paragraph texts in order
+  const paragraphs = Array.from(card.querySelectorAll("p"))
+    .map(p => cleanText(p.textContent))
+    .filter(t => t.length > 0 && t !== name && !t.includes("• "));
 
-  // All <p> tags — title is 2nd, location is 3rd
-  const paragraphs = Array.from(card.querySelectorAll("p"));
-  const title = cleanText(paragraphs[1]?.textContent ?? "");
-  const location = cleanText(paragraphs[2]?.textContent ?? "");
+  const title = paragraphs[0] ?? "";
+  const location = paragraphs[1] ?? "";
 
-  // Skip anonymous members
-  if (!name || name === "LinkedIn Member") {
-    return { name: "", title, profileLink, email: "", phone: "", website: "", location, rawDetails: "" };
-  }
+  console.log(DEBUG_PREFIX, "Parsed card:", { name, title, location, profileLink });
+
+  if (!name || name === "LinkedIn Member") return null;
 
   const cardText = cleanText(card.innerText);
   const contact = extractContactInfo(card, cardText);
