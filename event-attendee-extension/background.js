@@ -112,11 +112,9 @@ async function safeGetTab(tabId) {
 }
 
 function isScrapableUrl(url) {
-  if (!url || typeof url !== "string") {
-    return false;
-  }
-
-  return /^(https?:\/\/)/.test(url);
+  return typeof url === "string" &&
+    url.includes("linkedin.com/events") &&
+    url.includes("/attendees");
 }
 
 async function requestAttendeesFromTab(tabId) {
