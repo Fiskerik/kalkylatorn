@@ -16,7 +16,18 @@
       <section class="actions">
         <button id="scrapeBtn" class="btn primary">Extract attendees</button>
         <button id="saveBtn" class="btn">Save locally</button>
-        <button id="csvBtn" class="btn">Export CSV</button>
+
+        <div class="export-row">
+          <select id="crmSelect" class="crm-select">
+            <option value="generic">Generic CSV</option>
+            <option value="hubspot">HubSpot</option>
+            <option value="pipedrive">Pipedrive</option>
+            <option value="salesforce">Salesforce</option>
+            <option value="zoho">Zoho CRM</option>
+          </select>
+          <button id="csvBtn" class="btn export-btn">Export CSV</button>
+        </div>
+
         <button id="pdfBtn" class="btn">Export PDF</button>
       </section>
 
@@ -29,6 +40,7 @@
       </section>
     </main>
 
+    <script src="crm-export.js"></script>
     <script src="sidepanel.js"></script>
   </body>
 </html>
