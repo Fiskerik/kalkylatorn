@@ -1,19 +1,27 @@
-const state = { attendees: [] };
+const state = { attendees: [], viewMode: "detailed" };
 
 const attendeeListEl = document.getElementById("attendeeList");
-const statusTextEl   = document.getElementById("statusText");
-const countBadgeEl   = document.getElementById("countBadge");
-const crmSelectEl    = document.getElementById("crmSelect");
+const statusTextEl = document.getElementById("statusText");
+const countBadgeEl = document.getElementById("countBadge");
+const crmSelectEl = document.getElementById("crmSelect");
+const detailedViewBtn = document.getElementById("detailedViewBtn");
+const cardViewBtn = document.getElementById("cardViewBtn");
 
 document.getElementById("scrapeBtn").addEventListener("click", handleScrape);
 document.getElementById("saveBtn").addEventListener("click", handleSave);
 document.getElementById("csvBtn").addEventListener("click", exportCsv);
 document.getElementById("pdfBtn").addEventListener("click", exportPdf);
+detailedViewBtn.addEventListener("click", () => setViewMode("detailed"));
+cardViewBtn.addEventListener("click", () => setViewMode("card"));
 
-// Persist the last-used CRM selection
-chrome.storage.local.get(["lastCrm"], (r) => {
+chrome.storage.local.get(["lastCrm", "attendeeViewMode"], (r) => {
   if (r.lastCrm) crmSelectEl.value = r.lastCrm;
+  if (r.attendeeViewMode === "card" || r.attendeeViewMode === "detailed") {
+    state.viewMode = r.attendeeViewMode;
+  }
+  syncViewModeUI();
 });
+
 crmSelectEl.addEventListener("change", () => {
   chrome.storage.local.set({ lastCrm: crmSelectEl.value });
 });
@@ -54,7 +62,10 @@ function handleSave() {
 }
 
 function exportCsv() {
-  if (!state.attendees.length) { setStatus("No attendees to export."); return; }
+  if (!state.attendees.length) {
+    setStatus("No attendees to export.");
+    return;
+  }
 
   const crm = crmSelectEl.value;
   const profile = window.CRM_PROFILES[crm] ?? window.CRM_PROFILES.generic;
@@ -66,15 +77,36 @@ function exportCsv() {
 }
 
 function exportPdf() {
-  if (!state.attendees.length) { setStatus("No attendees to export."); return; }
+  if (!state.attendees.length) {
+    setStatus("No attendees to export.");
+    return;
+  }
   const pdfContent = buildSimplePdf(state.attendees);
   downloadBlob(new Blob([new Uint8Array(pdfContent)], { type: "application/pdf" }), "application/pdf", `attendees-${datestamp()}.pdf`);
   setStatus("PDF exported.");
 }
 
+function setViewMode(mode) {
+  if (mode !== "card" && mode !== "detailed") {
+    return;
+  }
+
+  state.viewMode = mode;
+  chrome.storage.local.set({ attendeeViewMode: mode });
+  syncViewModeUI();
+  renderAttendees();
+}
+
+function syncViewModeUI() {
+  attendeeListEl.classList.toggle("card-view", state.viewMode === "card");
+  detailedViewBtn.classList.toggle("active", state.viewMode === "detailed");
+  cardViewBtn.classList.toggle("active", state.viewMode === "card");
+}
+
 function renderAttendees() {
   attendeeListEl.innerHTML = "";
   countBadgeEl.textContent = String(state.attendees.length);
+  syncViewModeUI();
 
   if (!state.attendees.length) {
     attendeeListEl.innerHTML = `
@@ -97,28 +129,30 @@ function renderAttendees() {
       <div class="attendee-summary">
         <div class="attendee-info">
           <div class="attendee-name">${escapeHtml(attendee.name || "Unknown")}</div>
-          ${attendee.title    ? `<div class="attendee-title">${escapeHtml(attendee.title)}</div>` : ""}
+          ${attendee.title ? `<div class="attendee-title">${escapeHtml(attendee.title)}</div>` : ""}
           ${attendee.location ? `<div class="attendee-location">📍 ${escapeHtml(attendee.location)}</div>` : ""}
         </div>
         <span class="chevron">▼</span>
       </div>
       <div class="attendee-details">
         ${attendee.profileLink ? `<div class="detail-row"><span class="detail-label">Profile</span><span class="detail-value"><a ${profileHref}>LinkedIn ↗</a></span></div>` : ""}
-        ${attendee.email   ? `<div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${escapeHtml(attendee.email)}</span></div>`   : ""}
-        ${attendee.phone   ? `<div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${escapeHtml(attendee.phone)}</span></div>`   : ""}
+        ${attendee.email ? `<div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${escapeHtml(attendee.email)}</span></div>` : ""}
+        ${attendee.phone ? `<div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${escapeHtml(attendee.phone)}</span></div>` : ""}
         ${attendee.website ? `<div class="detail-row"><span class="detail-label">Web</span><span class="detail-value"><a href="${escapeHtml(attendee.website)}" target="_blank">${escapeHtml(attendee.website)}</a></span></div>` : ""}
       </div>
     `;
 
-    item.querySelector(".attendee-summary").addEventListener("click", () => {
-      item.classList.toggle("expanded");
-    });
+    if (state.viewMode === "detailed") {
+      item.querySelector(".attendee-summary").addEventListener("click", () => {
+        item.classList.toggle("expanded");
+      });
+    } else {
+      item.classList.add("expanded");
+    }
 
     attendeeListEl.appendChild(item);
   });
 }
-
-// ── Helpers ────────────────────────────────────────────────────────────────
 
 function sendRuntimeMessage(payload) {
   return new Promise((resolve) => {
@@ -132,7 +166,9 @@ function sendRuntimeMessage(payload) {
   });
 }
 
-function setStatus(msg) { statusTextEl.textContent = msg; }
+function setStatus(msg) {
+  statusTextEl.textContent = msg;
+}
 
 function datestamp() {
   return new Date().toISOString().slice(0, 10);
@@ -148,8 +184,10 @@ function downloadBlob(data, mimeType, filename) {
 
 function escapeHtml(input) {
   return String(input ?? "")
-    .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;").replaceAll('"', "&quot;")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
 
@@ -157,8 +195,8 @@ function buildSimplePdf(attendees) {
   const lines = ["Event Attendees", ""];
   attendees.forEach((a, i) => {
     lines.push(`${i + 1}. ${safePdfText(a.name)}`);
-    if (a.title)       lines.push(`   ${safePdfText(a.title)}`);
-    if (a.location)    lines.push(`   ${safePdfText(a.location)}`);
+    if (a.title) lines.push(`   ${safePdfText(a.title)}`);
+    if (a.location) lines.push(`   ${safePdfText(a.location)}`);
     if (a.profileLink) lines.push(`   ${safePdfText(a.profileLink)}`);
     lines.push("");
   });
@@ -182,16 +220,23 @@ function buildSimplePdf(attendees) {
 
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
-  objects.forEach(obj => { offsets.push(pdf.length); pdf += `${obj}\n`; });
+  objects.forEach((obj) => {
+    offsets.push(pdf.length);
+    pdf += `${obj}\n`;
+  });
   const xrefPos = pdf.length;
   pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (let i = 1; i < offsets.length; i++) pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+  for (let i = 1; i < offsets.length; i += 1) {
+    pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+  }
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
   return new TextEncoder().encode(pdf);
 }
 
-function safePdfText(v) { return String(v ?? "").slice(0, 90); }
+function safePdfText(v) {
+  return String(v ?? "").slice(0, 90);
+}
 
 function escapePdfString(v) {
-  return v.replaceAll("\\","\\\\").replaceAll("(","\\(").replaceAll(")","\\)").replace(/[^\x20-\x7E]/g," ");
+  return v.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)").replace(/[^\x20-\x7E]/g, " ");
 }

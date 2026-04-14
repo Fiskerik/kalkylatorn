@@ -4,13 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Attendee Extractor</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
     <link rel="stylesheet" href="sidepanel.css" />
   </head>
   <body>
     <main class="container">
       <header class="header">
-        <h1>Event Attendees</h1>
-        <p id="statusText" class="status">Ready to extract.</p>
+        <div class="brand-row">
+          <img src="assets/logo.svg" class="brand-logo" alt="Event Attendee Extractor logo" />
+          <div>
+            <h1>Event Attendees</h1>
+            <p id="statusText" class="status">Ready to extract.</p>
+          </div>
+        </div>
       </header>
 
       <section class="actions">
@@ -34,7 +40,13 @@
       <section class="results">
         <div class="results-header">
           <h2>Attendee List</h2>
-          <span id="countBadge" class="badge">0</span>
+          <div class="results-header-right">
+            <div class="view-toggle" role="group" aria-label="Attendee display mode">
+              <button id="detailedViewBtn" class="view-btn active" type="button">Detailed</button>
+              <button id="cardViewBtn" class="view-btn" type="button">Cards</button>
+            </div>
+            <span id="countBadge" class="badge">0</span>
+          </div>
         </div>
         <div id="attendeeList" class="attendee-list"></div>
       </section>
