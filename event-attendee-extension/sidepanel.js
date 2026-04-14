@@ -1,12 +1,23 @@
 const FREE_ATTENDEE_LIMIT = 20;
 const FULL_EXPORT_PRICE_LABEL = "$9.99";
-const BUY_CREDITS_URL = "https://your-stripe-checkout-url.example/full-export";
+const FIVE_EXPORTS_PRICE_LABEL = "$39.99";
+const TEN_EXPORTS_PRICE_LABEL = "$69.99";
+const DEFAULT_SUPABASE_URL = "https://vhemqgjwjqgjqrnjhvm.supabase.co";
+const DEFAULT_APP_PUBLIC_URL = "https://prospectin.vercel.app";
+
 const state = {
   attendees: [],
   viewMode: "detailed",
   attendeeLimit: 100,
   credits: 0,
-  hasUnlimited: false
+  hasUnlimited: false,
+  profile: null,
+  session: null,
+  config: {
+    supabaseUrl: DEFAULT_SUPABASE_URL,
+    supabaseAnonKey: "",
+    appPublicUrl: DEFAULT_APP_PUBLIC_URL
+  }
 };
 
 const attendeeListEl = document.getElementById("attendeeList");
@@ -20,7 +31,16 @@ const proHintEl = document.getElementById("proHint");
 const csvBtnEl = document.getElementById("csvBtn");
 const pdfBtnEl = document.getElementById("pdfBtn");
 const creditsBadgeEl = document.getElementById("creditsBadge");
-const buyCreditsBtnEl = document.getElementById("buyCreditsBtn");
+const buyOneBtnEl = document.getElementById("buyOneBtn");
+const buyFiveBtnEl = document.getElementById("buyFiveBtn");
+const buyTenBtnEl = document.getElementById("buyTenBtn");
+const authEmailEl = document.getElementById("authEmail");
+const authPasswordEl = document.getElementById("authPassword");
+const signInBtnEl = document.getElementById("signInBtn");
+const signOutBtnEl = document.getElementById("signOutBtn");
+const syncAccountBtnEl = document.getElementById("syncAccountBtn");
+const authStateEl = document.getElementById("authState");
+const openWebAppBtnEl = document.getElementById("openWebAppBtn");
 
 document.getElementById("scrapeBtn").addEventListener("click", handleScrape);
 document.getElementById("saveBtn").addEventListener("click", handleSave);
@@ -28,23 +48,13 @@ csvBtnEl.addEventListener("click", exportCsv);
 pdfBtnEl.addEventListener("click", exportPdf);
 detailedViewBtn.addEventListener("click", () => setViewMode("detailed"));
 cardViewBtn.addEventListener("click", () => setViewMode("card"));
-buyCreditsBtnEl.addEventListener("click", handleBuyCredits);
-
-chrome.storage.local.get(["lastCrm", "attendeeViewMode", "attendeeLimit", "credits", "hasUnlimited"], (r) => {
-  if (r.lastCrm) crmSelectEl.value = r.lastCrm;
-  if (r.attendeeViewMode === "card" || r.attendeeViewMode === "detailed") {
-    state.viewMode = r.attendeeViewMode;
-  }
-  if (Number.isInteger(r.attendeeLimit) && r.attendeeLimit > 0) {
-    state.attendeeLimit = r.attendeeLimit;
-  }
-  state.credits = Number.isInteger(r.credits) && r.credits > 0 ? r.credits : 0;
-  state.hasUnlimited = Boolean(r.hasUnlimited);
-  attendeeLimitInputEl.value = String(state.attendeeLimit);
-  buyCreditsBtnEl.textContent = `Get full list (${FULL_EXPORT_PRICE_LABEL})`;
-  syncExportPaywallUI();
-  syncViewModeUI();
-});
+buyOneBtnEl.addEventListener("click", () => handleBuyCredits("single"));
+buyFiveBtnEl.addEventListener("click", () => handleBuyCredits("five"));
+buyTenBtnEl.addEventListener("click", () => handleBuyCredits("ten"));
+signInBtnEl.addEventListener("click", handleSignIn);
+signOutBtnEl.addEventListener("click", handleSignOut);
+syncAccountBtnEl.addEventListener("click", loadProfileFromSupabase);
+openWebAppBtnEl.addEventListener("click", () => chrome.tabs.create({ url: state.config.appPublicUrl }));
 
 crmSelectEl.addEventListener("change", () => {
   chrome.storage.local.set({ lastCrm: crmSelectEl.value });
@@ -54,11 +64,152 @@ attendeeLimitInputEl.addEventListener("change", handleAttendeeLimitChange);
 init();
 
 async function init() {
+  const storage = await chrome.storage.local.get([
+    "lastCrm",
+    "attendeeViewMode",
+    "attendeeLimit",
+    "credits",
+    "hasUnlimited",
+    "session",
+    "profile",
+    "supabaseUrl",
+    "supabaseAnonKey",
+    "appPublicUrl"
+  ]);
+
+  if (storage.lastCrm) crmSelectEl.value = storage.lastCrm;
+  if (storage.attendeeViewMode === "card" || storage.attendeeViewMode === "detailed") {
+    state.viewMode = storage.attendeeViewMode;
+  }
+  if (Number.isInteger(storage.attendeeLimit) && storage.attendeeLimit > 0) {
+    state.attendeeLimit = storage.attendeeLimit;
+  }
+
+  state.credits = Number.isInteger(storage.credits) && storage.credits > 0 ? storage.credits : 0;
+  state.hasUnlimited = Boolean(storage.hasUnlimited);
+  state.session = storage.session ?? null;
+  state.profile = storage.profile ?? null;
+  state.config.supabaseUrl = storage.supabaseUrl || DEFAULT_SUPABASE_URL;
+  state.config.supabaseAnonKey = storage.supabaseAnonKey || "";
+  state.config.appPublicUrl = storage.appPublicUrl || DEFAULT_APP_PUBLIC_URL;
+
+  attendeeLimitInputEl.value = String(state.attendeeLimit);
+  syncExportPaywallUI();
+  syncViewModeUI();
+  syncAuthUI();
+
+  if (state.session?.access_token) {
+    await loadProfileFromSupabase();
+  }
+
   const response = await sendRuntimeMessage({ type: "GET_LAST_ATTENDEES" });
   if (response?.attendees?.length) {
     state.attendees = response.attendees;
     renderAttendees();
     setStatus(`${response.attendees.length} attendees from last scrape`);
+  }
+}
+
+async function handleSignIn() {
+  const email = authEmailEl.value.trim();
+  const password = authPasswordEl.value;
+  if (!email || !password) {
+    setStatus("Email and password are required.");
+    return;
+  }
+
+  if (!state.config.supabaseAnonKey) {
+    setStatus("Missing Supabase anon key. Save supabaseAnonKey in extension storage.");
+    return;
+  }
+
+  console.log("[Prospect In] Signing in user:", email);
+  setStatus("Signing in...");
+
+  try {
+    const response = await fetch(`${state.config.supabaseUrl}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: state.config.supabaseAnonKey
+      },
+      body: JSON.stringify({ email, password })
+    });
+    const payload = await response.json();
+
+    if (!response.ok || !payload?.access_token) {
+      console.log("[Prospect In] Sign in failed response:", payload);
+      setStatus(payload?.error_description || payload?.msg || "Sign in failed.");
+      return;
+    }
+
+    state.session = payload;
+    await chrome.storage.local.set({ session: payload });
+    await loadProfileFromSupabase();
+    syncAuthUI();
+    setStatus("Signed in.");
+  } catch (error) {
+    console.error("[Prospect In] Sign in error:", error);
+    setStatus("Could not sign in.");
+  }
+}
+
+async function handleSignOut() {
+  state.session = null;
+  state.profile = null;
+  state.credits = 0;
+  state.hasUnlimited = false;
+  await chrome.storage.local.remove(["session", "profile"]);
+  await chrome.storage.local.set({ credits: 0, hasUnlimited: false });
+  syncAuthUI();
+  syncExportPaywallUI();
+  setStatus("Signed out.");
+}
+
+async function loadProfileFromSupabase() {
+  if (!state.session?.access_token || !state.session?.user?.id) {
+    syncAuthUI();
+    return;
+  }
+  if (!state.config.supabaseAnonKey) {
+    setStatus("Missing Supabase anon key. Save supabaseAnonKey in extension storage.");
+    return;
+  }
+
+  setStatus("Syncing account...");
+  try {
+    const profileUrl = `${state.config.supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}&select=id,email,credits,has_unlimited,updated_at`;
+    const response = await fetch(profileUrl, {
+      headers: {
+        apikey: state.config.supabaseAnonKey,
+        Authorization: `Bearer ${state.session.access_token}`
+      }
+    });
+    const rows = await response.json();
+
+    if (!response.ok) {
+      console.log("[Prospect In] Profile fetch failed:", rows);
+      setStatus("Failed to sync account profile.");
+      return;
+    }
+
+    const profile = Array.isArray(rows) ? rows[0] : null;
+    state.profile = profile;
+    state.credits = Number.isInteger(profile?.credits) ? profile.credits : 0;
+    state.hasUnlimited = Boolean(profile?.has_unlimited);
+
+    await chrome.storage.local.set({
+      profile,
+      credits: state.credits,
+      hasUnlimited: state.hasUnlimited
+    });
+
+    syncAuthUI();
+    syncExportPaywallUI();
+    setStatus("Account synced.");
+  } catch (error) {
+    console.error("[Prospect In] Profile sync error:", error);
+    setStatus("Could not sync account.");
   }
 }
 
@@ -97,20 +248,26 @@ function exportCsv() {
     return;
   }
 
-  const hasAccess = checkAccess(state.attendees.length);
-  if (!hasAccess) {
-    return;
-  }
-
+  const exportScope = getCsvExportScope(state.attendees);
   const crm = crmSelectEl.value;
   const profile = window.CRM_PROFILES[crm] ?? window.CRM_PROFILES.generic;
-  const csv = window.buildCrmCsv(state.attendees, crm);
+  const csv = window.buildCrmCsv(exportScope.attendees, crm);
   const filename = `attendees-${crm}-${datestamp()}.csv`;
 
   downloadBlob(csv, "text/csv;charset=utf-8", filename);
-  consumeCreditIfNeeded(state.attendees.length);
+
+  if (exportScope.usedCredit) {
+    consumeCredit();
+  }
+
   syncExportPaywallUI();
-  setStatus(`Exported for ${profile.label}.`);
+
+  if (exportScope.isTruncated) {
+    setStatus(`Exported first ${FREE_ATTENDEE_LIMIT} attendees for ${profile.label}. Upgrade for full download.`);
+    return;
+  }
+
+  setStatus(`Exported full list for ${profile.label}.`);
 }
 
 function exportPdf() {
@@ -118,15 +275,37 @@ function exportPdf() {
     setStatus("No attendees to export.");
     return;
   }
-  const hasAccess = checkAccess(state.attendees.length);
+
+  const hasAccess = checkPaidAccess(state.attendees.length);
   if (!hasAccess) {
+    setStatus(`PDF full export requires 1 credit or unlimited. CSV still exports first ${FREE_ATTENDEE_LIMIT} for free.`);
     return;
   }
+
   const pdfContent = buildSimplePdf(state.attendees);
   downloadBlob(new Blob([new Uint8Array(pdfContent)], { type: "application/pdf" }), "application/pdf", `attendees-${datestamp()}.pdf`);
-  consumeCreditIfNeeded(state.attendees.length);
+  if (!state.hasUnlimited && state.attendees.length > FREE_ATTENDEE_LIMIT) {
+    consumeCredit();
+  }
   syncExportPaywallUI();
   setStatus("PDF exported.");
+}
+
+function getCsvExportScope(attendees) {
+  const canExportFull = attendees.length <= FREE_ATTENDEE_LIMIT || state.hasUnlimited || state.credits > 0;
+  if (canExportFull) {
+    return {
+      attendees,
+      isTruncated: false,
+      usedCredit: attendees.length > FREE_ATTENDEE_LIMIT && !state.hasUnlimited
+    };
+  }
+
+  return {
+    attendees: attendees.slice(0, FREE_ATTENDEE_LIMIT),
+    isTruncated: true,
+    usedCredit: false
+  };
 }
 
 function handleAttendeeLimitChange() {
@@ -139,16 +318,26 @@ function handleAttendeeLimitChange() {
 
 function syncExportPaywallUI() {
   const hasPaidAccess = state.hasUnlimited || state.credits > 0;
-  const hasFreeAccess = state.attendees.length > 0 && state.attendees.length <= FREE_ATTENDEE_LIMIT;
-  const canExport = hasPaidAccess || hasFreeAccess;
-  csvBtnEl.disabled = !canExport;
-  pdfBtnEl.disabled = !canExport;
-  proHintEl.hidden = hasPaidAccess || hasFreeAccess;
-  if (!proHintEl.hidden) {
-    proHintEl.textContent = `Limit reached. Get the full list for ${FULL_EXPORT_PRICE_LABEL}.`;
-  }
   creditsBadgeEl.textContent = state.hasUnlimited ? "Credits: Unlimited" : `Credits: ${state.credits}`;
-  buyCreditsBtnEl.hidden = hasPaidAccess || hasFreeAccess;
+  buyOneBtnEl.hidden = hasPaidAccess;
+  buyFiveBtnEl.hidden = hasPaidAccess;
+  buyTenBtnEl.hidden = hasPaidAccess;
+
+  const needsUpgrade = state.attendees.length > FREE_ATTENDEE_LIMIT && !hasPaidAccess;
+  proHintEl.hidden = !needsUpgrade;
+  if (needsUpgrade) {
+    proHintEl.textContent = `Free CSV exports include first ${FREE_ATTENDEE_LIMIT}. Full list: ${FULL_EXPORT_PRICE_LABEL}, 5 credits: ${FIVE_EXPORTS_PRICE_LABEL}, 10 credits: ${TEN_EXPORTS_PRICE_LABEL}.`;
+  }
+}
+
+function syncAuthUI() {
+  const email = state.profile?.email || state.session?.user?.email;
+  authStateEl.textContent = email ? `Signed in as ${email}` : "Not signed in";
+  signOutBtnEl.hidden = !email;
+  signInBtnEl.hidden = Boolean(email);
+  syncAccountBtnEl.hidden = !email;
+  authEmailEl.disabled = Boolean(email);
+  authPasswordEl.disabled = Boolean(email);
 }
 
 function setViewMode(mode) {
@@ -220,8 +409,8 @@ function renderAttendees() {
   });
 }
 
-function checkAccess(requestedCount) {
-  console.log("[Event Attendee Extractor] Access check:", {
+function checkPaidAccess(requestedCount) {
+  console.log("[Event Attendee Extractor] Paid access check:", {
     requestedCount,
     freeLimit: FREE_ATTENDEE_LIMIT,
     credits: state.credits,
@@ -236,13 +425,11 @@ function checkAccess(requestedCount) {
     return true;
   }
 
-  setStatus(`Limit reached. Get the full list for ${FULL_EXPORT_PRICE_LABEL}`);
-  showBuyButton();
   return false;
 }
 
-function consumeCreditIfNeeded(requestedCount) {
-  if (requestedCount <= FREE_ATTENDEE_LIMIT || state.hasUnlimited || state.credits <= 0) {
+function consumeCredit() {
+  if (state.hasUnlimited || state.credits <= 0) {
     return;
   }
   state.credits -= 1;
@@ -250,13 +437,12 @@ function consumeCreditIfNeeded(requestedCount) {
   console.log("[Event Attendee Extractor] Credit consumed. Remaining:", state.credits);
 }
 
-function showBuyButton() {
-  buyCreditsBtnEl.hidden = false;
-}
-
-function handleBuyCredits() {
-  console.log("[Event Attendee Extractor] Opening buy credits URL:", BUY_CREDITS_URL);
-  chrome.tabs.create({ url: BUY_CREDITS_URL });
+function handleBuyCredits(plan) {
+  const checkoutUrl = new URL(`${state.config.appPublicUrl}/pricing`);
+  checkoutUrl.searchParams.set("source", "extension");
+  checkoutUrl.searchParams.set("plan", plan);
+  console.log("[Event Attendee Extractor] Opening pricing URL:", checkoutUrl.toString());
+  chrome.tabs.create({ url: checkoutUrl.toString() });
 }
 
 function sendRuntimeMessage(payload) {

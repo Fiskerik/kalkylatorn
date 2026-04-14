@@ -20,6 +20,21 @@
       </header>
 
       <section class="actions">
+        <div class="auth-card">
+          <p class="auth-title">Account</p>
+          <p id="authState" class="auth-state">Not signed in</p>
+          <input id="authEmail" class="limit-input" type="email" placeholder="Email" />
+          <input id="authPassword" class="limit-input" type="password" placeholder="Password" />
+          <div class="auth-actions">
+            <button id="signInBtn" class="btn">Sign in</button>
+            <button id="signOutBtn" class="btn" hidden>Sign out</button>
+          </div>
+          <div class="auth-actions">
+            <button id="syncAccountBtn" class="btn" hidden>Sync credits</button>
+            <button id="openWebAppBtn" class="btn">Open web app</button>
+          </div>
+        </div>
+
         <button id="scrapeBtn" class="btn primary">Extract attendees</button>
         <div class="limit-row">
           <label for="attendeeLimitInput" class="limit-label">Max attendees per scrape</label>
@@ -42,7 +57,11 @@
         <p id="proHint" class="pro-hint" hidden>First 20 attendees are free. Use a credit to export full lists.</p>
         <div id="creditsRow" class="credits-row">
           <span id="creditsBadge" class="credits-badge">Credits: 0</span>
-          <button id="buyCreditsBtn" class="btn buy-btn" hidden>Buy Full Export</button>
+        </div>
+        <div class="pricing-grid">
+          <button id="buyOneBtn" class="btn buy-btn" hidden>Full list — $9.99</button>
+          <button id="buyFiveBtn" class="btn buy-btn" hidden>5 credits — $39.99</button>
+          <button id="buyTenBtn" class="btn buy-btn" hidden>10 credits — $69.99</button>
         </div>
       </section>
 
