@@ -13,7 +13,7 @@ chrome.action.onClicked.addListener(async (tab) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "SCRAPE_ATTENDEES") {
-    scrapeFromActiveTab(sendResponse);
+    scrapeFromActiveTab(sendResponse, sender, message?.tabId);
     return true;
   }
 
@@ -30,21 +30,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-async function scrapeFromActiveTab(sendResponse) {
+async function scrapeFromActiveTab(sendResponse, sender, requestedTabId) {
   try {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true
-    });
+    const tabId = await resolveTargetTabId(sender, requestedTabId);
 
-    if (!tab?.id) {
+    if (!tabId) {
       sendResponse({ ok: false, error: "No active tab found." });
       return;
     }
 
-    const response = await chrome.tabs.sendMessage(tab.id, {
-      type: "EXTRACT_ATTENDEES"
-    });
+    const response = await requestAttendeesFromTab(tabId);
 
     if (!response?.ok) {
       sendResponse({
@@ -73,4 +68,52 @@ async function scrapeFromActiveTab(sendResponse) {
       error: "Could not extract attendees on this page."
     });
   }
+}
+
+async function resolveTargetTabId(sender, requestedTabId) {
+  if (Number.isInteger(requestedTabId)) {
+    return requestedTabId;
+  }
+
+  if (sender?.tab?.id) {
+    return sender.tab.id;
+  }
+
+  const [activeTab] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true
+  });
+
+  return activeTab?.id ?? null;
+}
+
+async function requestAttendeesFromTab(tabId) {
+  try {
+    return await chrome.tabs.sendMessage(tabId, {
+      type: "EXTRACT_ATTENDEES"
+    });
+  } catch (error) {
+    if (!isReceivingEndMissingError(error)) {
+      throw error;
+    }
+
+    console.log(
+      "[Event Attendee Extractor] Content script unavailable; injecting and retrying.",
+      tabId
+    );
+
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["content.js"]
+    });
+
+    return chrome.tabs.sendMessage(tabId, {
+      type: "EXTRACT_ATTENDEES"
+    });
+  }
+}
+
+function isReceivingEndMissingError(error) {
+  const message = String(error?.message ?? "");
+  return message.includes("Receiving end does not exist");
 }

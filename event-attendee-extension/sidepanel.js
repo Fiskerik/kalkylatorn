@@ -27,7 +27,14 @@ async function init() {
 async function handleScrape() {
   setStatus("Extracting attendees from current page...");
 
-  const response = await sendRuntimeMessage({ type: "SCRAPE_ATTENDEES" });
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  console.log("[Event Attendee Extractor] Scrape requested for tab:", activeTab?.id, activeTab?.url);
+
+  const response = await sendRuntimeMessage({
+    type: "SCRAPE_ATTENDEES",
+    tabId: activeTab?.id
+  });
+
   if (!response?.ok) {
     setStatus(response?.error ?? "Failed to extract attendees.");
     return;
