@@ -3,6 +3,7 @@ const FREE_LIMIT = 20;
 const DEFAULT_SUPABASE_URL = "https://vhemqgjwjqgjqrnjhvm.supabase.co";
 const DEFAULT_APP_URL = "https://prospectin.vercel.app";
 const SYNC_INTERVAL_MS = 15000;
+const SIGNIN_CALLBACK_PATH = "signin-callback.html";
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const state = {
@@ -401,7 +402,7 @@ async function handleMagicLink() {
   $("magicLinkBtn").textContent = "Sending…";
 
   try {
-    const redirectTo = `${state.config.appUrl}/auth/callback`;
+    const redirectTo = chrome.runtime.getURL(SIGNIN_CALLBACK_PATH);
     const res = await fetch(`${state.config.supabaseUrl}/auth/v1/magiclink`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: state.config.supabaseAnonKey },
@@ -432,12 +433,12 @@ async function handleGoogleSignIn() {
     return;
   }
 
-  const redirectTo = `${state.config.appUrl}/auth/callback`;
+  const redirectTo = chrome.runtime.getURL(SIGNIN_CALLBACK_PATH);
   const googleOAuthUrl =
     `${state.config.supabaseUrl}/auth/v1/authorize?provider=google` +
     `&redirect_to=${encodeURIComponent(redirectTo)}`;
 
-  // Open OAuth in a new tab — user will be redirected back to appUrl/auth/callback
+  // Open OAuth in a new tab — user will be redirected back to extension callback page
   chrome.tabs.create({ url: googleOAuthUrl });
   setStatus("Google sign-in opened in new tab…");
   hideModal(authModalEl);

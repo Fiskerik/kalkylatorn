@@ -2,7 +2,7 @@
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({
     supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZoZW1xZ2p3cWpxZ2pxcm5qaHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTUyNDcsImV4cCI6MjA5MTczMTI0N30.Gyt1fxQgwM3_WFt6yEri-wRxvIg4m_z2TjjbwyzLOfI",
-    supabaseUrl: "https://vhemqgjwqjqgjqrnjhvm.supabase.co",
+    supabaseUrl: "https://vhemqgjwjqgjqrnjhvm.supabase.co",
     appUrl: "https://prospectin.vercel.app"
   });
 });
@@ -29,6 +29,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         lastScrapedAt: result.lastScrapedAt ?? null
       });
     });
+    return true;
+  }
+
+  if (message?.type === "SUPABASE_AUTH_CALLBACK") {
+    storeSupabaseSession(message?.session)
+      .then((result) => sendResponse(result))
+      .catch((error) => {
+        console.error("[Event Attendee Extractor] Failed to store callback session:", error);
+        sendResponse({ success: false, error: "Failed to store callback session." });
+      });
+    return true;
+  }
+
+  if (message?.type === "AUTH_SUCCESS_CALLBACK") {
+    chrome.runtime.sendMessage({
+      type: "AUTH_STATE_CHANGED",
+      email: message?.email || null,
+      at: Date.now(),
+    }).catch(() => {});
+
+    sendResponse({ success: true });
     return true;
   }
 
@@ -155,4 +176,47 @@ async function requestAttendeesFromTab(tabId, attendeeLimit) {
 function isReceivingEndMissingError(error) {
   const message = String(error?.message ?? "");
   return message.includes("Receiving end does not exist");
+}
+
+async function storeSupabaseSession(session) {
+  if (!session?.access_token) {
+    return { success: false, error: "Missing access token in callback." };
+  }
+
+  const userFromToken = session?.user?.id ? session.user : null;
+  const user = userFromToken || (await fetchSupabaseUser(session.access_token));
+
+  if (!user?.id) {
+    return { success: false, error: "Unable to resolve signed in user from callback token." };
+  }
+
+  const normalizedSession = {
+    access_token: session.access_token,
+    refresh_token: session.refresh_token || "",
+    expires_at: session.expires_at || null,
+    token_type: session.token_type || "bearer",
+    user,
+  };
+
+  await chrome.storage.local.set({ session: normalizedSession });
+
+  return {
+    success: true,
+    session: normalizedSession,
+  };
+}
+
+async function fetchSupabaseUser(accessToken) {
+  const { supabaseUrl, supabaseAnonKey } = await chrome.storage.local.get(["supabaseUrl", "supabaseAnonKey"]);
+  if (!supabaseUrl || !supabaseAnonKey) return null;
+
+  const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!res.ok) return null;
+  return res.json();
 }

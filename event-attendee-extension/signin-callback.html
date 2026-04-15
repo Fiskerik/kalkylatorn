@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prospect In — Sign-in callback</title>
+  <link rel="stylesheet" href="signin-callback.css" />
+</head>
+<body>
+  <main class="callback-wrap">
+    <section class="callback-card" aria-live="polite">
+      <div id="spinner" class="spinner" aria-hidden="true"></div>
+      <h1 id="statusTitle">Completing sign-in…</h1>
+      <p id="statusMessage">Please wait while we securely save your session in the extension.</p>
+      <div id="statusContainer" class="status-container"></div>
+      <button id="closeBtn" class="close-btn" type="button">Close tab</button>
+    </section>
+  </main>
+
+  <script src="signin-callback.js"></script>
+</body>
+</html>
