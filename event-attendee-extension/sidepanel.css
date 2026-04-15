@@ -262,3 +262,42 @@ body {
 .pricing-btn:hover { border-color: var(--blue); background: var(--blue-soft); }
 .pricing-btn strong { font-size: 11px; font-weight: 700; color: var(--text); }
 .pricing-btn span { font-size: 10.5px; color: var(--blue); font-weight: 600; }
+
+/* Google sign-in button */
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1.5px solid #dadce0;
+  color: #3c4043;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  width: 100%;
+  transition: background .12s, border-color .12s;
+}
+.google-btn:hover {
+  background: #f8f9fa;
+  border-color: #c0c7d0;
+}
+ 
+/* Auth divider */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+  margin: 2px 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
