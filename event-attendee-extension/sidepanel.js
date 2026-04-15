@@ -14,39 +14,39 @@ const state = {
   session: null,
   profile: null,
   pollTimer: null,
-  pendingExportFormat: null, // "csv" | "pdf"
+  pendingExportFormat: null,
   config: {
     supabaseUrl: DEFAULT_SUPABASE_URL,
     supabaseAnonKey: "",
-    appUrl: DEFAULT_APP_URL
-  }
+    appUrl: DEFAULT_APP_URL,
+  },
 };
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
-const statusEl         = $("statusText");
-const attendeeListEl   = $("attendeeList");
-const countBadgeEl     = $("countBadge");
-const crmSelectEl      = $("crmSelect");
-const accountBadgeEl   = $("accountBadge");
-const accountEmailEl   = $("accountEmail");
+const statusEl = $("statusText");
+const attendeeListEl = $("attendeeList");
+const countBadgeEl = $("countBadge");
+const crmSelectEl = $("crmSelect");
+const accountBadgeEl = $("accountBadge");
+const accountEmailEl = $("accountEmail");
 const accountCreditsEl = $("accountCredits");
 const historySectionEl = $("historySection");
-const historyListEl    = $("historyList");
-const limitInputEl     = $("attendeeLimitInput");
+const historyListEl = $("historyList");
+const limitInputEl = $("attendeeLimitInput");
 
 // auth modal
-const authModalEl    = $("authModal");
-const authEmailEl    = $("authEmail");
+const authModalEl = $("authModal");
+const authEmailEl = $("authEmail");
 const authPasswordEl = $("authPassword");
-const authErrorEl    = $("authError");
+const authErrorEl = $("authError");
 
 // export modal
-const exportModalEl      = $("exportModal");
-const exportModalSubEl   = $("exportModalSub");
+const exportModalEl = $("exportModal");
+const exportModalSubEl = $("exportModalSub");
 const exportTotalCountEl = $("exportTotalCount");
 const exportCreditDescEl = $("exportCreditDesc");
-const buyCreditsSection  = $("buyCreditsSection");
+const buyCreditsSection = $("buyCreditsSection");
 
 // ── Wire up events ────────────────────────────────────────────────────────────
 $("scrapeBtn").addEventListener("click", handleScrape);
@@ -56,11 +56,30 @@ $("detailedViewBtn").addEventListener("click", () => setViewMode("detailed"));
 $("cardViewBtn").addEventListener("click", () => setViewMode("card"));
 $("signOutBtn").addEventListener("click", handleSignOut);
 $("signInBtn").addEventListener("click", handleSignIn);
+$("magicLinkBtn").addEventListener("click", handleMagicLink);
+$("googleSignInBtn").addEventListener("click", handleGoogleSignIn);
 $("closeAuthModal").addEventListener("click", () => hideModal(authModalEl));
 $("closeExportModal").addEventListener("click", () => hideModal(exportModalEl));
 $("exportFreeBtn").addEventListener("click", () => doExport(false));
 $("exportCreditBtn").addEventListener("click", () => doExport(true));
-$("openWebAppLink").addEventListener("click", (e) => { e.preventDefault(); chrome.tabs.create({ url: state.config.appUrl }); });
+$("openWebAppLink").addEventListener("click", (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: state.config.appUrl });
+});
+
+// Toggle between email/password and magic link forms
+$("showMagicLinkBtn").addEventListener("click", () => {
+  $("passwordForm").style.display = "none";
+  $("magicLinkForm").style.display = "flex";
+  $("showPasswordBtn").style.display = "inline";
+  $("showMagicLinkBtn").style.display = "none";
+});
+$("showPasswordBtn").addEventListener("click", () => {
+  $("passwordForm").style.display = "flex";
+  $("magicLinkForm").style.display = "none";
+  $("showPasswordBtn").style.display = "none";
+  $("showMagicLinkBtn").style.display = "inline";
+});
 
 document.querySelectorAll(".pricing-btn").forEach((btn) => {
   btn.addEventListener("click", () => handleBuy(btn.dataset.plan));
@@ -76,9 +95,17 @@ document.addEventListener("visibilitychange", () => {
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
   const s = await chrome.storage.local.get([
-    "lastCrm", "attendeeViewMode", "attendeeLimit",
-    "credits", "hasUnlimited", "session", "profile",
-    "supabaseUrl", "supabaseAnonKey", "appUrl", "exportHistory"
+    "lastCrm",
+    "attendeeViewMode",
+    "attendeeLimit",
+    "credits",
+    "hasUnlimited",
+    "session",
+    "profile",
+    "supabaseUrl",
+    "supabaseAnonKey",
+    "appUrl",
+    "exportHistory",
   ]);
 
   if (s.lastCrm) crmSelectEl.value = s.lastCrm;
@@ -103,6 +130,9 @@ async function init() {
     startPoll();
   }
 
+  // Check for magic link hash in URL (Supabase auth callback)
+  await handleAuthCallback();
+
   const res = await sendMsg({ type: "GET_LAST_ATTENDEES" });
   if (res?.attendees?.length) {
     state.attendees = res.attendees;
@@ -113,6 +143,41 @@ async function init() {
 
 init();
 
+// ── Auth callback (magic link / OAuth) ───────────────────────────────────────
+async function handleAuthCallback() {
+  // Supabase puts tokens in the URL hash after OAuth/magic link
+  const hash = window.location.hash;
+  if (!hash || !hash.includes("access_token")) return;
+
+  const params = new URLSearchParams(hash.replace("#", ""));
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  if (!accessToken) return;
+
+  try {
+    const res = await fetch(`${state.config.supabaseUrl}/auth/v1/user`, {
+      headers: {
+        apikey: state.config.supabaseAnonKey,
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const user = await res.json();
+    if (user?.id) {
+      const session = { access_token: accessToken, refresh_token: refreshToken, user };
+      state.session = session;
+      await chrome.storage.local.set({ session });
+      await syncProfile();
+      startPoll();
+      syncAccountUI();
+      setStatus("Signed in successfully!");
+    }
+  } catch (e) {
+    console.error("Auth callback error:", e);
+  }
+  // Clear the hash
+  window.history.replaceState(null, "", window.location.pathname);
+}
+
 // ── Scrape ────────────────────────────────────────────────────────────────────
 async function handleScrape() {
   setStatus("Extracting…");
@@ -122,12 +187,15 @@ async function handleScrape() {
   const res = await sendMsg({
     type: "SCRAPE_ATTENDEES",
     tabId: tab?.id,
-    attendeeLimit: state.attendeeLimit
+    attendeeLimit: state.attendeeLimit,
   });
 
   $("scrapeBtn").disabled = false;
 
-  if (!res?.ok) { setStatus(res?.error ?? "Extraction failed."); return; }
+  if (!res?.ok) {
+    setStatus(res?.error ?? "Extraction failed.");
+    return;
+  }
 
   state.attendees = res.attendees;
   renderAttendees();
@@ -136,14 +204,17 @@ async function handleScrape() {
 
 // ── Export flow ───────────────────────────────────────────────────────────────
 function openExportModal(format) {
-  if (!state.attendees.length) { setStatus("No attendees to export."); return; }
+  if (!state.attendees.length) {
+    setStatus("No attendees to export.");
+    return;
+  }
 
   state.pendingExportFormat = format;
   const total = state.attendees.length;
   const needsCredit = total > FREE_LIMIT;
 
   exportModalSubEl.textContent = `Found ${total} attendees on this event.`;
-  exportTotalCountEl.textContent = total;
+  if (exportTotalCountEl) exportTotalCountEl.textContent = total;
 
   if (state.hasUnlimited) {
     exportCreditDescEl.textContent = "Unlimited plan — no credit used";
@@ -159,12 +230,14 @@ function openExportModal(format) {
     $("exportCreditBtn").disabled = true;
   }
 
-  // Show buy-credits if signed in but no credits
   buyCreditsSection.hidden = !(state.session && !state.hasUnlimited && state.credits <= 0 && needsCredit);
 
-  // If no account and need credits, button shows sign-in prompt
   $("exportCreditBtn").onclick = () => {
-    if (!state.session) { hideModal(exportModalEl); showAuthModal(); return; }
+    if (!state.session) {
+      hideModal(exportModalEl);
+      showAuthModal();
+      return;
+    }
     doExport(true);
   };
 
@@ -178,14 +251,18 @@ function doExport(fullReport) {
   const usedCredit = fullReport && !state.hasUnlimited && state.attendees.length > FREE_LIMIT;
 
   const crm = crmSelectEl.value;
-  const label = (window.CRM_PROFILES[crm] ?? window.CRM_PROFILES.generic).label;
+  const label = (window.CRM_PROFILES?.[crm] ?? window.CRM_PROFILES?.generic)?.label ?? crm;
 
   if (fmt === "csv") {
     const csv = window.buildCrmCsv(attendees, crm);
     downloadBlob(csv, "text/csv;charset=utf-8", `attendees-${crm}-${today()}.csv`);
   } else {
     const bytes = buildSimplePdf(attendees);
-    downloadBlob(new Blob([bytes], { type: "application/pdf" }), "application/pdf", `attendees-${today()}.pdf`);
+    downloadBlob(
+      new Blob([bytes], { type: "application/pdf" }),
+      "application/pdf",
+      `attendees-${today()}.pdf`,
+    );
   }
 
   if (usedCredit) {
@@ -194,19 +271,26 @@ function doExport(fullReport) {
     syncAccountUI();
   }
 
-  // Save to history (signed-in only)
   if (state.session && fullReport) saveToHistory(attendees.length, fmt, crm);
 
   const truncNote = !fullReport && state.attendees.length > FREE_LIMIT ? ` (first ${FREE_LIMIT})` : "";
   setStatus(`Exported ${attendees.length} attendees for ${label}${truncNote}.`);
 }
 
-// ── JSON save ─────────────────────────────────────────────────────────────────
+// ── JSON save — free limit unless signed in ────────────────────────────────
 function handleSaveJson() {
-  if (!state.attendees.length) { setStatus("No attendees to save."); return; }
-  const json = JSON.stringify(state.attendees, null, 2);
+  if (!state.attendees.length) {
+    setStatus("No attendees to save.");
+    return;
+  }
+
+  const isSignedIn = Boolean(state.session?.access_token);
+  const attendees = isSignedIn ? state.attendees : state.attendees.slice(0, FREE_LIMIT);
+  const truncNote = !isSignedIn && state.attendees.length > FREE_LIMIT ? ` (first ${FREE_LIMIT} — sign in for full list)` : "";
+
+  const json = JSON.stringify(attendees, null, 2);
   downloadBlob(json, "application/json", `attendees-${today()}.json`);
-  setStatus(`Saved ${state.attendees.length} attendees as JSON.`);
+  setStatus(`Saved ${attendees.length} attendees as JSON${truncNote}.`);
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
@@ -230,7 +314,10 @@ function renderHistory(history) {
     const div = document.createElement("div");
     div.className = "history-item";
     const d = new Date(item.date);
-    const dateStr = d.toLocaleDateString("sv-SE") + " " + d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+    const dateStr =
+      d.toLocaleDateString("sv-SE") +
+      " " +
+      d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
     div.innerHTML = `
       <div>
         <div>${item.count} attendees · ${item.fmt?.toUpperCase()} · ${item.crm ?? "generic"}</div>
@@ -244,16 +331,27 @@ function renderHistory(history) {
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function showAuthModal() {
   authErrorEl.hidden = true;
-  authEmailEl.value = "";
-  authPasswordEl.value = "";
+  if (authEmailEl) authEmailEl.value = "";
+  if (authPasswordEl) authPasswordEl.value = "";
+  // Reset to password form view
+  $("passwordForm").style.display = "flex";
+  $("magicLinkForm").style.display = "none";
+  $("showPasswordBtn").style.display = "none";
+  $("showMagicLinkBtn").style.display = "inline";
   showModal(authModalEl);
 }
 
 async function handleSignIn() {
   const email = authEmailEl.value.trim();
   const pw = authPasswordEl.value;
-  if (!email || !pw) { showAuthError("Email and password required."); return; }
-  if (!state.config.supabaseAnonKey) { showAuthError("Missing Supabase anon key in extension config."); return; }
+  if (!email || !pw) {
+    showAuthError("Email and password required.");
+    return;
+  }
+  if (!state.config.supabaseAnonKey) {
+    showAuthError("Missing Supabase anon key in extension config.");
+    return;
+  }
 
   $("signInBtn").disabled = true;
   $("signInBtn").textContent = "Signing in…";
@@ -262,7 +360,7 @@ async function handleSignIn() {
     const res = await fetch(`${state.config.supabaseUrl}/auth/v1/token?grant_type=password`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: state.config.supabaseAnonKey },
-      body: JSON.stringify({ email, password: pw })
+      body: JSON.stringify({ email, password: pw }),
     });
     const data = await res.json();
 
@@ -278,7 +376,6 @@ async function handleSignIn() {
     startPoll();
     syncAccountUI();
 
-    // If there was a pending export, re-open the export modal
     if (state.pendingExportFormat) openExportModal(state.pendingExportFormat);
   } catch {
     showAuthError("Network error — please try again.");
@@ -286,6 +383,64 @@ async function handleSignIn() {
     $("signInBtn").disabled = false;
     $("signInBtn").textContent = "Sign in";
   }
+}
+
+async function handleMagicLink() {
+  const emailEl = $("magicLinkEmail");
+  const email = emailEl?.value?.trim();
+  if (!email) {
+    showAuthError("Please enter your email.");
+    return;
+  }
+  if (!state.config.supabaseAnonKey) {
+    showAuthError("Missing Supabase anon key.");
+    return;
+  }
+
+  $("magicLinkBtn").disabled = true;
+  $("magicLinkBtn").textContent = "Sending…";
+
+  try {
+    const redirectTo = `${state.config.appUrl}/auth/callback`;
+    const res = await fetch(`${state.config.supabaseUrl}/auth/v1/magiclink`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: state.config.supabaseAnonKey },
+      body: JSON.stringify({ email, options: { emailRedirectTo: redirectTo } }),
+    });
+
+    if (res.ok) {
+      authErrorEl.textContent = "✅ Check your email for the magic link!";
+      authErrorEl.style.color = "#057642";
+      authErrorEl.style.background = "#e6f7ee";
+      authErrorEl.style.border = "1px solid #b7e4c7";
+      authErrorEl.hidden = false;
+    } else {
+      const data = await res.json();
+      showAuthError(data?.msg || "Could not send magic link.");
+    }
+  } catch {
+    showAuthError("Network error — please try again.");
+  } finally {
+    $("magicLinkBtn").disabled = false;
+    $("magicLinkBtn").textContent = "Send magic link";
+  }
+}
+
+async function handleGoogleSignIn() {
+  if (!state.config.supabaseAnonKey) {
+    showAuthError("Missing Supabase anon key.");
+    return;
+  }
+
+  const redirectTo = `${state.config.appUrl}/auth/callback`;
+  const googleOAuthUrl =
+    `${state.config.supabaseUrl}/auth/v1/authorize?provider=google` +
+    `&redirect_to=${encodeURIComponent(redirectTo)}`;
+
+  // Open OAuth in a new tab — user will be redirected back to appUrl/auth/callback
+  chrome.tabs.create({ url: googleOAuthUrl });
+  setStatus("Google sign-in opened in new tab…");
+  hideModal(authModalEl);
 }
 
 async function handleSignOut() {
@@ -303,6 +458,9 @@ async function handleSignOut() {
 
 function showAuthError(msg) {
   authErrorEl.textContent = msg;
+  authErrorEl.style.color = "#c0392b";
+  authErrorEl.style.background = "#fdf0ef";
+  authErrorEl.style.border = "1px solid #f5c6c2";
   authErrorEl.hidden = false;
 }
 
@@ -316,8 +474,8 @@ async function syncProfile({ silent = false } = {}) {
     const res = await fetch(url, {
       headers: {
         apikey: state.config.supabaseAnonKey,
-        Authorization: `Bearer ${state.session.access_token}`
-      }
+        Authorization: `Bearer ${state.session.access_token}`,
+      },
     });
     const rows = await res.json();
     const profile = Array.isArray(rows) ? rows[0] : null;
@@ -337,7 +495,9 @@ async function syncProfile({ silent = false } = {}) {
     if (!silent && state.credits > prevCredits) {
       setStatus("Purchase confirmed — credits updated!");
     }
-  } catch { /* silent fail */ }
+  } catch {
+    /* silent fail */
+  }
 }
 
 function startPoll() {
@@ -346,7 +506,10 @@ function startPoll() {
 }
 
 function stopPoll() {
-  if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+  if (state.pollTimer) {
+    clearInterval(state.pollTimer);
+    state.pollTimer = null;
+  }
 }
 
 // ── Buy ───────────────────────────────────────────────────────────────────────
@@ -404,7 +567,9 @@ function syncAccountUI() {
   accountBadgeEl.hidden = !email;
   if (email) {
     accountEmailEl.textContent = email;
-    accountCreditsEl.textContent = state.hasUnlimited ? "∞ credits" : `${state.credits} credit${state.credits !== 1 ? "s" : ""}`;
+    accountCreditsEl.textContent = state.hasUnlimited
+      ? "∞ credits"
+      : `${state.credits} credit${state.credits !== 1 ? "s" : ""}`;
   }
 }
 
@@ -428,25 +593,43 @@ function handleLimitChange() {
   chrome.storage.local.set({ attendeeLimit: state.attendeeLimit });
 }
 
-function setStatus(msg) { statusEl.textContent = msg; }
-function showModal(el) { el.hidden = false; }
-function hideModal(el) { el.hidden = true; }
-function today() { return new Date().toISOString().slice(0, 10); }
+function setStatus(msg) {
+  statusEl.textContent = msg;
+}
+function showModal(el) {
+  el.hidden = false;
+}
+function hideModal(el) {
+  el.hidden = true;
+}
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function downloadBlob(data, mime, filename) {
   const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
   const url = URL.createObjectURL(blob);
-  chrome.downloads.download({ url, filename, saveAs: true }, () => setTimeout(() => URL.revokeObjectURL(url), 1000));
+  chrome.downloads.download({ url, filename, saveAs: true }, () =>
+    setTimeout(() => URL.revokeObjectURL(url), 1000),
+  );
 }
 
 function esc(v) {
-  return String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  return String(v ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function sendMsg(payload) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(payload, (res) => {
-      if (chrome.runtime.lastError) { resolve({ ok: false, error: chrome.runtime.lastError.message }); return; }
+      if (chrome.runtime.lastError) {
+        resolve({ ok: false, error: chrome.runtime.lastError.message });
+        return;
+      }
       resolve(res);
     });
   });
@@ -463,22 +646,34 @@ function buildSimplePdf(attendees) {
     lines.push("");
   });
   const ls = lines.slice(0, 200);
-  const pdfStr = (v) => v.replaceAll("\\","\\\\").replaceAll("(","\\(").replaceAll(")","\\)").replace(/[^\x20-\x7E]/g," ");
+  const pdfStr = (v) =>
+    v
+      .replaceAll("\\", "\\\\")
+      .replaceAll("(", "\\(")
+      .replaceAll(")", "\\)")
+      .replace(/[^\x20-\x7E]/g, " ");
   let stream = "BT\n/F1 10 Tf\n14 TL\n50 770 Td\n";
-  ls.forEach((l, i) => { stream += i === 0 ? `(${pdfStr(l)}) Tj\n` : `T* (${pdfStr(l)}) Tj\n`; });
+  ls.forEach((l, i) => {
+    stream += i === 0 ? `(${pdfStr(l)}) Tj\n` : `T* (${pdfStr(l)}) Tj\n`;
+  });
   stream += "ET";
   const objs = [
     "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
     "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
     "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj",
     "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
-    `5 0 obj << /Length ${stream.length} >> stream\n${stream}\nendstream endobj`
+    `5 0 obj << /Length ${stream.length} >> stream\n${stream}\nendstream endobj`,
   ];
-  let pdf = "%PDF-1.4\n"; const off = [0];
-  objs.forEach((o) => { off.push(pdf.length); pdf += `${o}\n`; });
+  let pdf = "%PDF-1.4\n";
+  const off = [0];
+  objs.forEach((o) => {
+    off.push(pdf.length);
+    pdf += `${o}\n`;
+  });
   const xref = pdf.length;
   pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`;
-  for (let i = 1; i < off.length; i++) pdf += `${String(off[i]).padStart(10,"0")} 00000 n \n`;
+  for (let i = 1; i < off.length; i++)
+    pdf += `${String(off[i]).padStart(10, "0")} 00000 n \n`;
   pdf += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
   return new TextEncoder().encode(pdf);
 }
