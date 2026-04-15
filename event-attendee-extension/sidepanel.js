@@ -93,6 +93,15 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden && state.session?.access_token) syncProfile({ silent: true });
 });
 
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type !== "AUTH_STATE_CHANGED") return;
+  console.log("[sidepanel] AUTH_STATE_CHANGED received", {
+    at: message?.at || null,
+    email: message?.email || null,
+  });
+  refreshSessionFromStorage();
+});
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
   const s = await chrome.storage.local.get([
@@ -131,9 +140,6 @@ async function init() {
     startPoll();
   }
 
-  // Check for magic link hash in URL (Supabase auth callback)
-  await handleAuthCallback();
-
   const res = await sendMsg({ type: "GET_LAST_ATTENDEES" });
   if (res?.attendees?.length) {
     state.attendees = res.attendees;
@@ -143,41 +149,6 @@ async function init() {
 }
 
 init();
-
-// ── Auth callback (magic link / OAuth) ───────────────────────────────────────
-async function handleAuthCallback() {
-  // Supabase puts tokens in the URL hash after OAuth/magic link
-  const hash = window.location.hash;
-  if (!hash || !hash.includes("access_token")) return;
-
-  const params = new URLSearchParams(hash.replace("#", ""));
-  const accessToken = params.get("access_token");
-  const refreshToken = params.get("refresh_token");
-  if (!accessToken) return;
-
-  try {
-    const res = await fetch(`${state.config.supabaseUrl}/auth/v1/user`, {
-      headers: {
-        apikey: state.config.supabaseAnonKey,
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    const user = await res.json();
-    if (user?.id) {
-      const session = { access_token: accessToken, refresh_token: refreshToken, user };
-      state.session = session;
-      await chrome.storage.local.set({ session });
-      await syncProfile();
-      startPoll();
-      syncAccountUI();
-      setStatus("Signed in successfully!");
-    }
-  } catch (e) {
-    console.error("Auth callback error:", e);
-  }
-  // Clear the hash
-  window.history.replaceState(null, "", window.location.pathname);
-}
 
 // ── Scrape ────────────────────────────────────────────────────────────────────
 async function handleScrape() {
@@ -445,6 +416,29 @@ async function handleGoogleSignIn() {
 }
 
 async function handleSignOut() {
+  const accessToken = state.session?.access_token || null;
+  console.log("[sidepanel] sign out started", {
+    hadSession: Boolean(accessToken),
+    hadProfile: Boolean(state.profile),
+    credits: state.credits,
+    hasUnlimited: state.hasUnlimited,
+  });
+
+  if (accessToken && state.config.supabaseAnonKey) {
+    try {
+      const res = await fetch(`${state.config.supabaseUrl}/auth/v1/logout`, {
+        method: "POST",
+        headers: {
+          apikey: state.config.supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      console.log("[sidepanel] supabase logout response", { ok: res.ok, status: res.status });
+    } catch (error) {
+      console.warn("[sidepanel] supabase logout failed", error);
+    }
+  }
+
   stopPoll();
   state.session = null;
   state.profile = null;
@@ -467,17 +461,31 @@ function showAuthError(msg) {
 
 // ── Profile sync ──────────────────────────────────────────────────────────────
 async function syncProfile({ silent = false } = {}) {
-  if (!state.session?.access_token || !state.session?.user?.id) return;
+  ensureSessionUserShape();
+  if (!state.session?.access_token || !state.session?.user?.id) {
+    console.warn("[sidepanel] syncProfile skipped due to missing token/user id");
+    return;
+  }
   if (!state.config.supabaseAnonKey) return;
 
   try {
     const url = `${state.config.supabaseUrl}/rest/v1/profiles?id=eq.${state.session.user.id}&select=id,email,credits,has_unlimited`;
+    console.log("[sidepanel] syncProfile request", {
+      url,
+      userId: state.session.user.id,
+      silent,
+    });
     const res = await fetch(url, {
       headers: {
         apikey: state.config.supabaseAnonKey,
         Authorization: `Bearer ${state.session.access_token}`,
       },
     });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error("[sidepanel] syncProfile failed", { status: res.status, body });
+      return;
+    }
     const rows = await res.json();
     const profile = Array.isArray(rows) ? rows[0] : null;
     if (!profile) return;
@@ -496,8 +504,8 @@ async function syncProfile({ silent = false } = {}) {
     if (!silent && state.credits > prevCredits) {
       setStatus("Purchase confirmed — credits updated!");
     }
-  } catch {
-    /* silent fail */
+  } catch (error) {
+    console.error("[sidepanel] syncProfile unexpected error", error);
   }
 }
 
@@ -515,10 +523,16 @@ function stopPoll() {
 
 // ── Buy ───────────────────────────────────────────────────────────────────────
 function handleBuy(plan) {
+  ensureSessionUserShape();
   const url = new URL(`${state.config.appUrl}/checkout`);
   url.searchParams.set("plan", plan);
   url.searchParams.set("source", "extension");
   if (state.session?.user?.id) url.searchParams.set("user_id", state.session.user.id);
+  console.log("[sidepanel] opening checkout", {
+    url: url.toString(),
+    userId: state.session?.user?.id || null,
+    plan,
+  });
   chrome.tabs.create({ url: url.toString() });
   setStatus("Opening checkout… credits sync automatically.");
 }
@@ -564,6 +578,7 @@ function renderAttendees() {
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
 function syncAccountUI() {
+  ensureSessionUserShape();
   const email = state.profile?.email || state.session?.user?.email;
   accountBadgeEl.hidden = !email;
   if (email) {
@@ -571,6 +586,12 @@ function syncAccountUI() {
     accountCreditsEl.textContent = state.hasUnlimited
       ? "∞ credits"
       : `${state.credits} credit${state.credits !== 1 ? "s" : ""}`;
+    return;
+  }
+  accountEmailEl.textContent = "";
+  accountCreditsEl.textContent = "";
+  if (!state.session?.access_token) {
+    setStatus("Signed out. Sign in to unlock full exports.");
   }
 }
 
@@ -634,6 +655,44 @@ function sendMsg(payload) {
       resolve(res);
     });
   });
+}
+
+async function refreshSessionFromStorage() {
+  const { session } = await chrome.storage.local.get("session");
+  if (!session?.access_token) {
+    console.log("[sidepanel] no session in storage after auth state update");
+    return;
+  }
+  state.session = session;
+  ensureSessionUserShape();
+  await syncProfile({ silent: true });
+  startPoll();
+  syncAccountUI();
+  setStatus("Signed in successfully!");
+}
+
+function ensureSessionUserShape() {
+  if (!state.session?.access_token) return;
+  if (!state.session.user) state.session.user = {};
+  const payload = decodeJwtPayloadSafe(state.session.access_token);
+  if (!state.session.user.id && payload?.sub) {
+    state.session.user.id = payload.sub;
+  }
+  if (!state.session.user.email && payload?.email) {
+    state.session.user.email = payload.email;
+  }
+}
+
+function decodeJwtPayloadSafe(accessToken) {
+  try {
+    const [, payloadPart] = String(accessToken).split(".");
+    if (!payloadPart) return null;
+    const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
 }
 
 // ── PDF builder ───────────────────────────────────────────────────────────────
