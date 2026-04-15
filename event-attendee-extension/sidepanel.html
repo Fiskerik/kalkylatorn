@@ -1,86 +1,132 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prospect In</title>
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-    <link rel="stylesheet" href="sidepanel.css" />
-  </head>
-  <body>
-    <main class="container">
-      <header class="header">
-        <div class="brand-row">
-          <img src="assets/logo.png" class="brand-logo" alt="Event Attendee Extractor logo" />
-          <div>
-            <h1>Event Attendees</h1>
-            <p id="statusText" class="status">Ready to extract.</p>
-          </div>
-        </div>
-      </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prospect In</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+<main class="container">
 
-      <section class="actions">
-        <div class="auth-card">
-          <p class="auth-title">Account</p>
-          <p id="authState" class="auth-state">Not signed in</p>
-          <input id="authEmail" class="limit-input" type="email" placeholder="Email" />
-          <input id="authPassword" class="limit-input" type="password" placeholder="Password" />
-          <div class="auth-actions">
-            <button id="signInBtn" class="btn">Sign in</button>
-            <button id="signOutBtn" class="btn" hidden>Sign out</button>
-          </div>
-          <div class="auth-actions">
-            <button id="syncAccountBtn" class="btn" hidden>Sync credits</button>
-            <button id="openWebAppBtn" class="btn">Open web app</button>
-          </div>
-        </div>
+  <!-- Header -->
+  <header class="header">
+    <div class="brand-row">
+      <img src="assets/logo.png" class="brand-logo" alt="Prospect In" />
+      <div>
+        <h1>Prospect In</h1>
+        <p id="statusText" class="status">Ready to extract.</p>
+      </div>
+    </div>
+    <!-- Shown when signed in -->
+    <div id="accountBadge" class="account-badge" hidden>
+      <span id="accountEmail" class="account-email"></span>
+      <span id="accountCredits" class="account-credits"></span>
+      <button id="signOutBtn" class="btn-link">Sign out</button>
+    </div>
+  </header>
 
-        <button id="scrapeBtn" class="btn primary">Extract attendees</button>
-        <div class="limit-row">
-          <label for="attendeeLimitInput" class="limit-label">Max attendees per scrape</label>
-          <input id="attendeeLimitInput" class="limit-input" type="number" min="1" step="1" value="100" />
-        </div>
-        <button id="saveBtn" class="btn">Save locally</button>
+  <!-- Main actions -->
+  <section class="actions">
+    <button id="scrapeBtn" class="btn primary">Extract attendees</button>
 
-        <div class="export-row">
-          <select id="crmSelect" class="crm-select">
-            <option value="generic">Generic CSV</option>
-            <option value="hubspot">HubSpot</option>
-            <option value="pipedrive">Pipedrive</option>
-            <option value="salesforce">Salesforce</option>
-            <option value="zoho">Zoho CRM</option>
-          </select>
-          <button id="csvBtn" class="btn export-btn">Export CSV</button>
-        </div>
+    <div class="field-row">
+      <label for="attendeeLimitInput" class="field-label">Max attendees per scrape</label>
+      <input id="attendeeLimitInput" class="input" type="number" min="1" step="1" value="100" />
+    </div>
 
-        <button id="pdfBtn" class="btn">Export PDF</button>
-        <p id="proHint" class="pro-hint" hidden>First 20 attendees are free. Use a credit to export full lists.</p>
-        <div id="creditsRow" class="credits-row">
-          <span id="creditsBadge" class="credits-badge">Credits: 0</span>
-        </div>
-        <div class="pricing-grid">
-          <button id="buyOneBtn" class="btn buy-btn" hidden>Full list — $9.99</button>
-          <button id="buyFiveBtn" class="btn buy-btn" hidden>5 credits — $39.99</button>
-          <button id="buyTenBtn" class="btn buy-btn" hidden>10 credits — $69.99</button>
-        </div>
-      </section>
+    <div class="export-row">
+      <select id="crmSelect" class="crm-select">
+        <option value="generic">Generic CSV</option>
+        <option value="hubspot">HubSpot</option>
+        <option value="pipedrive">Pipedrive</option>
+        <option value="salesforce">Salesforce</option>
+        <option value="zoho">Zoho CRM</option>
+      </select>
+      <button id="csvBtn" class="btn export-btn">Export CSV</button>
+    </div>
 
-      <section class="results">
-        <div class="results-header">
-          <h2>Attendee List</h2>
-          <div class="results-header-right">
-            <div class="view-toggle" role="group" aria-label="Attendee display mode">
-              <button id="detailedViewBtn" class="view-btn active" type="button">Detailed</button>
-              <button id="cardViewBtn" class="view-btn" type="button">Cards</button>
-            </div>
-            <span id="countBadge" class="badge">0</span>
-          </div>
-        </div>
-        <div id="attendeeList" class="attendee-list"></div>
-      </section>
-    </main>
+    <button id="saveJsonBtn" class="btn">Save as JSON file</button>
+  </section>
 
-    <script src="crm-export.js"></script>
-    <script src="sidepanel.js"></script>
-  </body>
+  <!-- Attendee list -->
+  <section class="results">
+    <div class="results-header">
+      <h2>Attendee List</h2>
+      <div class="results-header-right">
+        <div class="view-toggle">
+          <button id="detailedViewBtn" class="view-btn active" type="button">List</button>
+          <button id="cardViewBtn" class="view-btn" type="button">Cards</button>
+        </div>
+        <span id="countBadge" class="badge">0</span>
+      </div>
+    </div>
+    <div id="attendeeList" class="attendee-list"></div>
+  </section>
+
+  <!-- History (signed-in only) -->
+  <section id="historySection" class="results" hidden>
+    <div class="results-header">
+      <h2>Export History</h2>
+    </div>
+    <div id="historyList" class="history-list"></div>
+  </section>
+
+</main>
+
+<!-- ── AUTH MODAL ── -->
+<div id="authModal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <button id="closeAuthModal" class="modal-close">✕</button>
+    <h2 class="modal-title">Sign in to Prospect In</h2>
+    <p class="modal-sub">Create a free account to unlock full exports.</p>
+    <input id="authEmail" class="input" type="email" placeholder="Email" />
+    <input id="authPassword" class="input" type="password" placeholder="Password" />
+    <p id="authError" class="auth-error" hidden></p>
+    <button id="signInBtn" class="btn primary full-width">Sign in</button>
+    <a id="openWebAppLink" href="#" class="modal-link">Create account on web ↗</a>
+  </div>
+</div>
+
+<!-- ── EXPORT MODAL ── -->
+<div id="exportModal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <button id="closeExportModal" class="modal-close">✕</button>
+    <h2 class="modal-title">Export options</h2>
+    <p class="modal-sub" id="exportModalSub"></p>
+
+    <div class="export-options">
+      <button id="exportFreeBtn" class="export-option">
+        <span class="export-option-title">Free — Top 20 entries</span>
+        <span class="export-option-desc">No account needed</span>
+        <span class="export-option-badge free">Free</span>
+      </button>
+      <button id="exportCreditBtn" class="export-option premium" id="exportCreditBtn">
+        <span class="export-option-title">Full report — all <span id="exportTotalCount"></span> entries</span>
+        <span class="export-option-desc" id="exportCreditDesc"></span>
+        <span class="export-option-badge premium">1 credit</span>
+      </button>
+    </div>
+
+    <!-- Buy credits (shown when no credits) -->
+    <div id="buyCreditsSection" class="buy-section" hidden>
+      <p class="buy-title">Buy credits</p>
+      <div class="pricing-grid">
+        <button data-plan="single" class="pricing-btn">
+          <strong>1 report</strong><span>$9.99</span>
+        </button>
+        <button data-plan="five" class="pricing-btn">
+          <strong>5 reports</strong><span>$39.99</span>
+        </button>
+        <button data-plan="ten" class="pricing-btn">
+          <strong>10 reports</strong><span>$69.99</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="crm-export.js"></script>
+<script src="sidepanel.js"></script>
+</body>
 </html>

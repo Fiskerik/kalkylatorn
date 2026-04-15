@@ -1,382 +1,414 @@
-const FREE_ATTENDEE_LIMIT = 20;
-const FULL_EXPORT_PRICE_LABEL = "$9.99";
-const FIVE_EXPORTS_PRICE_LABEL = "$39.99";
-const TEN_EXPORTS_PRICE_LABEL = "$69.99";
+// ── Constants ────────────────────────────────────────────────────────────────
+const FREE_LIMIT = 20;
 const DEFAULT_SUPABASE_URL = "https://vhemqgjwjqgjqrnjhvm.supabase.co";
-const DEFAULT_APP_PUBLIC_URL = "https://prospectin.vercel.app";
-const PROFILE_POLL_INTERVAL_MS = 12000;
+const DEFAULT_APP_URL = "https://prospectin.vercel.app";
+const SYNC_INTERVAL_MS = 15000;
 
+// ── State ─────────────────────────────────────────────────────────────────────
 const state = {
   attendees: [],
   viewMode: "detailed",
   attendeeLimit: 100,
   credits: 0,
   hasUnlimited: false,
-  profile: null,
-  profilePollTimer: null,
-  lastKnownCredits: 0,
   session: null,
+  profile: null,
+  pollTimer: null,
+  pendingExportFormat: null, // "csv" | "pdf"
   config: {
     supabaseUrl: DEFAULT_SUPABASE_URL,
     supabaseAnonKey: "",
-    appPublicUrl: DEFAULT_APP_PUBLIC_URL
+    appUrl: DEFAULT_APP_URL
   }
 };
 
-const attendeeListEl = document.getElementById("attendeeList");
-const statusTextEl = document.getElementById("statusText");
-const countBadgeEl = document.getElementById("countBadge");
-const crmSelectEl = document.getElementById("crmSelect");
-const detailedViewBtn = document.getElementById("detailedViewBtn");
-const cardViewBtn = document.getElementById("cardViewBtn");
-const attendeeLimitInputEl = document.getElementById("attendeeLimitInput");
-const proHintEl = document.getElementById("proHint");
-const csvBtnEl = document.getElementById("csvBtn");
-const pdfBtnEl = document.getElementById("pdfBtn");
-const creditsBadgeEl = document.getElementById("creditsBadge");
-const buyOneBtnEl = document.getElementById("buyOneBtn");
-const buyFiveBtnEl = document.getElementById("buyFiveBtn");
-const buyTenBtnEl = document.getElementById("buyTenBtn");
-const authEmailEl = document.getElementById("authEmail");
-const authPasswordEl = document.getElementById("authPassword");
-const signInBtnEl = document.getElementById("signInBtn");
-const signOutBtnEl = document.getElementById("signOutBtn");
-const syncAccountBtnEl = document.getElementById("syncAccountBtn");
-const authStateEl = document.getElementById("authState");
-const openWebAppBtnEl = document.getElementById("openWebAppBtn");
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const statusEl         = $("statusText");
+const attendeeListEl   = $("attendeeList");
+const countBadgeEl     = $("countBadge");
+const crmSelectEl      = $("crmSelect");
+const accountBadgeEl   = $("accountBadge");
+const accountEmailEl   = $("accountEmail");
+const accountCreditsEl = $("accountCredits");
+const historySectionEl = $("historySection");
+const historyListEl    = $("historyList");
+const limitInputEl     = $("attendeeLimitInput");
 
-document.getElementById("scrapeBtn").addEventListener("click", handleScrape);
-document.getElementById("saveBtn").addEventListener("click", handleSave);
-csvBtnEl.addEventListener("click", exportCsv);
-pdfBtnEl.addEventListener("click", exportPdf);
-detailedViewBtn.addEventListener("click", () => setViewMode("detailed"));
-cardViewBtn.addEventListener("click", () => setViewMode("card"));
-buyOneBtnEl.addEventListener("click", () => handleBuyCredits("single"));
-buyFiveBtnEl.addEventListener("click", () => handleBuyCredits("five"));
-buyTenBtnEl.addEventListener("click", () => handleBuyCredits("ten"));
-signInBtnEl.addEventListener("click", handleSignIn);
-signOutBtnEl.addEventListener("click", handleSignOut);
-syncAccountBtnEl.addEventListener("click", loadProfileFromSupabase);
-openWebAppBtnEl.addEventListener("click", () => chrome.tabs.create({ url: state.config.appPublicUrl }));
-document.addEventListener("visibilitychange", handlePanelVisibilityChange);
+// auth modal
+const authModalEl    = $("authModal");
+const authEmailEl    = $("authEmail");
+const authPasswordEl = $("authPassword");
+const authErrorEl    = $("authError");
 
-crmSelectEl.addEventListener("change", () => {
-  chrome.storage.local.set({ lastCrm: crmSelectEl.value });
+// export modal
+const exportModalEl      = $("exportModal");
+const exportModalSubEl   = $("exportModalSub");
+const exportTotalCountEl = $("exportTotalCount");
+const exportCreditDescEl = $("exportCreditDesc");
+const buyCreditsSection  = $("buyCreditsSection");
+
+// ── Wire up events ────────────────────────────────────────────────────────────
+$("scrapeBtn").addEventListener("click", handleScrape);
+$("csvBtn").addEventListener("click", () => openExportModal("csv"));
+$("saveJsonBtn").addEventListener("click", handleSaveJson);
+$("detailedViewBtn").addEventListener("click", () => setViewMode("detailed"));
+$("cardViewBtn").addEventListener("click", () => setViewMode("card"));
+$("signOutBtn").addEventListener("click", handleSignOut);
+$("signInBtn").addEventListener("click", handleSignIn);
+$("closeAuthModal").addEventListener("click", () => hideModal(authModalEl));
+$("closeExportModal").addEventListener("click", () => hideModal(exportModalEl));
+$("exportFreeBtn").addEventListener("click", () => doExport(false));
+$("exportCreditBtn").addEventListener("click", () => doExport(true));
+$("openWebAppLink").addEventListener("click", (e) => { e.preventDefault(); chrome.tabs.create({ url: state.config.appUrl }); });
+
+document.querySelectorAll(".pricing-btn").forEach((btn) => {
+  btn.addEventListener("click", () => handleBuy(btn.dataset.plan));
 });
-attendeeLimitInputEl.addEventListener("change", handleAttendeeLimitChange);
+
+crmSelectEl.addEventListener("change", () => chrome.storage.local.set({ lastCrm: crmSelectEl.value }));
+limitInputEl.addEventListener("change", handleLimitChange);
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && state.session?.access_token) syncProfile({ silent: true });
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  const s = await chrome.storage.local.get([
+    "lastCrm", "attendeeViewMode", "attendeeLimit",
+    "credits", "hasUnlimited", "session", "profile",
+    "supabaseUrl", "supabaseAnonKey", "appUrl", "exportHistory"
+  ]);
+
+  if (s.lastCrm) crmSelectEl.value = s.lastCrm;
+  if (s.attendeeViewMode) state.viewMode = s.attendeeViewMode;
+  state.attendeeLimit = s.attendeeLimit > 0 ? s.attendeeLimit : 100;
+  state.credits = s.credits ?? 0;
+  state.hasUnlimited = Boolean(s.hasUnlimited);
+  state.session = s.session ?? null;
+  state.profile = s.profile ?? null;
+  state.config.supabaseUrl = s.supabaseUrl || DEFAULT_SUPABASE_URL;
+  state.config.supabaseAnonKey = s.supabaseAnonKey || "";
+  state.config.appUrl = s.appUrl || DEFAULT_APP_URL;
+
+  limitInputEl.value = state.attendeeLimit;
+  syncViewModeUI();
+  syncAccountUI();
+  renderHistory(s.exportHistory ?? []);
+  $("openWebAppLink").href = state.config.appUrl;
+
+  if (state.session?.access_token) {
+    await syncProfile({ silent: true });
+    startPoll();
+  }
+
+  const res = await sendMsg({ type: "GET_LAST_ATTENDEES" });
+  if (res?.attendees?.length) {
+    state.attendees = res.attendees;
+    renderAttendees();
+    setStatus(`${res.attendees.length} attendees from last scrape`);
+  }
+}
 
 init();
 
-async function init() {
-  const storage = await chrome.storage.local.get([
-    "lastCrm",
-    "attendeeViewMode",
-    "attendeeLimit",
-    "credits",
-    "hasUnlimited",
-    "session",
-    "profile",
-    "supabaseUrl",
-    "supabaseAnonKey",
-    "appPublicUrl"
-  ]);
+// ── Scrape ────────────────────────────────────────────────────────────────────
+async function handleScrape() {
+  setStatus("Extracting…");
+  $("scrapeBtn").disabled = true;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  if (storage.lastCrm) crmSelectEl.value = storage.lastCrm;
-  if (storage.attendeeViewMode === "card" || storage.attendeeViewMode === "detailed") {
-    state.viewMode = storage.attendeeViewMode;
+  const res = await sendMsg({
+    type: "SCRAPE_ATTENDEES",
+    tabId: tab?.id,
+    attendeeLimit: state.attendeeLimit
+  });
+
+  $("scrapeBtn").disabled = false;
+
+  if (!res?.ok) { setStatus(res?.error ?? "Extraction failed."); return; }
+
+  state.attendees = res.attendees;
+  renderAttendees();
+  setStatus(`${state.attendees.length} attendees extracted`);
+}
+
+// ── Export flow ───────────────────────────────────────────────────────────────
+function openExportModal(format) {
+  if (!state.attendees.length) { setStatus("No attendees to export."); return; }
+
+  state.pendingExportFormat = format;
+  const total = state.attendees.length;
+  const needsCredit = total > FREE_LIMIT;
+
+  exportModalSubEl.textContent = `Found ${total} attendees on this event.`;
+  exportTotalCountEl.textContent = total;
+
+  if (state.hasUnlimited) {
+    exportCreditDescEl.textContent = "Unlimited plan — no credit used";
+    $("exportCreditBtn").disabled = false;
+  } else if (state.credits > 0) {
+    exportCreditDescEl.textContent = `You have ${state.credits} credit${state.credits !== 1 ? "s" : ""} remaining`;
+    $("exportCreditBtn").disabled = false;
+  } else if (state.session) {
+    exportCreditDescEl.textContent = "You have 0 credits — buy below";
+    $("exportCreditBtn").disabled = true;
+  } else {
+    exportCreditDescEl.textContent = "Sign in and buy credits to unlock";
+    $("exportCreditBtn").disabled = true;
   }
-  if (Number.isInteger(storage.attendeeLimit) && storage.attendeeLimit > 0) {
-    state.attendeeLimit = storage.attendeeLimit;
+
+  // Show buy-credits if signed in but no credits
+  buyCreditsSection.hidden = !(state.session && !state.hasUnlimited && state.credits <= 0 && needsCredit);
+
+  // If no account and need credits, button shows sign-in prompt
+  $("exportCreditBtn").onclick = () => {
+    if (!state.session) { hideModal(exportModalEl); showAuthModal(); return; }
+    doExport(true);
+  };
+
+  showModal(exportModalEl);
+}
+
+function doExport(fullReport) {
+  hideModal(exportModalEl);
+  const fmt = state.pendingExportFormat;
+  const attendees = fullReport ? state.attendees : state.attendees.slice(0, FREE_LIMIT);
+  const usedCredit = fullReport && !state.hasUnlimited && state.attendees.length > FREE_LIMIT;
+
+  const crm = crmSelectEl.value;
+  const label = (window.CRM_PROFILES[crm] ?? window.CRM_PROFILES.generic).label;
+
+  if (fmt === "csv") {
+    const csv = window.buildCrmCsv(attendees, crm);
+    downloadBlob(csv, "text/csv;charset=utf-8", `attendees-${crm}-${today()}.csv`);
+  } else {
+    const bytes = buildSimplePdf(attendees);
+    downloadBlob(new Blob([bytes], { type: "application/pdf" }), "application/pdf", `attendees-${today()}.pdf`);
   }
 
-  state.credits = Number.isInteger(storage.credits) && storage.credits > 0 ? storage.credits : 0;
-  state.hasUnlimited = Boolean(storage.hasUnlimited);
-  state.session = storage.session ?? null;
-  state.profile = storage.profile ?? null;
-  state.config.supabaseUrl = storage.supabaseUrl || DEFAULT_SUPABASE_URL;
-  state.config.supabaseAnonKey = storage.supabaseAnonKey || "";
-  state.config.appPublicUrl = storage.appPublicUrl || DEFAULT_APP_PUBLIC_URL;
-
-  attendeeLimitInputEl.value = String(state.attendeeLimit);
-  syncExportPaywallUI();
-  syncViewModeUI();
-  syncAuthUI();
-  state.lastKnownCredits = state.credits;
-
-  if (state.session?.access_token) {
-    await loadProfileFromSupabase();
-    startProfileAutoSync();
+  if (usedCredit) {
+    state.credits = Math.max(0, state.credits - 1);
+    chrome.storage.local.set({ credits: state.credits });
+    syncAccountUI();
   }
 
-  const response = await sendRuntimeMessage({ type: "GET_LAST_ATTENDEES" });
-  if (response?.attendees?.length) {
-    state.attendees = response.attendees;
-    renderAttendees();
-    setStatus(`${response.attendees.length} attendees from last scrape`);
+  // Save to history (signed-in only)
+  if (state.session && fullReport) saveToHistory(attendees.length, fmt, crm);
+
+  const truncNote = !fullReport && state.attendees.length > FREE_LIMIT ? ` (first ${FREE_LIMIT})` : "";
+  setStatus(`Exported ${attendees.length} attendees for ${label}${truncNote}.`);
+}
+
+// ── JSON save ─────────────────────────────────────────────────────────────────
+function handleSaveJson() {
+  if (!state.attendees.length) { setStatus("No attendees to save."); return; }
+  const json = JSON.stringify(state.attendees, null, 2);
+  downloadBlob(json, "application/json", `attendees-${today()}.json`);
+  setStatus(`Saved ${state.attendees.length} attendees as JSON.`);
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+async function saveToHistory(count, fmt, crm) {
+  const s = await chrome.storage.local.get("exportHistory");
+  const history = s.exportHistory ?? [];
+  history.unshift({ count, fmt, crm, date: new Date().toISOString() });
+  const trimmed = history.slice(0, 30);
+  chrome.storage.local.set({ exportHistory: trimmed });
+  renderHistory(trimmed);
+}
+
+function renderHistory(history) {
+  if (!state.session || !history.length) {
+    historySectionEl.hidden = true;
+    return;
   }
+  historySectionEl.hidden = false;
+  historyListEl.innerHTML = "";
+  history.forEach((item) => {
+    const div = document.createElement("div");
+    div.className = "history-item";
+    const d = new Date(item.date);
+    const dateStr = d.toLocaleDateString("sv-SE") + " " + d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+    div.innerHTML = `
+      <div>
+        <div>${item.count} attendees · ${item.fmt?.toUpperCase()} · ${item.crm ?? "generic"}</div>
+        <div class="history-meta">${dateStr}</div>
+      </div>
+    `;
+    historyListEl.appendChild(div);
+  });
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function showAuthModal() {
+  authErrorEl.hidden = true;
+  authEmailEl.value = "";
+  authPasswordEl.value = "";
+  showModal(authModalEl);
 }
 
 async function handleSignIn() {
   const email = authEmailEl.value.trim();
-  const password = authPasswordEl.value;
-  if (!email || !password) {
-    setStatus("Email and password are required.");
-    return;
-  }
+  const pw = authPasswordEl.value;
+  if (!email || !pw) { showAuthError("Email and password required."); return; }
+  if (!state.config.supabaseAnonKey) { showAuthError("Missing Supabase anon key in extension config."); return; }
 
-  if (!state.config.supabaseAnonKey) {
-    setStatus("Missing Supabase anon key. Save supabaseAnonKey in extension storage.");
-    return;
-  }
-
-  console.log("[Prospect In] Signing in user:", email);
-  setStatus("Signing in...");
+  $("signInBtn").disabled = true;
+  $("signInBtn").textContent = "Signing in…";
 
   try {
-    const response = await fetch(`${state.config.supabaseUrl}/auth/v1/token?grant_type=password`, {
+    const res = await fetch(`${state.config.supabaseUrl}/auth/v1/token?grant_type=password`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: state.config.supabaseAnonKey
-      },
-      body: JSON.stringify({ email, password })
+      headers: { "Content-Type": "application/json", apikey: state.config.supabaseAnonKey },
+      body: JSON.stringify({ email, password: pw })
     });
-    const payload = await response.json();
+    const data = await res.json();
 
-    if (!response.ok || !payload?.access_token) {
-      console.log("[Prospect In] Sign in failed response:", payload);
-      setStatus(payload?.error_description || payload?.msg || "Sign in failed.");
+    if (!res.ok || !data?.access_token) {
+      showAuthError(data?.error_description || data?.msg || "Sign in failed.");
       return;
     }
 
-    state.session = payload;
-    await chrome.storage.local.set({ session: payload });
-    await loadProfileFromSupabase();
-    startProfileAutoSync();
-    syncAuthUI();
-    setStatus("Signed in.");
-  } catch (error) {
-    console.error("[Prospect In] Sign in error:", error);
-    setStatus("Could not sign in.");
+    state.session = data;
+    await chrome.storage.local.set({ session: data });
+    hideModal(authModalEl);
+    await syncProfile();
+    startPoll();
+    syncAccountUI();
+
+    // If there was a pending export, re-open the export modal
+    if (state.pendingExportFormat) openExportModal(state.pendingExportFormat);
+  } catch {
+    showAuthError("Network error — please try again.");
+  } finally {
+    $("signInBtn").disabled = false;
+    $("signInBtn").textContent = "Sign in";
   }
 }
 
 async function handleSignOut() {
-  stopProfileAutoSync();
+  stopPoll();
   state.session = null;
   state.profile = null;
   state.credits = 0;
   state.hasUnlimited = false;
-  state.lastKnownCredits = 0;
   await chrome.storage.local.remove(["session", "profile"]);
-  await chrome.storage.local.set({ credits: 0, hasUnlimited: false });
-  syncAuthUI();
-  syncExportPaywallUI();
+  chrome.storage.local.set({ credits: 0, hasUnlimited: false });
+  syncAccountUI();
+  renderHistory([]);
   setStatus("Signed out.");
 }
 
-async function loadProfileFromSupabase(options = {}) {
-  const { silent = false } = options;
-  if (!state.session?.access_token || !state.session?.user?.id) {
-    syncAuthUI();
-    return;
-  }
-  if (!state.config.supabaseAnonKey) {
-    setStatus("Missing Supabase anon key. Save supabaseAnonKey in extension storage.");
-    return;
-  }
+function showAuthError(msg) {
+  authErrorEl.textContent = msg;
+  authErrorEl.hidden = false;
+}
 
-  if (!silent) {
-    setStatus("Syncing account...");
-  }
+// ── Profile sync ──────────────────────────────────────────────────────────────
+async function syncProfile({ silent = false } = {}) {
+  if (!state.session?.access_token || !state.session?.user?.id) return;
+  if (!state.config.supabaseAnonKey) return;
+
   try {
-    const profileUrl = `${state.config.supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(state.session.user.id)}&select=id,email,credits,has_unlimited,updated_at`;
-    const response = await fetch(profileUrl, {
+    const url = `${state.config.supabaseUrl}/rest/v1/profiles?id=eq.${state.session.user.id}&select=id,email,credits,has_unlimited`;
+    const res = await fetch(url, {
       headers: {
         apikey: state.config.supabaseAnonKey,
         Authorization: `Bearer ${state.session.access_token}`
       }
     });
-    const rows = await response.json();
-
-    if (!response.ok) {
-      console.log("[Prospect In] Profile fetch failed:", rows);
-      setStatus("Failed to sync account profile.");
-      return;
-    }
-
+    const rows = await res.json();
     const profile = Array.isArray(rows) ? rows[0] : null;
+    if (!profile) return;
+
+    const prevCredits = state.credits;
     state.profile = profile;
-    const previousCredits = state.credits;
-    state.credits = Number.isInteger(profile?.credits) ? profile.credits : 0;
-    state.hasUnlimited = Boolean(profile?.has_unlimited);
-    state.lastKnownCredits = state.credits;
+    state.credits = profile.credits ?? 0;
+    state.hasUnlimited = Boolean(profile.has_unlimited);
 
-    await chrome.storage.local.set({
-      profile,
-      credits: state.credits,
-      hasUnlimited: state.hasUnlimited
-    });
+    chrome.storage.local.set({ profile, credits: state.credits, hasUnlimited: state.hasUnlimited });
+    syncAccountUI();
 
-    syncAuthUI();
-    syncExportPaywallUI();
-    if (state.credits > previousCredits) {
-      setStatus("Purchase confirmed! Full export unlocked.");
-      console.log("[Prospect In] Credit increase detected:", { previousCredits, currentCredits: state.credits });
-      return;
+    const s = await chrome.storage.local.get("exportHistory");
+    renderHistory(s.exportHistory ?? []);
+
+    if (!silent && state.credits > prevCredits) {
+      setStatus("Purchase confirmed — credits updated!");
     }
-    if (!silent) {
-      setStatus("Account synced.");
-    }
-  } catch (error) {
-    console.error("[Prospect In] Profile sync error:", error);
-    if (!silent) {
-      setStatus("Could not sync account.");
-    }
-  }
+  } catch { /* silent fail */ }
 }
 
-async function handleScrape() {
-  setStatus("Extracting…");
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  console.log("[Event Attendee Extractor] Scrape requested for tab:", activeTab?.id, activeTab?.url);
-  console.log("[Event Attendee Extractor] Scrape attendee limit:", state.attendeeLimit);
+function startPoll() {
+  stopPoll();
+  state.pollTimer = setInterval(() => syncProfile({ silent: true }), SYNC_INTERVAL_MS);
+}
 
-  const response = await sendRuntimeMessage({
-    type: "SCRAPE_ATTENDEES",
-    tabId: activeTab?.id,
-    attendeeLimit: state.attendeeLimit
+function stopPoll() {
+  if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+}
+
+// ── Buy ───────────────────────────────────────────────────────────────────────
+function handleBuy(plan) {
+  const url = new URL(`${state.config.appUrl}/checkout`);
+  url.searchParams.set("plan", plan);
+  url.searchParams.set("source", "extension");
+  if (state.session?.user?.id) url.searchParams.set("user_id", state.session.user.id);
+  chrome.tabs.create({ url: url.toString() });
+  setStatus("Opening checkout… credits sync automatically.");
+}
+
+// ── Render attendees ──────────────────────────────────────────────────────────
+function renderAttendees() {
+  attendeeListEl.innerHTML = "";
+  countBadgeEl.textContent = state.attendees.length;
+  syncViewModeUI();
+
+  if (!state.attendees.length) {
+    attendeeListEl.innerHTML = `<div class="empty"><div class="empty-icon">👥</div>Click <strong>Extract attendees</strong><br>while on a LinkedIn event page.</div>`;
+    return;
+  }
+
+  state.attendees.forEach((a) => {
+    const item = document.createElement("article");
+    item.className = "attendee-item";
+    const href = a.profileLink ? `href="${esc(a.profileLink)}" target="_blank"` : "";
+    item.innerHTML = `
+      <div class="attendee-summary">
+        <div class="attendee-info">
+          <div class="attendee-name">${esc(a.name || "Unknown")}</div>
+          ${a.title ? `<div class="attendee-title">${esc(a.title)}</div>` : ""}
+          ${a.location ? `<div class="attendee-location">📍 ${esc(a.location)}</div>` : ""}
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="attendee-details">
+        ${a.profileLink ? `<div class="detail-row"><span class="detail-label">Profile</span><span class="detail-value"><a ${href}>LinkedIn ↗</a></span></div>` : ""}
+        ${a.email ? `<div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${esc(a.email)}</span></div>` : ""}
+        ${a.phone ? `<div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${esc(a.phone)}</span></div>` : ""}
+        ${a.website ? `<div class="detail-row"><span class="detail-label">Web</span><span class="detail-value"><a href="${esc(a.website)}" target="_blank">${esc(a.website)}</a></span></div>` : ""}
+      </div>`;
+    if (state.viewMode === "detailed") {
+      item.querySelector(".attendee-summary").addEventListener("click", () => item.classList.toggle("expanded"));
+    } else {
+      item.classList.add("expanded");
+    }
+    attendeeListEl.appendChild(item);
   });
-
-  if (!response?.ok) {
-    setStatus(response?.error ?? "Extraction failed.");
-    return;
-  }
-
-  state.attendees = response.attendees;
-  renderAttendees();
-  const needsUpgrade = state.attendees.length > FREE_ATTENDEE_LIMIT && !state.hasUnlimited && state.credits <= 0;
-  if (needsUpgrade) {
-    setStatus(`Found ${state.attendees.length} attendees. Unlock full report to export.`);
-    return;
-  }
-  setStatus(`${state.attendees.length} attendees extracted`);
 }
 
-function handleSave() {
-  chrome.storage.local.set(
-    { lastAttendees: state.attendees, lastScrapedAt: new Date().toISOString() },
-    () => setStatus(`Saved ${state.attendees.length} attendees locally.`)
-  );
-}
-
-function exportCsv() {
-  if (!state.attendees.length) {
-    setStatus("No attendees to export.");
-    return;
-  }
-
-  const exportScope = getCsvExportScope(state.attendees);
-  const crm = crmSelectEl.value;
-  const profile = window.CRM_PROFILES[crm] ?? window.CRM_PROFILES.generic;
-  const csv = window.buildCrmCsv(exportScope.attendees, crm);
-  const filename = `attendees-${crm}-${datestamp()}.csv`;
-
-  downloadBlob(csv, "text/csv;charset=utf-8", filename);
-
-  if (exportScope.usedCredit) {
-    consumeCredit();
-  }
-
-  syncExportPaywallUI();
-
-  if (exportScope.isTruncated) {
-    setStatus(`Exported first ${FREE_ATTENDEE_LIMIT} attendees for ${profile.label}. Upgrade for full download.`);
-    return;
-  }
-
-  setStatus(`Exported full list for ${profile.label}.`);
-}
-
-function exportPdf() {
-  if (!state.attendees.length) {
-    setStatus("No attendees to export.");
-    return;
-  }
-
-  const hasAccess = checkPaidAccess(state.attendees.length);
-  if (!hasAccess) {
-    setStatus(`PDF full export requires 1 credit or unlimited. CSV still exports first ${FREE_ATTENDEE_LIMIT} for free.`);
-    return;
-  }
-
-  const pdfContent = buildSimplePdf(state.attendees);
-  downloadBlob(new Blob([new Uint8Array(pdfContent)], { type: "application/pdf" }), "application/pdf", `attendees-${datestamp()}.pdf`);
-  if (!state.hasUnlimited && state.attendees.length > FREE_ATTENDEE_LIMIT) {
-    consumeCredit();
-  }
-  syncExportPaywallUI();
-  setStatus("PDF exported.");
-}
-
-function getCsvExportScope(attendees) {
-  const canExportFull = attendees.length <= FREE_ATTENDEE_LIMIT || state.hasUnlimited || state.credits > 0;
-  if (canExportFull) {
-    return {
-      attendees,
-      isTruncated: false,
-      usedCredit: attendees.length > FREE_ATTENDEE_LIMIT && !state.hasUnlimited
-    };
-  }
-
-  return {
-    attendees: attendees.slice(0, FREE_ATTENDEE_LIMIT),
-    isTruncated: true,
-    usedCredit: false
-  };
-}
-
-function handleAttendeeLimitChange() {
-  const parsed = Number.parseInt(attendeeLimitInputEl.value, 10);
-  const nextLimit = Number.isInteger(parsed) && parsed > 0 ? parsed : 100;
-  state.attendeeLimit = nextLimit;
-  attendeeLimitInputEl.value = String(nextLimit);
-  chrome.storage.local.set({ attendeeLimit: nextLimit });
-}
-
-function syncExportPaywallUI() {
-  const hasPaidAccess = state.hasUnlimited || state.credits > 0;
-  const hasLockedReport = state.attendees.length > FREE_ATTENDEE_LIMIT && !hasPaidAccess;
-  creditsBadgeEl.textContent = state.hasUnlimited ? "Credits: Unlimited" : `Credits: ${state.credits}`;
-  buyOneBtnEl.hidden = !hasLockedReport;
-  buyFiveBtnEl.hidden = !hasLockedReport;
-  buyTenBtnEl.hidden = !hasLockedReport;
-
-  const needsUpgrade = hasLockedReport;
-  proHintEl.hidden = !needsUpgrade;
-  if (needsUpgrade) {
-    proHintEl.textContent = `Report locked: ${state.attendees.length} attendees found. Buy 1 report (${FULL_EXPORT_PRICE_LABEL}) or credit packs (${FIVE_EXPORTS_PRICE_LABEL} / ${TEN_EXPORTS_PRICE_LABEL}) to unlock export.`;
-  }
-
-  csvBtnEl.disabled = hasLockedReport;
-  pdfBtnEl.disabled = hasLockedReport;
-}
-
-function syncAuthUI() {
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function syncAccountUI() {
   const email = state.profile?.email || state.session?.user?.email;
-  authStateEl.textContent = email ? `Signed in as ${email}` : "Not signed in";
-  signOutBtnEl.hidden = !email;
-  signInBtnEl.hidden = Boolean(email);
-  syncAccountBtnEl.hidden = !email;
-  authEmailEl.disabled = Boolean(email);
-  authPasswordEl.disabled = Boolean(email);
+  accountBadgeEl.hidden = !email;
+  if (email) {
+    accountEmailEl.textContent = email;
+    accountCreditsEl.textContent = state.hasUnlimited ? "∞ credits" : `${state.credits} credit${state.credits !== 1 ? "s" : ""}`;
+  }
 }
 
 function setViewMode(mode) {
-  if (mode !== "card" && mode !== "detailed") {
-    return;
-  }
-
   state.viewMode = mode;
   chrome.storage.local.set({ attendeeViewMode: mode });
   syncViewModeUI();
@@ -385,211 +417,68 @@ function setViewMode(mode) {
 
 function syncViewModeUI() {
   attendeeListEl.classList.toggle("card-view", state.viewMode === "card");
-  detailedViewBtn.classList.toggle("active", state.viewMode === "detailed");
-  cardViewBtn.classList.toggle("active", state.viewMode === "card");
+  $("detailedViewBtn").classList.toggle("active", state.viewMode === "detailed");
+  $("cardViewBtn").classList.toggle("active", state.viewMode === "card");
 }
 
-function renderAttendees() {
-  attendeeListEl.innerHTML = "";
-  countBadgeEl.textContent = String(state.attendees.length);
-  syncViewModeUI();
-  syncExportPaywallUI();
-
-  if (!state.attendees.length) {
-    attendeeListEl.innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">👥</div>
-        Click <strong>Extract attendees</strong><br>while on the event page.
-      </div>`;
-    return;
-  }
-
-  state.attendees.forEach((attendee) => {
-    const item = document.createElement("article");
-    item.className = "attendee-item";
-
-    const profileHref = attendee.profileLink
-      ? `href="${escapeHtml(attendee.profileLink)}" target="_blank"`
-      : "";
-
-    item.innerHTML = `
-      <div class="attendee-summary">
-        <div class="attendee-info">
-          <div class="attendee-name">${escapeHtml(attendee.name || "Unknown")}</div>
-          ${attendee.title ? `<div class="attendee-title">${escapeHtml(attendee.title)}</div>` : ""}
-          ${attendee.location ? `<div class="attendee-location">📍 ${escapeHtml(attendee.location)}</div>` : ""}
-        </div>
-        <span class="chevron">▼</span>
-      </div>
-      <div class="attendee-details">
-        ${attendee.profileLink ? `<div class="detail-row"><span class="detail-label">Profile</span><span class="detail-value"><a ${profileHref}>LinkedIn ↗</a></span></div>` : ""}
-        ${attendee.email ? `<div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${escapeHtml(attendee.email)}</span></div>` : ""}
-        ${attendee.phone ? `<div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${escapeHtml(attendee.phone)}</span></div>` : ""}
-        ${attendee.website ? `<div class="detail-row"><span class="detail-label">Web</span><span class="detail-value"><a href="${escapeHtml(attendee.website)}" target="_blank">${escapeHtml(attendee.website)}</a></span></div>` : ""}
-      </div>
-    `;
-
-    if (state.viewMode === "detailed") {
-      item.querySelector(".attendee-summary").addEventListener("click", () => {
-        item.classList.toggle("expanded");
-      });
-    } else {
-      item.classList.add("expanded");
-    }
-
-    attendeeListEl.appendChild(item);
-  });
+function handleLimitChange() {
+  const n = parseInt(limitInputEl.value, 10);
+  state.attendeeLimit = n > 0 ? n : 100;
+  limitInputEl.value = state.attendeeLimit;
+  chrome.storage.local.set({ attendeeLimit: state.attendeeLimit });
 }
 
-function checkPaidAccess(requestedCount) {
-  console.log("[Event Attendee Extractor] Paid access check:", {
-    requestedCount,
-    freeLimit: FREE_ATTENDEE_LIMIT,
-    credits: state.credits,
-    hasUnlimited: state.hasUnlimited
-  });
+function setStatus(msg) { statusEl.textContent = msg; }
+function showModal(el) { el.hidden = false; }
+function hideModal(el) { el.hidden = true; }
+function today() { return new Date().toISOString().slice(0, 10); }
 
-  if (requestedCount <= FREE_ATTENDEE_LIMIT) {
-    return true;
-  }
-
-  if (state.credits > 0 || state.hasUnlimited) {
-    return true;
-  }
-
-  return false;
+function downloadBlob(data, mime, filename) {
+  const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
+  const url = URL.createObjectURL(blob);
+  chrome.downloads.download({ url, filename, saveAs: true }, () => setTimeout(() => URL.revokeObjectURL(url), 1000));
 }
 
-function consumeCredit() {
-  if (state.hasUnlimited || state.credits <= 0) {
-    return;
-  }
-  state.credits -= 1;
-  chrome.storage.local.set({ credits: state.credits });
-  console.log("[Event Attendee Extractor] Credit consumed. Remaining:", state.credits);
+function esc(v) {
+  return String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 
-function handleBuyCredits(plan) {
-  const checkoutUrl = new URL(`${state.config.appPublicUrl}/checkout`);
-  checkoutUrl.searchParams.set("source", "extension");
-  checkoutUrl.searchParams.set("plan", plan);
-  if (state.session?.user?.id) {
-    checkoutUrl.searchParams.set("user_id", state.session.user.id);
-  }
-  console.log("[Event Attendee Extractor] Opening pricing URL:", checkoutUrl.toString());
-  chrome.tabs.create({ url: checkoutUrl.toString() });
-}
-
-function startProfileAutoSync() {
-  if (!state.session?.access_token) {
-    return;
-  }
-  stopProfileAutoSync();
-  state.profilePollTimer = window.setInterval(() => {
-    console.log("[Prospect In] Polling Supabase profile for credit updates.");
-    loadProfileFromSupabase({ silent: true });
-  }, PROFILE_POLL_INTERVAL_MS);
-}
-
-function stopProfileAutoSync() {
-  if (!state.profilePollTimer) {
-    return;
-  }
-  window.clearInterval(state.profilePollTimer);
-  state.profilePollTimer = null;
-}
-
-function handlePanelVisibilityChange() {
-  if (document.hidden || !state.session?.access_token) {
-    return;
-  }
-  console.log("[Prospect In] Panel focused. Triggering account sync.");
-  loadProfileFromSupabase({ silent: true });
-}
-
-function sendRuntimeMessage(payload) {
+function sendMsg(payload) {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(payload, (response) => {
-      if (chrome.runtime.lastError) {
-        resolve({ ok: false, error: chrome.runtime.lastError.message });
-        return;
-      }
-      resolve(response);
+    chrome.runtime.sendMessage(payload, (res) => {
+      if (chrome.runtime.lastError) { resolve({ ok: false, error: chrome.runtime.lastError.message }); return; }
+      resolve(res);
     });
   });
 }
 
-function setStatus(msg) {
-  statusTextEl.textContent = msg;
-}
-
-function datestamp() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function downloadBlob(data, mimeType, filename) {
-  const blob = data instanceof Blob ? data : new Blob([data], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  chrome.downloads.download({ url, filename, saveAs: true }, () => {
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  });
-}
-
-function escapeHtml(input) {
-  return String(input ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
+// ── PDF builder ───────────────────────────────────────────────────────────────
 function buildSimplePdf(attendees) {
   const lines = ["Event Attendees", ""];
   attendees.forEach((a, i) => {
-    lines.push(`${i + 1}. ${safePdfText(a.name)}`);
-    if (a.title) lines.push(`   ${safePdfText(a.title)}`);
-    if (a.location) lines.push(`   ${safePdfText(a.location)}`);
-    if (a.profileLink) lines.push(`   ${safePdfText(a.profileLink)}`);
+    lines.push(`${i + 1}. ${String(a.name ?? "").slice(0, 90)}`);
+    if (a.title) lines.push(`   ${String(a.title).slice(0, 90)}`);
+    if (a.location) lines.push(`   ${String(a.location).slice(0, 90)}`);
+    if (a.profileLink) lines.push(`   ${String(a.profileLink).slice(0, 90)}`);
     lines.push("");
   });
-
-  const textLines = lines.slice(0, 180);
+  const ls = lines.slice(0, 200);
+  const pdfStr = (v) => v.replaceAll("\\","\\\\").replaceAll("(","\\(").replaceAll(")","\\)").replace(/[^\x20-\x7E]/g," ");
   let stream = "BT\n/F1 10 Tf\n14 TL\n50 770 Td\n";
-  textLines.forEach((line, i) => {
-    stream += i === 0
-      ? `(${escapePdfString(line)}) Tj\n`
-      : `T* (${escapePdfString(line)}) Tj\n`;
-  });
+  ls.forEach((l, i) => { stream += i === 0 ? `(${pdfStr(l)}) Tj\n` : `T* (${pdfStr(l)}) Tj\n`; });
   stream += "ET";
-
-  const objects = [
+  const objs = [
     "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
     "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
     "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj",
     "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
     `5 0 obj << /Length ${stream.length} >> stream\n${stream}\nendstream endobj`
   ];
-
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-  objects.forEach((obj) => {
-    offsets.push(pdf.length);
-    pdf += `${obj}\n`;
-  });
-  const xrefPos = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (let i = 1; i < offsets.length; i += 1) {
-    pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+  let pdf = "%PDF-1.4\n"; const off = [0];
+  objs.forEach((o) => { off.push(pdf.length); pdf += `${o}\n`; });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i < off.length; i++) pdf += `${String(off[i]).padStart(10,"0")} 00000 n \n`;
+  pdf += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
   return new TextEncoder().encode(pdf);
-}
-
-function safePdfText(v) {
-  return String(v ?? "").slice(0, 90);
-}
-
-function escapePdfString(v) {
-  return v.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)").replace(/[^\x20-\x7E]/g, " ");
 }
