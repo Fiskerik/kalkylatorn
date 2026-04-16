@@ -1,6 +1,6 @@
 // ── Constants ────────────────────────────────────────────────────────────────
 const FREE_LIMIT = 20;
-const DEFAULT_SUPABASE_URL = "https://vhemqgjwjqgjqrnjhvm.supabase.co";
+const DEFAULT_SUPABASE_URL = "https://vhemqgjwqjqgjqrnjhvm.supabase.co";
 const DEFAULT_APP_URL = "https://prospectin.vercel.app";
 const SYNC_INTERVAL_MS = 15000;
 const SIGNIN_CALLBACK_PATH = "signin-callback.html";
