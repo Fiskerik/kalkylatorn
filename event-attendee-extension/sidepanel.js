@@ -332,7 +332,7 @@ function renderHistory(history) {
     <div>Date / Name</div>
     <div>CRM Target</div>
     <div>Rows</div>
-    <div></div>
+    <div>Redownload</div>
   `;
   historyListEl.appendChild(head);
 
@@ -347,6 +347,10 @@ function renderHistory(history) {
     const rowCount = item.rowCount ?? item.count ?? (Array.isArray(item.attendees) ? item.attendees.length : 0);
     const filename = item.filename || `attendees-${item.crm ?? "generic"}-${item.date?.slice(0, 10) || today()}.${item.fmt || "csv"}`;
     const originalFormat = item.fmt || "csv";
+    const originalCrm = item.crm || "generic";
+    const crmOptions = Object.entries(window.CRM_PROFILES || {})
+      .map(([key, profile]) => `<option value="${esc(key)}"${key === originalCrm ? " selected" : ""}>${esc(profile.label || key)}</option>`)
+      .join("");
     div.innerHTML = `
       <div class="history-cell history-date-wrap">
         <span class="history-meta">${dateStr}</span>
@@ -355,6 +359,9 @@ function renderHistory(history) {
       <div class="history-cell">${esc(item.crm ?? "generic")}</div>
       <div class="history-cell">${rowCount}</div>
       <div class="history-redownload">
+        <select class="history-crm-select" aria-label="Select redownload CRM target">
+          ${crmOptions}
+        </select>
         <select class="history-format-select" aria-label="Select redownload format">
           <option value="csv"${originalFormat === "csv" ? " selected" : ""}>CSV</option>
           <option value="json"${originalFormat === "json" ? " selected" : ""}>JSON</option>
@@ -363,45 +370,49 @@ function renderHistory(history) {
         <button class="history-dl">Redownload</button>
       </div>
     `;
+    const crmSelect = div.querySelector(".history-crm-select");
     const formatSelect = div.querySelector(".history-format-select");
     const downloadBtn = div.querySelector(".history-dl");
-    downloadBtn.addEventListener("click", () => redownloadFromHistory(item, formatSelect.value));
+    downloadBtn.addEventListener("click", () => redownloadFromHistory(item, formatSelect.value, crmSelect.value));
     historyListEl.appendChild(div);
   });
 }
 
-async function redownloadFromHistory(item, format) {
+async function redownloadFromHistory(item, format, crmTarget) {
   const attendees = Array.isArray(item.attendees) ? item.attendees : [];
   if (!attendees.length) {
     setStatus("Cannot redownload this report — stored data is missing.");
     return;
   }
 
+  const selectedCrm = crmTarget || item.crm || "generic";
+
   console.log("[sidepanel] redownload history item", {
     date: item.date,
     filename: item.filename,
     crm: item.crm,
+    crmTarget: selectedCrm,
     rows: attendees.length,
     format,
   });
 
   let result;
   if (format === "csv") {
-    const csv = window.buildCrmCsv(attendees, item.crm || "generic");
-    result = await downloadBlob(csv, "text/csv;charset=utf-8", `attendees-${item.crm || "generic"}-${today()}.csv`);
+    const csv = window.buildCrmCsv(attendees, selectedCrm);
+    result = await downloadBlob(csv, "text/csv;charset=utf-8", `attendees-${selectedCrm}-${today()}.csv`);
   } else if (format === "json") {
     const json = JSON.stringify(attendees, null, 2);
-    result = await downloadBlob(json, "application/json", `attendees-${item.crm || "generic"}-${today()}.json`);
+    result = await downloadBlob(json, "application/json", `attendees-${selectedCrm}-${today()}.json`);
   } else {
     const bytes = buildSimplePdf(attendees);
-    result = await downloadBlob(new Blob([bytes], { type: "application/pdf" }), "application/pdf", `attendees-${item.crm || "generic"}-${today()}.pdf`);
+    result = await downloadBlob(new Blob([bytes], { type: "application/pdf" }), "application/pdf", `attendees-${selectedCrm}-${today()}.pdf`);
   }
 
   if (!result.ok) {
     setStatus(result.canceled ? "Redownload canceled." : "Redownload failed.");
     return;
   }
-  setStatus(`Redownloaded ${attendees.length} rows as ${format.toUpperCase()}.`);
+  setStatus(`Redownloaded ${attendees.length} rows as ${format.toUpperCase()} (${selectedCrm}).`);
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
