@@ -2,7 +2,7 @@
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({
     supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZoZW1xZ2p3cWpxZ2pxcm5qaHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTUyNDcsImV4cCI6MjA5MTczMTI0N30.Gyt1fxQgwM3_WFt6yEri-wRxvIg4m_z2TjjbwyzLOfI",
-    supabaseUrl: "https://vhemqgjwjqgjqrnjhvm.supabase.co",
+    supabaseUrl: "https://vhemqgjwqjqgjqrnjhvm.supabase.co",
     appUrl: "https://prospectin.vercel.app"
   });
 });
