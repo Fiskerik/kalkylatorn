@@ -375,6 +375,7 @@ async function handleMagicLink() {
 
   try {
     const redirectTo = chrome.runtime.getURL(SIGNIN_CALLBACK_PATH);
+    console.log("[sidepanel] magic link redirect target", { redirectTo, email });
     const res = await fetch(`${state.config.supabaseUrl}/auth/v1/magiclink`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: state.config.supabaseAnonKey },
@@ -409,6 +410,10 @@ async function handleGoogleSignIn() {
   const googleOAuthUrl =
     `${state.config.supabaseUrl}/auth/v1/authorize?provider=google` +
     `&redirect_to=${encodeURIComponent(redirectTo)}`;
+  console.log("[sidepanel] google oauth flow start", {
+    redirectTo,
+    googleOAuthUrl,
+  });
 
   // Open OAuth in a new tab — user will be redirected back to extension callback page
   chrome.tabs.create({ url: googleOAuthUrl });
