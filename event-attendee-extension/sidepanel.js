@@ -587,11 +587,15 @@ function syncAccountUI() {
   ensureSessionUserShape();
   const email = state.profile?.email || state.session?.user?.email;
   const signedOutBadge = $("signedOutBadge");
- 
+
   if (email) {
     // Signed in
     accountBadgeEl.hidden = false;
-    if (signedOutBadge) signedOutBadge.hidden = true;
+    accountBadgeEl.style.display = "flex";
+    if (signedOutBadge) {
+      signedOutBadge.hidden = true;
+      signedOutBadge.style.display = "none";
+    }
     accountEmailEl.textContent = email;
     accountCreditsEl.textContent = state.hasUnlimited
       ? "∞ credits"
@@ -599,13 +603,17 @@ function syncAccountUI() {
   } else {
     // Signed out
     accountBadgeEl.hidden = true;
-    if (signedOutBadge) signedOutBadge.hidden = false;
+    accountBadgeEl.style.display = "none";
+    if (signedOutBadge) {
+      signedOutBadge.hidden = false;
+      signedOutBadge.style.display = "flex";
+    }
     accountEmailEl.textContent = "";
     accountCreditsEl.textContent = "";
     setStatus("Sign in to unlock full exports.");
   }
 }
- 
+
 
 function setViewMode(mode) {
   state.viewMode = mode;
