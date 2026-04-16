@@ -51,6 +51,7 @@ const buyCreditsSection = $("buyCreditsSection");
 
 // ── Wire up events ────────────────────────────────────────────────────────────
 $("scrapeBtn").addEventListener("click", handleScrape);
+$("signInHeaderBtn").addEventListener("click", () => showAuthModal());
 $("csvBtn").addEventListener("click", () => openExportModal("csv"));
 $("saveJsonBtn").addEventListener("click", handleSaveJson);
 $("detailedViewBtn").addEventListener("click", () => setViewMode("detailed"));
@@ -580,20 +581,26 @@ function renderAttendees() {
 function syncAccountUI() {
   ensureSessionUserShape();
   const email = state.profile?.email || state.session?.user?.email;
-  accountBadgeEl.hidden = !email;
+  const signedOutBadge = $("signedOutBadge");
+ 
   if (email) {
+    // Signed in
+    accountBadgeEl.hidden = false;
+    if (signedOutBadge) signedOutBadge.hidden = true;
     accountEmailEl.textContent = email;
     accountCreditsEl.textContent = state.hasUnlimited
       ? "∞ credits"
       : `${state.credits} credit${state.credits !== 1 ? "s" : ""}`;
-    return;
-  }
-  accountEmailEl.textContent = "";
-  accountCreditsEl.textContent = "";
-  if (!state.session?.access_token) {
-    setStatus("Signed out. Sign in to unlock full exports.");
+  } else {
+    // Signed out
+    accountBadgeEl.hidden = true;
+    if (signedOutBadge) signedOutBadge.hidden = false;
+    accountEmailEl.textContent = "";
+    accountCreditsEl.textContent = "";
+    setStatus("Sign in to unlock full exports.");
   }
 }
+ 
 
 function setViewMode(mode) {
   state.viewMode = mode;
