@@ -17,6 +17,7 @@ const state = {
   pollTimer: null,
   pendingExportFormat: null,
   exportInProgress: false,
+  activePanel: "attendees",
   config: {
     supabaseUrl: DEFAULT_SUPABASE_URL,
     supabaseAnonKey: "",
@@ -36,6 +37,10 @@ const accountCreditsEl = $("accountCredits");
 const historySectionEl = $("historySection");
 const historyListEl = $("historyList");
 const limitInputEl = $("attendeeLimitInput");
+const attendeesPanelEl = $("attendeesPanel");
+const historyPanelEl = $("historyPanel");
+const attendeesTabBtnEl = $("attendeesTabBtn");
+const historyTabBtnEl = $("historyTabBtn");
 
 // auth modal
 const authModalEl = $("authModal");
@@ -89,6 +94,8 @@ document.querySelectorAll(".pricing-btn").forEach((btn) => {
 
 crmSelectEl.addEventListener("change", () => chrome.storage.local.set({ lastCrm: crmSelectEl.value }));
 limitInputEl.addEventListener("change", handleLimitChange);
+attendeesTabBtnEl.addEventListener("click", () => setActivePanel("attendees"));
+historyTabBtnEl.addEventListener("click", () => setActivePanel("history"));
 
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && state.session?.access_token) syncProfile({ silent: true });
@@ -134,6 +141,7 @@ async function init() {
   syncViewModeUI();
   syncAccountUI();
   renderHistory(s.exportHistory ?? []);
+  setActivePanel("attendees");
   $("openWebAppLink").href = state.config.appUrl;
 
   if (state.session?.access_token) {
@@ -217,49 +225,65 @@ function openExportModal(format) {
   showModal(exportModalEl);
 }
 
-function doExport(fullReport) {
+async function doExport(fullReport) {
   if (state.exportInProgress) {
     console.log("[sidepanel] export blocked: already in progress", { fullReport });
     return;
   }
   state.exportInProgress = true;
   hideModal(exportModalEl);
-  const fmt = state.pendingExportFormat;
-  const attendees = fullReport ? state.attendees : state.attendees.slice(0, FREE_LIMIT);
-  const usedCredit = fullReport && !state.hasUnlimited && state.attendees.length > FREE_LIMIT;
 
-  const crm = crmSelectEl.value;
-  const label = (window.CRM_PROFILES?.[crm] ?? window.CRM_PROFILES?.generic)?.label ?? crm;
+  try {
+    const fmt = state.pendingExportFormat;
+    const attendees = fullReport ? state.attendees : state.attendees.slice(0, FREE_LIMIT);
+    const usedCredit = fullReport && !state.hasUnlimited && state.attendees.length > FREE_LIMIT;
 
-  if (fmt === "csv") {
-    const csv = window.buildCrmCsv(attendees, crm);
-    downloadBlob(csv, "text/csv;charset=utf-8", `attendees-${crm}-${today()}.csv`);
-  } else {
-    const bytes = buildSimplePdf(attendees);
-    downloadBlob(
-      new Blob([bytes], { type: "application/pdf" }),
-      "application/pdf",
-      `attendees-${today()}.pdf`,
-    );
-  }
+    const crm = crmSelectEl.value;
+    const label = (window.CRM_PROFILES?.[crm] ?? window.CRM_PROFILES?.generic)?.label ?? crm;
+    const filename = fmt === "csv" ? `attendees-${crm}-${today()}.csv` : `attendees-${today()}.pdf`;
 
-  if (usedCredit) {
-    console.log("[sidepanel] deducting credit for full report export", {
-      beforeCredits: state.credits,
-      totalAttendees: state.attendees.length,
-    });
-    state.credits = Math.max(0, state.credits - 1);
-    chrome.storage.local.set({ credits: state.credits });
-    syncAccountUI();
-  }
+    let payload;
+    let mime;
+    if (fmt === "csv") {
+      payload = window.buildCrmCsv(attendees, crm);
+      mime = "text/csv;charset=utf-8";
+    } else {
+      const bytes = buildSimplePdf(attendees);
+      payload = new Blob([bytes], { type: "application/pdf" });
+      mime = "application/pdf";
+    }
 
-  if (state.session && fullReport) saveToHistory(attendees.length, fmt, crm);
+    const result = await downloadBlob(payload, mime, filename);
+    if (!result.ok) {
+      setStatus(result.cancelled ? "Export cancelled — no credit charged." : "Export failed.");
+      return;
+    }
 
-  const truncNote = !fullReport && state.attendees.length > FREE_LIMIT ? ` (first ${FREE_LIMIT})` : "";
-  setStatus(`Exported ${attendees.length} attendees for ${label}${truncNote}.`);
-  setTimeout(() => {
+    if (usedCredit) {
+      console.log("[sidepanel] deducting credit after successful download", {
+        beforeCredits: state.credits,
+        totalAttendees: state.attendees.length,
+      });
+      state.credits = Math.max(0, state.credits - 1);
+      chrome.storage.local.set({ credits: state.credits });
+      syncAccountUI();
+    }
+
+    if (state.session && fullReport) {
+      await saveToHistory({
+        fmt,
+        crm,
+        rowCount: attendees.length,
+        fileName: filename,
+        attendees,
+      });
+    }
+
+    const truncNote = !fullReport && state.attendees.length > FREE_LIMIT ? ` (first ${FREE_LIMIT})` : "";
+    setStatus(`Exported ${attendees.length} attendees for ${label}${truncNote}.`);
+  } finally {
     state.exportInProgress = false;
-  }, 300);
+  }
 }
 
 // ── JSON save — free limit unless signed in ────────────────────────────────
@@ -279,22 +303,37 @@ function handleSaveJson() {
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
-async function saveToHistory(count, fmt, crm) {
+async function saveToHistory(entry) {
   const s = await chrome.storage.local.get("exportHistory");
   const history = s.exportHistory ?? [];
-  history.unshift({ count, fmt, crm, date: new Date().toISOString() });
+  const normalized = {
+    id: crypto.randomUUID(),
+    date: new Date().toISOString(),
+    fmt: entry.fmt,
+    crm: entry.crm,
+    rowCount: entry.rowCount,
+    fileName: entry.fileName,
+    attendees: entry.attendees,
+  };
+  history.unshift(normalized);
   const trimmed = history.slice(0, 30);
-  chrome.storage.local.set({ exportHistory: trimmed });
+  await chrome.storage.local.set({ exportHistory: trimmed });
   renderHistory(trimmed);
 }
 
 function renderHistory(history) {
-  if (!state.session || !history.length) {
+  if (!state.session) {
     historySectionEl.hidden = true;
     return;
   }
   historySectionEl.hidden = false;
   historyListEl.innerHTML = "";
+
+  if (!history.length) {
+    historyListEl.innerHTML = '<div class="empty">No paid reports yet.</div>';
+    return;
+  }
+
   history.forEach((item) => {
     const div = document.createElement("div");
     div.className = "history-item";
@@ -303,14 +342,47 @@ function renderHistory(history) {
       d.toLocaleDateString("sv-SE") +
       " " +
       d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+
+    const downloadBtnLabel = item.fmt === "pdf" ? "Redownload PDF" : "Redownload CSV";
     div.innerHTML = `
-      <div>
-        <div>${item.count} attendees · ${item.fmt?.toUpperCase()} · ${item.crm ?? "generic"}</div>
-        <div class="history-meta">${dateStr}</div>
-      </div>
+      <div class="history-meta">${esc(dateStr)}</div>
+      <div class="history-name" title="${esc(item.fileName ?? "report")}">${esc(item.fileName ?? "report")}</div>
+      <div>${esc(item.crm ?? "generic")}</div>
+      <div>${esc(item.rowCount ?? item.count ?? 0)}</div>
+      <button class="history-dl" type="button">${downloadBtnLabel}</button>
     `;
+
+    const btn = div.querySelector(".history-dl");
+    btn.addEventListener("click", () => redownloadHistoryItem(item));
     historyListEl.appendChild(div);
   });
+}
+
+async function redownloadHistoryItem(item) {
+  const rows = Array.isArray(item.attendees) ? item.attendees : [];
+  if (!rows.length) {
+    setStatus("This report is too old to redownload. Export again to store it.");
+    return;
+  }
+
+  const fmt = item.fmt === "pdf" ? "pdf" : "csv";
+  const filename = item.fileName || (fmt === "pdf" ? `attendees-${today()}.pdf` : `attendees-${item.crm || "generic"}-${today()}.csv`);
+  console.log("[sidepanel] redownload from history", { id: item.id, fmt, filename, rowCount: rows.length });
+
+  let result;
+  if (fmt === "pdf") {
+    const bytes = buildSimplePdf(rows);
+    result = await downloadBlob(new Blob([bytes], { type: "application/pdf" }), "application/pdf", filename);
+  } else {
+    const csv = window.buildCrmCsv(rows, item.crm || "generic");
+    result = await downloadBlob(csv, "text/csv;charset=utf-8", filename);
+  }
+
+  if (!result.ok) {
+    setStatus(result.cancelled ? "Redownload cancelled." : "Redownload failed.");
+    return;
+  }
+  setStatus(`Redownloaded ${rows.length} rows without credit charge.`);
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -627,6 +699,14 @@ function syncAccountUI() {
 }
 
 
+function setActivePanel(panel) {
+  state.activePanel = panel;
+  attendeesPanelEl.classList.toggle("active", panel === "attendees");
+  historyPanelEl.classList.toggle("active", panel === "history");
+  attendeesTabBtnEl.classList.toggle("active", panel === "attendees");
+  historyTabBtnEl.classList.toggle("active", panel === "history");
+}
+
 function setViewMode(mode) {
   state.viewMode = mode;
   chrome.storage.local.set({ attendeeViewMode: mode });
@@ -661,11 +741,52 @@ function today() {
 }
 
 function downloadBlob(data, mime, filename) {
-  const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
-  const url = URL.createObjectURL(blob);
-  chrome.downloads.download({ url, filename, saveAs: true }, () =>
-    setTimeout(() => URL.revokeObjectURL(url), 1000),
-  );
+  return new Promise((resolve) => {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
+    const url = URL.createObjectURL(blob);
+
+    chrome.downloads.download({ url, filename, saveAs: true }, (downloadId) => {
+      if (chrome.runtime.lastError || !downloadId) {
+        console.warn("[sidepanel] download failed before start", {
+          error: chrome.runtime.lastError?.message || "unknown",
+          filename,
+        });
+        URL.revokeObjectURL(url);
+        resolve({ ok: false, cancelled: false });
+        return;
+      }
+
+      console.log("[sidepanel] download started", { downloadId, filename });
+
+      const cleanup = () => {
+        chrome.downloads.onChanged.removeListener(listener);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      };
+
+      const listener = (delta) => {
+        if (delta.id !== downloadId || !delta.state) return;
+
+        if (delta.state.current === "complete") {
+          cleanup();
+          resolve({ ok: true, cancelled: false, downloadId });
+          return;
+        }
+
+        if (delta.state.current === "interrupted") {
+          const err = delta.error?.current || "INTERRUPTED";
+          cleanup();
+          resolve({
+            ok: false,
+            cancelled: err === "USER_CANCELED",
+            error: err,
+            downloadId,
+          });
+        }
+      };
+
+      chrome.downloads.onChanged.addListener(listener);
+    });
+  });
 }
 
 function esc(v) {

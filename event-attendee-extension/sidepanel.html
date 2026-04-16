@@ -33,51 +33,67 @@
     </div>
   </header>
 
-  <!-- Main actions -->
-  <section class="actions">
-    <button id="scrapeBtn" class="btn primary">Extract attendees</button>
-
-    <div class="field-row">
-      <label for="attendeeLimitInput" class="field-label">Max attendees per scrape</label>
-      <input id="attendeeLimitInput" class="input" type="number" min="1" step="1" value="100" />
-    </div>
-
-    <div class="export-row">
-      <select id="crmSelect" class="crm-select">
-        <option value="generic">Generic CSV</option>
-        <option value="hubspot">HubSpot</option>
-        <option value="pipedrive">Pipedrive</option>
-        <option value="salesforce">Salesforce</option>
-        <option value="zoho">Zoho CRM</option>
-      </select>
-      <button id="csvBtn" class="btn export-btn">Export CSV</button>
-    </div>
-
-    <button id="saveJsonBtn" class="btn">Save as JSON file</button>
+  <section class="panel-tabs" aria-label="Panel sections">
+    <button id="attendeesTabBtn" class="panel-tab active" type="button">Attendees</button>
+    <button id="historyTabBtn" class="panel-tab" type="button">History</button>
   </section>
 
-  <!-- Attendee list -->
-  <section class="results">
-    <div class="results-header">
-      <h2>Attendee List</h2>
-      <div class="results-header-right">
-        <div class="view-toggle">
-          <button id="detailedViewBtn" class="view-btn active" type="button">List</button>
-          <button id="cardViewBtn" class="view-btn" type="button">Cards</button>
-        </div>
-        <span id="countBadge" class="badge">0</span>
+  <div id="attendeesPanel" class="tab-panel active" data-panel="attendees">
+    <!-- Main actions -->
+    <section class="actions">
+      <button id="scrapeBtn" class="btn primary">Extract attendees</button>
+
+      <div class="field-row">
+        <label for="attendeeLimitInput" class="field-label">Max attendees per scrape</label>
+        <input id="attendeeLimitInput" class="input" type="number" min="1" step="1" value="100" />
       </div>
-    </div>
-    <div id="attendeeList" class="attendee-list"></div>
-  </section>
 
-  <!-- History (signed-in only) -->
-  <section id="historySection" class="results" hidden>
-    <div class="results-header">
-      <h2>Export History</h2>
-    </div>
-    <div id="historyList" class="history-list"></div>
-  </section>
+      <div class="export-row">
+        <select id="crmSelect" class="crm-select">
+          <option value="generic">Generic CSV</option>
+          <option value="hubspot">HubSpot</option>
+          <option value="pipedrive">Pipedrive</option>
+          <option value="salesforce">Salesforce</option>
+          <option value="zoho">Zoho CRM</option>
+        </select>
+        <button id="csvBtn" class="btn export-btn">Export CSV</button>
+      </div>
+
+      <button id="saveJsonBtn" class="btn">Save as JSON file</button>
+    </section>
+
+    <!-- Attendee list -->
+    <section class="results">
+      <div class="results-header">
+        <h2>Attendee List</h2>
+        <div class="results-header-right">
+          <div class="view-toggle">
+            <button id="detailedViewBtn" class="view-btn active" type="button">List</button>
+            <button id="cardViewBtn" class="view-btn" type="button">Cards</button>
+          </div>
+          <span id="countBadge" class="badge">0</span>
+        </div>
+      </div>
+      <div id="attendeeList" class="attendee-list"></div>
+    </section>
+  </div>
+
+  <div id="historyPanel" class="tab-panel" data-panel="history">
+    <!-- History (signed-in only) -->
+    <section id="historySection" class="results" hidden>
+      <div class="results-header">
+        <h2>Report History</h2>
+      </div>
+      <div class="history-header-row">
+        <span>Date</span>
+        <span>Name</span>
+        <span>CRM target</span>
+        <span>Rows</span>
+        <span></span>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </section>
+  </div>
 
 </main>
 
