@@ -17,6 +17,7 @@ const state = {
   pollTimer: null,
   pendingExportFormat: null,
   exportInProgress: false,
+  activeTab: "attendees",
   config: {
     supabaseUrl: DEFAULT_SUPABASE_URL,
     supabaseAnonKey: "",
@@ -28,6 +29,7 @@ const state = {
 const $ = (id) => document.getElementById(id);
 const statusEl = $("statusText");
 const attendeeListEl = $("attendeeList");
+const attendeesSectionEl = $("attendeesSection");
 const countBadgeEl = $("countBadge");
 const crmSelectEl = $("crmSelect");
 const accountBadgeEl = $("accountBadge");
@@ -58,6 +60,8 @@ $("saveJsonBtn").addEventListener("click", handleSaveJson);
 $("detailedViewBtn").addEventListener("click", () => setViewMode("detailed"));
 $("cardViewBtn").addEventListener("click", () => setViewMode("card"));
 $("signOutBtn").addEventListener("click", handleSignOut);
+$("attendeesTabBtn").addEventListener("click", () => setActivePanelTab("attendees"));
+$("historyTabBtn").addEventListener("click", () => setActivePanelTab("history"));
 $("signInBtn").addEventListener("click", handleSignIn);
 $("magicLinkBtn").addEventListener("click", handleMagicLink);
 $("googleSignInBtn").addEventListener("click", handleGoogleSignIn);
@@ -133,6 +137,7 @@ async function init() {
   limitInputEl.value = state.attendeeLimit;
   syncViewModeUI();
   syncAccountUI();
+  setActivePanelTab("attendees");
   renderHistory(s.exportHistory ?? []);
   $("openWebAppLink").href = state.config.appUrl;
 
@@ -217,7 +222,7 @@ function openExportModal(format) {
   showModal(exportModalEl);
 }
 
-function doExport(fullReport) {
+async function doExport(fullReport) {
   if (state.exportInProgress) {
     console.log("[sidepanel] export blocked: already in progress", { fullReport });
     return;
@@ -231,16 +236,30 @@ function doExport(fullReport) {
   const crm = crmSelectEl.value;
   const label = (window.CRM_PROFILES?.[crm] ?? window.CRM_PROFILES?.generic)?.label ?? crm;
 
+  const filename = fmt === "csv" ? `attendees-${crm}-${today()}.csv` : `attendees-${today()}.pdf`;
+  let downloadResult;
+
   if (fmt === "csv") {
     const csv = window.buildCrmCsv(attendees, crm);
-    downloadBlob(csv, "text/csv;charset=utf-8", `attendees-${crm}-${today()}.csv`);
+    downloadResult = await downloadBlob(csv, "text/csv;charset=utf-8", filename);
   } else {
     const bytes = buildSimplePdf(attendees);
-    downloadBlob(
+    downloadResult = await downloadBlob(
       new Blob([bytes], { type: "application/pdf" }),
       "application/pdf",
-      `attendees-${today()}.pdf`,
+      filename,
     );
+  }
+
+  if (!downloadResult.ok) {
+    console.log("[sidepanel] export canceled or failed", {
+      fullReport,
+      filename,
+      reason: downloadResult.error,
+    });
+    setStatus(downloadResult.canceled ? "Download canceled — no credit charged." : "Download failed. No credit charged.");
+    state.exportInProgress = false;
+    return;
   }
 
   if (usedCredit) {
@@ -254,13 +273,11 @@ function doExport(fullReport) {
     deductCreditInDB();
   }
 
-  if (state.session && fullReport) saveToHistory(attendees.length, fmt, crm);
+  if (state.session && fullReport) await saveToHistory(attendees, fmt, crm, filename);
 
   const truncNote = !fullReport && state.attendees.length > FREE_LIMIT ? ` (first ${FREE_LIMIT})` : "";
   setStatus(`Exported ${attendees.length} attendees for ${label}${truncNote}.`);
-  setTimeout(() => {
-    state.exportInProgress = false;
-  }, 300);
+  state.exportInProgress = false;
 }
 
 // ── JSON save — free limit unless signed in ────────────────────────────────
@@ -280,22 +297,46 @@ function handleSaveJson() {
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
-async function saveToHistory(count, fmt, crm) {
+async function saveToHistory(attendees, fmt, crm, filename) {
   const s = await chrome.storage.local.get("exportHistory");
   const history = s.exportHistory ?? [];
-  history.unshift({ count, fmt, crm, date: new Date().toISOString() });
+  history.unshift({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    attendees,
+    rowCount: attendees.length,
+    fmt,
+    crm,
+    filename,
+    date: new Date().toISOString(),
+  });
   const trimmed = history.slice(0, 30);
   chrome.storage.local.set({ exportHistory: trimmed });
   renderHistory(trimmed);
 }
 
 function renderHistory(history) {
-  if (!state.session || !history.length) {
+  if (!state.session) {
     historySectionEl.hidden = true;
     return;
   }
-  historySectionEl.hidden = false;
+  historySectionEl.hidden = state.activeTab !== "history";
   historyListEl.innerHTML = "";
+  if (!history.length) {
+    historyListEl.innerHTML = `<div class="empty"><div class="empty-icon">🧾</div>No purchased reports yet.</div>`;
+    return;
+  }
+
+  const head = document.createElement("div");
+  head.className = "history-head";
+  head.innerHTML = `
+    <div>Date</div>
+    <div>Name</div>
+    <div>CRM Target</div>
+    <div>Rows</div>
+    <div></div>
+  `;
+  historyListEl.appendChild(head);
+
   history.forEach((item) => {
     const div = document.createElement("div");
     div.className = "history-item";
@@ -304,14 +345,49 @@ function renderHistory(history) {
       d.toLocaleDateString("sv-SE") +
       " " +
       d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+    const rowCount = item.rowCount ?? item.count ?? (Array.isArray(item.attendees) ? item.attendees.length : 0);
+    const filename = item.filename || `attendees-${item.crm ?? "generic"}-${item.date?.slice(0, 10) || today()}.${item.fmt || "csv"}`;
     div.innerHTML = `
-      <div>
-        <div>${item.count} attendees · ${item.fmt?.toUpperCase()} · ${item.crm ?? "generic"}</div>
-        <div class="history-meta">${dateStr}</div>
-      </div>
+      <div class="history-cell history-meta">${dateStr}</div>
+      <div class="history-cell">${esc(filename)}</div>
+      <div class="history-cell">${esc(item.crm ?? "generic")}</div>
+      <div class="history-cell">${rowCount}</div>
+      <button class="history-dl">Redownload</button>
     `;
+    const downloadBtn = div.querySelector(".history-dl");
+    downloadBtn.addEventListener("click", () => redownloadFromHistory(item));
     historyListEl.appendChild(div);
   });
+}
+
+async function redownloadFromHistory(item) {
+  const attendees = Array.isArray(item.attendees) ? item.attendees : [];
+  if (!attendees.length) {
+    setStatus("Cannot redownload this report — stored data is missing.");
+    return;
+  }
+
+  console.log("[sidepanel] redownload history item", {
+    date: item.date,
+    filename: item.filename,
+    crm: item.crm,
+    rows: attendees.length,
+  });
+
+  let result;
+  if (item.fmt === "csv") {
+    const csv = window.buildCrmCsv(attendees, item.crm || "generic");
+    result = await downloadBlob(csv, "text/csv;charset=utf-8", item.filename || `attendees-${item.crm || "generic"}-${today()}.csv`);
+  } else {
+    const bytes = buildSimplePdf(attendees);
+    result = await downloadBlob(new Blob([bytes], { type: "application/pdf" }), "application/pdf", item.filename || `attendees-${today()}.pdf`);
+  }
+
+  if (!result.ok) {
+    setStatus(result.canceled ? "Redownload canceled." : "Redownload failed.");
+    return;
+  }
+  setStatus(`Redownloaded ${attendees.length} rows from history.`);
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -625,6 +701,27 @@ function syncAccountUI() {
     accountCreditsEl.textContent = "";
     setStatus("Sign in to unlock full exports.");
   }
+  syncHistoryTabVisibility();
+}
+
+function setActivePanelTab(tab) {
+  state.activeTab = tab === "history" ? "history" : "attendees";
+  $("attendeesTabBtn").classList.toggle("active", state.activeTab === "attendees");
+  $("historyTabBtn").classList.toggle("active", state.activeTab === "history");
+  const showHistory = Boolean(state.session) && state.activeTab === "history";
+  historySectionEl.hidden = !showHistory;
+  attendeesSectionEl.hidden = state.activeTab !== "attendees";
+  if (showHistory) {
+    chrome.storage.local.get("exportHistory").then((s) => renderHistory(s.exportHistory ?? []));
+  }
+}
+
+function syncHistoryTabVisibility() {
+  const hasAccessToHistory = Boolean(state.session);
+  $("historyTabBtn").disabled = !hasAccessToHistory;
+  if (!hasAccessToHistory && state.activeTab === "history") {
+    setActivePanelTab("attendees");
+  }
 }
 
 
@@ -664,9 +761,17 @@ function today() {
 function downloadBlob(data, mime, filename) {
   const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
   const url = URL.createObjectURL(blob);
-  chrome.downloads.download({ url, filename, saveAs: true }, () =>
-    setTimeout(() => URL.revokeObjectURL(url), 1000),
-  );
+  return new Promise((resolve) => {
+    chrome.downloads.download({ url, filename, saveAs: true }, (downloadId) => {
+      const err = chrome.runtime.lastError?.message;
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (err) {
+        resolve({ ok: false, canceled: /canceled/i.test(err), error: err });
+        return;
+      }
+      resolve({ ok: Number.isInteger(downloadId), canceled: false, error: null, downloadId });
+    });
+  });
 }
 
 function esc(v) {
