@@ -251,6 +251,7 @@ function doExport(fullReport) {
     state.credits = Math.max(0, state.credits - 1);
     chrome.storage.local.set({ credits: state.credits });
     syncAccountUI();
+    deductCreditInDB();
   }
 
   if (state.session && fullReport) saveToHistory(attendees.length, fmt, crm);
@@ -768,4 +769,24 @@ function buildSimplePdf(attendees) {
     pdf += `${String(off[i]).padStart(10, "0")} 00000 n \n`;
   pdf += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
   return new TextEncoder().encode(pdf);
+}
+async function deductCreditInDB() {
+  if (!state.session?.access_token || !state.config.supabaseAnonKey) return;
+
+  const res = await fetch(
+    `${state.config.supabaseUrl}/rest/v1/rpc/deduct_credit`,
+    {
+      method: "POST",
+      headers: {
+        apikey: state.config.supabaseAnonKey,
+        Authorization: `Bearer ${state.session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ user_id: state.session.user.id }),
+    }
+  );
+
+  if (!res.ok) {
+    console.error("[sidepanel] credit deduction failed", await res.text());
+  }
 }
