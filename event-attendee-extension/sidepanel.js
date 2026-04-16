@@ -16,6 +16,7 @@ const state = {
   profile: null,
   pollTimer: null,
   pendingExportFormat: null,
+  exportInProgress: false,
   config: {
     supabaseUrl: DEFAULT_SUPABASE_URL,
     supabaseAnonKey: "",
@@ -63,7 +64,6 @@ $("googleSignInBtn").addEventListener("click", handleGoogleSignIn);
 $("closeAuthModal").addEventListener("click", () => hideModal(authModalEl));
 $("closeExportModal").addEventListener("click", () => hideModal(exportModalEl));
 $("exportFreeBtn").addEventListener("click", () => doExport(false));
-$("exportCreditBtn").addEventListener("click", () => doExport(true));
 $("openWebAppLink").addEventListener("click", (e) => {
   e.preventDefault();
   chrome.tabs.create({ url: state.config.appUrl });
@@ -218,6 +218,11 @@ function openExportModal(format) {
 }
 
 function doExport(fullReport) {
+  if (state.exportInProgress) {
+    console.log("[sidepanel] export blocked: already in progress", { fullReport });
+    return;
+  }
+  state.exportInProgress = true;
   hideModal(exportModalEl);
   const fmt = state.pendingExportFormat;
   const attendees = fullReport ? state.attendees : state.attendees.slice(0, FREE_LIMIT);
@@ -239,6 +244,10 @@ function doExport(fullReport) {
   }
 
   if (usedCredit) {
+    console.log("[sidepanel] deducting credit for full report export", {
+      beforeCredits: state.credits,
+      totalAttendees: state.attendees.length,
+    });
     state.credits = Math.max(0, state.credits - 1);
     chrome.storage.local.set({ credits: state.credits });
     syncAccountUI();
@@ -248,6 +257,9 @@ function doExport(fullReport) {
 
   const truncNote = !fullReport && state.attendees.length > FREE_LIMIT ? ` (first ${FREE_LIMIT})` : "";
   setStatus(`Exported ${attendees.length} attendees for ${label}${truncNote}.`);
+  setTimeout(() => {
+    state.exportInProgress = false;
+  }, 300);
 }
 
 // ── JSON save — free limit unless signed in ────────────────────────────────
