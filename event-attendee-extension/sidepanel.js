@@ -329,8 +329,7 @@ function renderHistory(history) {
   const head = document.createElement("div");
   head.className = "history-head";
   head.innerHTML = `
-    <div>Date</div>
-    <div>Name</div>
+    <div>Date / Name</div>
     <div>CRM Target</div>
     <div>Rows</div>
     <div></div>
@@ -347,20 +346,31 @@ function renderHistory(history) {
       d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
     const rowCount = item.rowCount ?? item.count ?? (Array.isArray(item.attendees) ? item.attendees.length : 0);
     const filename = item.filename || `attendees-${item.crm ?? "generic"}-${item.date?.slice(0, 10) || today()}.${item.fmt || "csv"}`;
+    const originalFormat = item.fmt || "csv";
     div.innerHTML = `
-      <div class="history-cell history-meta">${dateStr}</div>
-      <div class="history-cell">${esc(filename)}</div>
+      <div class="history-cell history-date-wrap">
+        <span class="history-meta">${dateStr}</span>
+        <span class="history-name">${esc(filename)}</span>
+      </div>
       <div class="history-cell">${esc(item.crm ?? "generic")}</div>
       <div class="history-cell">${rowCount}</div>
-      <button class="history-dl">Redownload</button>
+      <div class="history-redownload">
+        <select class="history-format-select" aria-label="Select redownload format">
+          <option value="csv"${originalFormat === "csv" ? " selected" : ""}>CSV</option>
+          <option value="json"${originalFormat === "json" ? " selected" : ""}>JSON</option>
+          <option value="pdf"${originalFormat === "pdf" ? " selected" : ""}>PDF</option>
+        </select>
+        <button class="history-dl">Redownload</button>
+      </div>
     `;
+    const formatSelect = div.querySelector(".history-format-select");
     const downloadBtn = div.querySelector(".history-dl");
-    downloadBtn.addEventListener("click", () => redownloadFromHistory(item));
+    downloadBtn.addEventListener("click", () => redownloadFromHistory(item, formatSelect.value));
     historyListEl.appendChild(div);
   });
 }
 
-async function redownloadFromHistory(item) {
+async function redownloadFromHistory(item, format) {
   const attendees = Array.isArray(item.attendees) ? item.attendees : [];
   if (!attendees.length) {
     setStatus("Cannot redownload this report — stored data is missing.");
@@ -372,22 +382,26 @@ async function redownloadFromHistory(item) {
     filename: item.filename,
     crm: item.crm,
     rows: attendees.length,
+    format,
   });
 
   let result;
-  if (item.fmt === "csv") {
+  if (format === "csv") {
     const csv = window.buildCrmCsv(attendees, item.crm || "generic");
-    result = await downloadBlob(csv, "text/csv;charset=utf-8", item.filename || `attendees-${item.crm || "generic"}-${today()}.csv`);
+    result = await downloadBlob(csv, "text/csv;charset=utf-8", `attendees-${item.crm || "generic"}-${today()}.csv`);
+  } else if (format === "json") {
+    const json = JSON.stringify(attendees, null, 2);
+    result = await downloadBlob(json, "application/json", `attendees-${item.crm || "generic"}-${today()}.json`);
   } else {
     const bytes = buildSimplePdf(attendees);
-    result = await downloadBlob(new Blob([bytes], { type: "application/pdf" }), "application/pdf", item.filename || `attendees-${today()}.pdf`);
+    result = await downloadBlob(new Blob([bytes], { type: "application/pdf" }), "application/pdf", `attendees-${item.crm || "generic"}-${today()}.pdf`);
   }
 
   if (!result.ok) {
     setStatus(result.canceled ? "Redownload canceled." : "Redownload failed.");
     return;
   }
-  setStatus(`Redownloaded ${attendees.length} rows from history.`);
+  setStatus(`Redownloaded ${attendees.length} rows as ${format.toUpperCase()}.`);
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
