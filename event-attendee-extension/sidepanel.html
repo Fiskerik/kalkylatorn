@@ -18,7 +18,14 @@
         <p id="statusText" class="status">Ready to extract.</p>
       </div>
     </div>
-    <!-- Shown when signed in -->
+ 
+    <!-- Shown when signed OUT -->
+    <div id="signedOutBadge" class="account-badge">
+      <span class="account-email" style="color:var(--text-muted);font-weight:400;">Not signed in</span>
+      <button id="signInHeaderBtn" class="btn-link" style="color:var(--blue);font-weight:600;">Sign in</button>
+    </div>
+ 
+    <!-- Shown when signed IN -->
     <div id="accountBadge" class="account-badge" hidden>
       <span id="accountEmail" class="account-email"></span>
       <span id="accountCredits" class="account-credits"></span>
