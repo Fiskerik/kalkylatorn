@@ -51,7 +51,6 @@ const exportModalSubEl = $("exportModalSub");
 const exportTotalCountEl = $("exportTotalCount");
 const exportCreditDescEl = $("exportCreditDesc");
 const buyCreditsSection = $("buyCreditsSection");
-const stripeCouponInputEl = $("stripeCouponInput");
 
 // ── Wire up events ────────────────────────────────────────────────────────────
 $("scrapeBtn").addEventListener("click", handleScrape);
@@ -646,16 +645,13 @@ function stopPoll() {
 function handleBuy(plan) {
   ensureSessionUserShape();
   const url = new URL(`${state.config.appUrl}/checkout`);
-  const couponCode = stripeCouponInputEl?.value?.trim() || "";
   url.searchParams.set("plan", plan);
   url.searchParams.set("source", "extension");
   if (state.session?.user?.id) url.searchParams.set("user_id", state.session.user.id);
-  if (couponCode) url.searchParams.set("coupon", couponCode);
   console.log("[sidepanel] opening checkout", {
     url: url.toString(),
     userId: state.session?.user?.id || null,
     plan,
-    coupon: couponCode || null,
   });
   chrome.tabs.create({ url: url.toString() });
   setStatus("Opening checkout… credits sync automatically.");
